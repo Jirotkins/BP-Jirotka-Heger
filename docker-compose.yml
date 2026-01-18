@@ -21,17 +21,20 @@ services:
     container_name: postgres_db
     volumes:
       - postgres_data:/var/lib/postgresql/data # Aby data nezmizela po vypnutí
+      - ./schema.sql:/docker-entrypoint-initdb.d/01_schema.sql # Automatické nahrání DB při prvním zapnutí
+      - ./data.sql:/docker-entrypoint-initdb.d/02_data.sql # Automatické nahraní prvotních dat do DB
     env_file:
       - .env
     ports:
       - "5432:5432"
 
-  # 3. Nástroj pro správu DB (Adminer)
-  adminer:
-    image: adminer
-    container_name: db_adminer
+  # 3. Nástroj pro správu DB (DbGate)
+  dbgate:
+    image: dbgate/dbgate
+    container_name: db_client
+    restart: always
     ports:
-      - "8080:8080"
+      - "3000:3000"
     depends_on:
       - db
 
