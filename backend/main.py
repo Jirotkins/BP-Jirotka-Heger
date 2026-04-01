@@ -6,7 +6,7 @@ import os
 from database import get_db
 import db_layer
 from auth import create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES, require_teacher, require_student
-from schemas import LoginRequest, CreateStudentRequest, Token
+from schemas import LoginRequest, CreateStudentRequest, CreateTeacherRequest, Token
 
 app = FastAPI()
 
@@ -114,3 +114,51 @@ def test_create_student(student_data: CreateStudentRequest, db: Session = Depend
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Chyba při vytváření studenta: {str(e)}"
         )
+
+@app.post("/test/create-teacher")
+def test_create_teacher(teacher_data: CreateTeacherRequest, db: Session = Depends(get_db)):
+    """Endpoint pro vytvoření nového učitele se správně zahashovaným heslem"""
+    try:
+        teacher = db_layer.create_teacher(
+            db=db,
+            name=teacher_data.name,
+            email=teacher_data.email,
+            password=teacher_data.password
+        )
+        return {
+            "success": True,
+            "message": "Učitel vytvořen",
+            "teacher_id": teacher.teacher_id,
+            "name": teacher.name,
+            "email": teacher.email
+        }
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Chyba při vytváření učitele: {str(e)}"
+        )
+
+@app.get("/validate/teacher")
+def validate_teacher_token(current_teacher: dict = Depends(require_teacher)):
+    """Ověří platnost JWT tokenu pro učitele"""
+    return {
+        "valid": True,
+        "user_type": current_teacher["user_type"],
+        "teacher_id": current_teacher["user_id"],
+        "message": "Token je platný"
+    }
+
+@app.get("/validate/student")
+def validate_student_token(current_student: dict = Depends(require_student)):
+    """Ověří platnost JWT tokenu pro studenta"""
+    return {
+        "valid": True,
+        "user_type": current_student["user_type"],
+        "student_id": current_student["user_id"],
+        "message": "Token je platný"
+    }

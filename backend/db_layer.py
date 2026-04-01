@@ -49,3 +49,23 @@ def create_student(db: Session, login_code: str, password: str, group_id: int = 
     
     return new_student
 
+def create_teacher(db: Session, name: str, email: str, password: str):
+    """Vytvoří nového učitele s zahashovaným heslem"""
+    existing_teacher = db.query(Teacher).filter(Teacher.email == email).first()
+    if existing_teacher:
+        raise ValueError("Email už existuje")
+
+    password_hash = get_password_hash(password)
+    
+    new_teacher = Teacher(
+        name=name,
+        email=email,
+        password_hash=password_hash
+    )
+    
+    db.add(new_teacher)
+    db.commit()
+    db.refresh(new_teacher)
+    
+    return new_teacher
+

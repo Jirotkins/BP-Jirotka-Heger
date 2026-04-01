@@ -20,6 +20,19 @@ class CreateStudentRequest(BaseModel):
         return v
 
 
+class CreateTeacherRequest(BaseModel):
+    name: str
+    email: str
+    password: str
+    
+    @field_validator('password')
+    @classmethod
+    def validate_password_length(cls, v):
+        if len(v.encode('utf-8')) > 72:
+            raise ValueError("Heslo může mít maximálně 72 bytů")
+        return v
+
+
 class Token(BaseModel):
     access_token: str
     token_type: str
