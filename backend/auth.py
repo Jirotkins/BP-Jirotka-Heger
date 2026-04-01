@@ -2,6 +2,9 @@ from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
 from passlib.context import CryptContext
+from fastapi import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
+from sqlalchemy.orm import Session
 
 # Nastavení pro hashování hesel
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -34,3 +37,46 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
+
+# OAuth2 scheme pro extrakci Bearer tokenu
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login/teacher")
+
+def verify_access_token(token: str) -> dict:
+    """Dekóduje a ověří JWT token"""
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Nelze ověřit přihlašovací údaje",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id: str = payload.get("sub")
+        user_type: str = payload.get("type")
+        if user_id is None or user_type is None:
+            raise credentials_exception
+        return {"user_id": int(user_id), "user_type": user_type}
+    except JWTError:
+        raise credentials_exception
+
+def get_current_user(token: str = Depends(oauth2_scheme)):
+    """Získá aktuálního přihlášeného uživatele z tokenu"""
+    return verify_access_token(token)
+
+def require_teacher(current_user: dict = Depends(get_current_user)):
+    """Vyžaduje, aby uživatel byl učitel"""
+    if current_user["user_type"] != "teacher":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Přístup povolen pouze pro učitele"
+        )
+    return current_user
+
+def require_student(current_user: dict = Depends(get_current_user)):
+    """Vyžaduje, aby uživatel byl student"""
+    if current_user["user_type"] != "student":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Přístup povolen pouze pro studenty"
+        )
+    return current_user
+
