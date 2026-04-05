@@ -43,3 +43,26 @@ class Token(BaseModel):
 class CreateGroupRequest(BaseModel):
     name: str
     description: str = None
+
+class CreateSingleStudentRequest(BaseModel):
+    login_code: str
+    password: str
+    
+    @field_validator('password')
+    @classmethod
+    def validate_password_length(cls, v):
+        if len(v.encode('utf-8')) > 72:
+            raise ValueError("Heslo může mít maximálně 72 bytů")
+        return v
+
+
+class CreateBulkStudentsRequest(BaseModel):
+    prefix: str
+    count: int
+    
+    @field_validator('count')
+    @classmethod
+    def validate_count(cls, v):
+        if v < 1 or v > 100:
+            raise ValueError("Počet studentů musí být mezi 1 a 100")
+        return v

@@ -1,13 +1,16 @@
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm, HTTPBearer
 from fastapi.openapi.utils import get_openapi
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from datetime import timedelta
 import os
+import io
+import csv
 from database import get_db
 import db_layer
 from auth import create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES, require_teacher, require_student
-from schemas import LoginRequest, CreateStudentRequest, CreateTeacherRequest, Token, CreateGroupRequest
+from schemas import LoginRequest, CreateStudentRequest, CreateTeacherRequest, Token, CreateGroupRequest, CreateSingleStudentRequest, CreateBulkStudentsRequest
 
 security = HTTPBearer()
 
@@ -101,6 +104,104 @@ def get_groups(
         "teacher_id": current_teacher["user_id"],
         "groups": groups
     }
+
+@app.post("/groups/{group_id}/students")
+def add_single_student(
+    group_id: int,
+    student_data: CreateSingleStudentRequest,
+    current_teacher: dict = Depends(require_teacher),
+    db: Session = Depends(get_db)
+):
+    """Přidat jednoho studenta do skupiny - pouze pro učitele"""
+    try:
+        # Ověř, že grupa patří učiteli
+        group = db.query(db_layer.Group).filter(
+            db_layer.Group.group_id == group_id,
+            db_layer.Group.teacher_id == current_teacher["user_id"]
+        ).first()
+        if not group:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Tato skupina nepatří vám"
+            )
+        
+        student = db_layer.create_student_in_group(
+            db=db,
+            group_id=group_id,
+            login_code=student_data.login_code,
+            password=student_data.password
+        )
+        return {
+            "success": True,
+            "message": "Student vytvořen",
+            "student_id": student.student_id,
+            "login_code": student.login_code,
+            "group_id": student.group_id
+        }
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Chyba při vytváření studenta: {str(e)}"
+        )
+
+@app.post("/groups/{group_id}/students/bulk")
+def add_bulk_students(
+    group_id: int,
+    students_data: CreateBulkStudentsRequest,
+    current_teacher: dict = Depends(require_teacher),
+    db: Session = Depends(get_db)
+):
+    """Přidat více studentů do skupiny najednou - vrátí CSV - pouze pro učitele"""
+    try:
+        # Ověř, že grupa patří učiteli
+        from models import Group
+        group = db.query(Group).filter(
+            Group.group_id == group_id,
+            Group.teacher_id == current_teacher["user_id"]
+        ).first()
+        if not group:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Tato skupina nepatří vám"
+            )
+        
+        # Vytvoř studenty
+        students = db_layer.create_bulk_students(
+            db=db,
+            group_id=group_id,
+            prefix=students_data.prefix,
+            count=students_data.count
+        )
+        
+        # Vytvoř CSV
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow(["Login kód", "Heslo"])
+        for student in students:
+            writer.writerow([student["login_code"], student["password"]])
+        
+        output.seek(0)
+        
+        return StreamingResponse(
+            iter([output.getvalue()]),
+            media_type="text/csv",
+            headers={"Content-Disposition": f"attachment; filename=students_{students_data.prefix}.csv"}
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Chyba při vytváření studentů: {str(e)}"
+        )
 
 @app.post("/login", response_model=Token)
 def login(login_data: LoginRequest, db: Session = Depends(get_db)):
