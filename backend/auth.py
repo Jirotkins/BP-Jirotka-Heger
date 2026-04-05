@@ -3,7 +3,7 @@ from typing import Optional
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 
 # Nastavení pro hashování hesel
@@ -38,8 +38,8 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-# OAuth2 scheme pro extrakci Bearer tokenu
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login/teacher")
+# HTTP Bearer scheme pro JWT extrakci
+security = HTTPBearer()
 
 def verify_access_token(token: str) -> dict:
     """Dekóduje a ověří JWT token"""
@@ -58,9 +58,9 @@ def verify_access_token(token: str) -> dict:
     except JWTError:
         raise credentials_exception
 
-def get_current_user(token: str = Depends(oauth2_scheme)):
+def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
     """Získá aktuálního přihlášeného uživatele z tokenu"""
-    return verify_access_token(token)
+    return verify_access_token(credentials.credentials)
 
 def require_teacher(current_user: dict = Depends(get_current_user)):
     """Vyžaduje, aby uživatel byl učitel"""

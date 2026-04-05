@@ -1,14 +1,50 @@
 from fastapi import FastAPI, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordRequestForm, HTTPBearer
+from fastapi.openapi.utils import get_openapi
 from sqlalchemy.orm import Session
 from datetime import timedelta
 import os
 from database import get_db
 import db_layer
 from auth import create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES, require_teacher, require_student
-from schemas import LoginRequest, CreateStudentRequest, CreateTeacherRequest, Token
+from schemas import LoginRequest, CreateStudentRequest, CreateTeacherRequest, Token, CreateGroupRequest
 
-app = FastAPI()
+security = HTTPBearer()
+
+app = FastAPI(
+    title="BP-Jirotka-Heger API",
+    description="API for creating and managing test for schools",
+    version="1.0.0"
+)
+
+# Configure JWT Bearer authentication in OpenAPI schema
+def custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+    openapi_schema = get_openapi(
+        title="BP-Jirotka-Heger API",
+        version="1.0.0",
+        description="API for creating and managing test for schools",
+        routes=app.routes,
+    )
+    openapi_schema["components"]["securitySchemes"] = {
+        "Bearer": {
+            "type": "http",
+            "scheme": "bearer",
+            "bearerFormat": "JWT",
+        }
+    }
+    # Add security to protected endpoints
+    for path, path_item in openapi_schema["paths"].items():
+        if path not in ["/", "/login", "/login/teacher", "/login/student", "/test/create-student", "/test/create-teacher", "/validate/teacher", "/validate/student"]:
+            for operation in path_item.values():
+                if isinstance(operation, dict):
+                    operation["security"] = [{"Bearer": []}]
+    
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+app.openapi = custom_openapi
 
 @app.get("/")
 def read_root():
@@ -25,6 +61,46 @@ def read_students(
     """Endpoint pro zobrazení všech studentů - pouze pro učitele"""
     students = db_layer.get_all_students(db)
     return students
+
+@app.post("/groups")
+def create_group(
+    group_data: CreateGroupRequest,
+    current_teacher: dict = Depends(require_teacher),
+    db: Session = Depends(get_db)
+):
+    """Endpoint pro vytvoření skupiny - pouze pro učitele"""
+    try:
+        group = db_layer.create_group(
+            db=db,
+            teacher_id=current_teacher["user_id"],
+            name=group_data.name,
+            description=group_data.description
+        )
+        return {
+            "success": True,
+            "message": "Skupina vytvořena",
+            "group_id": group.group_id,
+            "teacher_id": group.teacher_id,
+            "name": group.name,
+            "description": group.description
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Chyba při vytváření skupiny: {str(e)}"
+        )
+
+@app.get("/groups")
+def get_groups(
+    current_teacher: dict = Depends(require_teacher),
+    db: Session = Depends(get_db)
+):
+    """Endpoint pro zobrazení všech skupin učitele - pouze pro učitele"""
+    groups = db_layer.get_teacher_groups(db, current_teacher["user_id"])
+    return {
+        "teacher_id": current_teacher["user_id"],
+        "groups": groups
+    }
 
 @app.post("/login", response_model=Token)
 def login(login_data: LoginRequest, db: Session = Depends(get_db)):

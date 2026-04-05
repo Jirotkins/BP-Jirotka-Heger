@@ -38,3 +38,8 @@ class Token(BaseModel):
     token_type: str
     user_type: str
     user_id: int
+
+
+class CreateGroupRequest(BaseModel):
+    name: str
+    description: str = None

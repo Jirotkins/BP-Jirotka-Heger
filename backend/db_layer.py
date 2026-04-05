@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from database import get_db
-from models import Student, Teacher
+from models import Student, Teacher, Group
 from auth import verify_password, get_password_hash
 
 def get_all_students(db: Session):
@@ -68,4 +68,25 @@ def create_teacher(db: Session, name: str, email: str, password: str):
     db.refresh(new_teacher)
     
     return new_teacher
+
+
+def create_group(db: Session, teacher_id: int, name: str, description: str = None):
+    """Vytvoří novou skupinu učitele"""
+    new_group = Group(
+        teacher_id=teacher_id,
+        name=name,
+        description=description
+    )
+    
+    db.add(new_group)
+    db.commit()
+    db.refresh(new_group)
+    
+    return new_group
+
+
+def get_teacher_groups(db: Session, teacher_id: int):
+    """Získá všechny skupiny učitele"""
+    groups = db.query(Group).filter(Group.teacher_id == teacher_id).all()
+    return groups
 
