@@ -21,8 +21,8 @@ services:
     container_name: postgres_db
     volumes:
       - postgres_data:/var/lib/postgresql/data # Aby data nezmizela po vypnutí
-      - ./schema.sql:/docker-entrypoint-initdb.d/01_schema.sql # Automatické nahrání DB při prvním zapnutí
-      - ./data.sql:/docker-entrypoint-initdb.d/02_data.sql # Automatické nahraní prvotních dat do DB
+      - ./01_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql # Automatické nahrání DB při prvním zapnutí
+      - ./02_data.sql:/docker-entrypoint-initdb.d/02_data.sql # Automatické nahraní prvotních dat do DB
     env_file:
       - .env
     ports:
