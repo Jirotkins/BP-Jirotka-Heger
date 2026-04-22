@@ -17,6 +17,11 @@ class AttemptStatus(enum.Enum):
     SUBMITTED = "SUBMITTED"
     GRADED = "GRADED"
 
+class DifficultyLevel(enum.Enum):
+    EASY = "EASY"
+    MEDIUM = "MEDIUM"
+    HARD = "HARD"
+
 # --- MODELY ---
 
 class Teacher(Base):
@@ -45,7 +50,7 @@ class Group(Base):
 
     # Vztahy
     teacher = relationship("Teacher", back_populates="groups")
-    students = relationship("Student", back_populates="group", cascade="all, delete-orphan")
+    students = relationship("Student", secondary="student_groups", back_populates="groups")
     assignments = relationship("ExamAssignment", back_populates="group")
 
 
@@ -53,15 +58,24 @@ class Student(Base):
     __tablename__ = "students"
 
     student_id = Column(Integer, primary_key=True, index=True)
-    group_id = Column(Integer, ForeignKey("groups.group_id"))
+    email = Column(String, unique=True, nullable=False)
     login_code = Column(String, unique=True, nullable=False)
     password_hash = Column(String)
     active_flag = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    # Vztahy
-    group = relationship("Group", back_populates="students")
+    # Vztahy - many-to-many se skupinami
+    groups = relationship("Group", secondary="student_groups", back_populates="students")
     attempts = relationship("StudentAttempt", back_populates="student")
+
+
+# M2M association table для Student a Group
+class StudentGroup(Base):
+    __tablename__ = "student_groups"
+
+    student_id = Column(Integer, ForeignKey("students.student_id"), primary_key=True)
+    group_id = Column(Integer, ForeignKey("groups.group_id"), primary_key=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
 class Bank(Base):
@@ -115,8 +129,15 @@ class TestTemplate(Base):
     template_id = Column(Integer, primary_key=True, index=True)
     teacher_id = Column(Integer, ForeignKey("teachers.teacher_id"))
     name = Column(String, nullable=False)
-    settings = Column(JSONB, default={})  # Postgres JSONB
+    description = Column(Text)
+    is_active = Column(Boolean, default=True)
+    difficulty = Column(Enum(DifficultyLevel))
+    estimated_duration_minutes = Column(Integer)
+    tags = Column(ARRAY(String), default=[])
+    learning_objectives = Column(JSONB, default=[])
+    settings = Column(JSONB, default={})
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     # Vztahy
     teacher = relationship("Teacher", back_populates="test_templates")

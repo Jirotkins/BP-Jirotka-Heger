@@ -6,6 +6,7 @@ DROP TABLE IF EXISTS test_templates CASCADE;
 DROP TABLE IF EXISTS answers CASCADE;
 DROP TABLE IF EXISTS questions CASCADE;
 DROP TABLE IF EXISTS banks CASCADE;
+DROP TABLE IF EXISTS student_groups CASCADE;
 DROP TABLE IF EXISTS students CASCADE;
 DROP TABLE IF EXISTS groups CASCADE;
 DROP TABLE IF EXISTS teachers CASCADE;
@@ -13,10 +14,12 @@ DROP TABLE IF EXISTS teachers CASCADE;
 -- Smazání typů (ENUM), pokud existují
 DROP TYPE IF EXISTS question_type;
 DROP TYPE IF EXISTS attempt_status;
+DROP TYPE IF EXISTS difficulty_level;
 
 -- 2. Vytvoření ENUM typů (výčtové typy pro Postgres)
-CREATE TYPE question_type AS ENUM ('SINGLE_CHOICE', 'MULTI_CHOICE', 'OPEN_TEXT');
+CREATE TYPE question_type AS ENUM ('SINGLE_CHOICE', 'MULTI_CHOICE', 'OPEN_TEXT', 'ORDERING');
 CREATE TYPE attempt_status AS ENUM ('STARTED', 'SUBMITTED', 'GRADED');
+CREATE TYPE difficulty_level AS ENUM ('EASY', 'MEDIUM', 'HARD');
 
 -- 3. Tabulky Uživatelů a Organizace
 CREATE TABLE teachers (
@@ -37,12 +40,25 @@ CREATE TABLE groups (
 
 CREATE TABLE students (
     student_id SERIAL PRIMARY KEY,
-    group_id INT REFERENCES groups(group_id) ON DELETE CASCADE,
-    login_code VARCHAR(100) UNIQUE NOT NULL, -- Unikátní kód pro přihlášení
+    email VARCHAR(255) UNIQUE NOT NULL,    -- Primární email pro přihlášení
+    login_code VARCHAR(100) UNIQUE NOT NULL, -- Unikátní kód pro přihlášení (backup)
     password_hash VARCHAR(255),            -- Volitelné heslo
     active_flag BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Tabulka pro propojení studentů se skupinami (many-to-many)
+-- Umožňuje jednomu studentovi být součástí více skupin
+CREATE TABLE student_groups (
+    student_id INT REFERENCES students(student_id) ON DELETE CASCADE,
+    group_id INT REFERENCES groups(group_id) ON DELETE CASCADE,
+    PRIMARY KEY (student_id, group_id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexy pro rychlé vyhledávání
+CREATE INDEX idx_student_groups_student ON student_groups(student_id);
+CREATE INDEX idx_student_groups_group ON student_groups(group_id);
 
 -- 4. Banka otázek
 CREATE TABLE banks (
@@ -76,13 +92,26 @@ CREATE TABLE answers (
 );
 
 -- 5. Definice testů (Šablony)
+-- DESIGN: test_templates je ŠABLONA testu (co obsahuje za otázky)
+--         exam_assignments přiřazuje konkrétní šablonu skupině s nastavením (čas, heslo)
+--         student_attempts jsou jednotlivé pokusy studentů (s snapshoty otázek)
 CREATE TABLE test_templates (
     template_id SERIAL PRIMARY KEY,
     teacher_id INT REFERENCES teachers(teacher_id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
-    settings JSONB DEFAULT '{}', -- Např. {"shuffle": true, "show_results": false}
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    description TEXT,                          -- Popis co se v testu testuje
+    is_active BOOLEAN DEFAULT TRUE,            -- Může být deaktivován, ale data se zachovají
+    difficulty difficulty_level,               -- Obtížnost: EASY, MEDIUM, HARD
+    estimated_duration_minutes INT,            -- Očekávaná doba řešení
+    tags TEXT[] DEFAULT ARRAY[]::TEXT[],       -- Tagy pro kategorizaci (např. 'SQL', 'junior', 'review')
+    learning_objectives JSONB DEFAULT '[]',    -- Cíle výuky: ["Understand SELECT", "Use WHERE"]
+    settings JSONB DEFAULT '{}',               -- Další nastavení: {"shuffle": true, "show_results": false}
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Index pro tagy (LIKE dotazy na tagy)
+CREATE INDEX idx_test_templates_tags ON test_templates USING GIN (tags);
 
 CREATE TABLE test_templates_questions (
     template_id INT REFERENCES test_templates(template_id) ON DELETE CASCADE,
