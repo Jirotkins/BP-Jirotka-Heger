@@ -38,5 +38,14 @@ services:
     depends_on:
       - db
 
+  # 4. Flutter Frontend
+  frontend:
+    build: ./frontend
+    container_name: flutter_frontend
+    ports:
+      - "80:80" # Frontend bude dostupný přímo na http://localhost
+    depends_on:
+      - backend
+
 volumes:
   postgres_data:

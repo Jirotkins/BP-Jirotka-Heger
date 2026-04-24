@@ -1,125 +1,128 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+
+// IMPORT VŠECH POUŽÍVANÝCH STRÁNEK
+import 'pages/login_page/login_page_widget.dart';
+import 'pages/class_overview/class_overview_widget.dart';
+import 'pages/class_manager/class_manager_widget.dart';
+import 'pages/test_editor/test_editor_widget.dart';
+import 'pages/test_evaluation/test_evaluation_widget.dart';
+import 'pages/student_overview/student_overview_widget.dart';
+import 'pages/subject_page/subject_page_widget.dart';
+import 'pages/test_active/test_active_widget.dart';
+import 'pages/settings_student/settings_student_widget.dart';
+import 'pages/bank_overview/bank_overview_widget.dart';
+import 'pages/settings_teacher/settings_teacher_widget.dart';
+import 'pages/questions_overview/questions_overview_widget.dart';
+import 'pages/add_new_question/add_new_question_widget.dart';
+import 'pages/short_answer_question/short_answer_question_widget.dart';
+import 'pages/order_question/order_question_widget.dart';
+import 'pages/open_question/open_question_widget.dart';
+import 'pages/multi_choice_question/multi_choice_question_widget.dart';
+import 'pages/connect_question/connect_question_widget.dart';
+
+// IMPORT HLAVNÍHO UČITELSKÉHO LAYOUTU
+import 'layouts/teacher_main_layout.dart';
 
 void main() {
-  runApp(const MyApp());
+  // Spuštění samotné aplikace
+  runApp(const BakalarkaApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class BakalarkaApp extends StatelessWidget {
+  const BakalarkaApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Quizzes',
+      debugShowCheckedModeBanner: false,
+
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('cs', 'CZ'), // Nastavení češtiny jako hlavního jazyka
+      ],
+      
+      // Nastavení globálního grafického tématu
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        primaryColor: const Color(0xFF0056D2), // Naše hlavní modrá
+        scaffoldBackgroundColor: const Color(0xFFF5F7FA), // Výchozí světlé pozadí
         useMaterial3: true,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
-    );
-  }
-}
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
+      // Kde má aplikace začít? Lomítko '/' je standardní označení pro domovskou/login obrazovku
+      initialRoute: '/',
 
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
-    return Scaffold(
-      appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
+      // MAPA VŠECH CEST (ROUTES)
+      routes: {
+        // Výchozí obrazovka (Login layout nemá sidebar)
+        '/': (context) => const LoginPageWidget(),
+        
+        // --- UČITEL (Obaleno v TeacherMainLayout SPA rámu) ---
+        // Odstraněno 'const' u layoutů pro prevenci chyb s dynamickými potomky
+        '/classOverview': (context) => TeacherMainLayout(
+              activePage: 'classes',
+              child: const ClassOverviewWidget(), 
             ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+        '/classManager': (context) => TeacherMainLayout(
+              activePage: 'classes', 
+              child: const ClassManagerWidget(),
             ),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+        '/bankOverview': (context) => TeacherMainLayout(
+              activePage: 'banks',
+              child: BankOverviewWidget(), 
+            ),
+        '/testEditor': (context) => TeacherMainLayout(
+              activePage: 'classes', 
+              child: const TestEditorWidget(),
+            ),
+        '/testEvaluation': (context) => TeacherMainLayout(
+              activePage: 'classes', 
+              child: const TestEvaluationWidget(),
+            ),
+        '/settingsTeacher': (context) => TeacherMainLayout(
+              activePage: 'settings',
+              child: const SettingsTeacherWidget(),
+            ),
+        '/questionsOverview': (context) => TeacherMainLayout(
+              activePage: 'banks',
+              child: const QuestionsOverviewWidget(),
+            ),
+        '/addNewQuestion': (context) => TeacherMainLayout(
+              activePage: 'banks',
+              child: const AddNewQuestionWidget(),
+            ),
+        '/multiChoiceQuestion': (context) => TeacherMainLayout(
+              activePage: 'banks',
+              child: const MultiChoiceQuestionWidget(),
+            ),
+        '/openQuestion': (context) => TeacherMainLayout(
+              activePage: 'banks',
+              child: const OpenQuestionWidget(),
+            ),
+        '/shortAnswerQuestion': (context) => TeacherMainLayout(
+              activePage: 'banks',
+              child: const ShortAnswerQuestionWidget(),
+            ),
+        '/connectQuestion': (context) => TeacherMainLayout(
+              activePage: 'banks',
+              child: const ConnectQuestionWidget(),
+            ),
+        '/orderQuestion': (context) => TeacherMainLayout(
+              activePage: 'banks',
+              child: const OrderQuestionWidget(),
+            ),
+
+        // --- STUDENT (Zatím bez obalu, nebo později přidáme StudentMainLayout) ---
+        '/studentOverview': (context) => const StudentOverviewWidget(),
+        '/subjectPage': (context) => const SubjectPageWidget(),
+        '/testActive': (context) => const TestActiveWidget(),
+        '/settingsStudent': (context) => const SettingsStudentWidget(),
+      },
     );
   }
 }
