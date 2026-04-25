@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../test_evaluation/test_evaluation_widget.dart';
 import '../../components/active_test_card_widget.dart';
 import '../../components/control_test_card_widget.dart';
 import '../../components/page_header_widget.dart';
@@ -192,7 +193,15 @@ class _ClassManagerWidgetState extends State<ClassManagerWidget> {
                 ControlTestCard(
                   title: 'Biologie - Buňka 1',
                   subtitle: 'Ukončeno: 12. 5. 2025 · 22/29 odevzdalo',
-                  onTap: () => print('Otevřít test ke kontrole'),
+                  onTap: () {
+                    // NAVIGACE DO HODNOCENÍ TESTU
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const TestEvaluationWidget(),
+                      ),
+                    );
+                  },
                 ),
                 
               ],

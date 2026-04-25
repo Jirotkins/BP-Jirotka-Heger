@@ -2,24 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 // IMPORT VŠECH POUŽÍVANÝCH STRÁNEK
-import 'pages/login_page/login_page_widget.dart';
-import 'pages/class_overview/class_overview_widget.dart';
-import 'pages/class_manager/class_manager_widget.dart';
-import 'pages/test_editor/test_editor_widget.dart';
-import 'pages/test_evaluation/test_evaluation_widget.dart';
-import 'pages/student_overview/student_overview_widget.dart';
-import 'pages/subject_page/subject_page_widget.dart';
-import 'pages/test_active/test_active_widget.dart';
-import 'pages/settings_student/settings_student_widget.dart';
-import 'pages/bank_overview/bank_overview_widget.dart';
-import 'pages/settings_teacher/settings_teacher_widget.dart';
-import 'pages/questions_overview/questions_overview_widget.dart';
-import 'pages/add_new_question/add_new_question_widget.dart';
-import 'pages/short_answer_question/short_answer_question_widget.dart';
-import 'pages/order_question/order_question_widget.dart';
-import 'pages/open_question/open_question_widget.dart';
-import 'pages/multi_choice_question/multi_choice_question_widget.dart';
-import 'pages/connect_question/connect_question_widget.dart';
+import 'pages/pages.dart';
 
 // IMPORT HLAVNÍHO UČITELSKÉHO LAYOUTU
 import 'layouts/teacher_main_layout.dart';
@@ -49,7 +32,7 @@ class BakalarkaApp extends StatelessWidget {
       
       // Nastavení globálního grafického tématu
       theme: ThemeData(
-        primaryColor: const Color(0xFF0056D2), // Naše hlavní modrá
+        primaryColor: const Color(0xFF0056D2), // Hlavní modrá
         scaffoldBackgroundColor: const Color(0xFFF5F7FA), // Výchozí světlé pozadí
         useMaterial3: true,
       ),
@@ -59,11 +42,10 @@ class BakalarkaApp extends StatelessWidget {
 
       // MAPA VŠECH CEST (ROUTES)
       routes: {
-        // Výchozí obrazovka (Login layout nemá sidebar)
+        // Výchozí obrazovka
         '/': (context) => const LoginPageWidget(),
         
         // --- UČITEL (Obaleno v TeacherMainLayout SPA rámu) ---
-        // Odstraněno 'const' u layoutů pro prevenci chyb s dynamickými potomky
         '/classOverview': (context) => TeacherMainLayout(
               activePage: 'classes',
               child: const ClassOverviewWidget(), 
