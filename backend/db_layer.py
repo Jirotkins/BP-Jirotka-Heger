@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from database import get_db
-from models import Student, Teacher, Group, Bank, TestTemplate, TestTemplateQuestion, Question, DifficultyLevel
+from models import Student, Teacher, Group, Bank, TestTemplate, TestTemplateQuestion, Question, DifficultyLevel, ExamAssignment, StudentAttempt, AttemptStatus
 from auth import verify_password, get_password_hash
 import string
 import random
@@ -437,4 +437,533 @@ def get_teacher_test_templates(db: Session, teacher_id: int):
     ).all()
     
     return templates
+
+
+# --- Exam Assignment Functions (Phase 1) ---
+
+def create_exam_assignment(db: Session, teacher_id: int, group_id: int, template_id: int, 
+                          activate_from: str, activate_to: str, time_limit_minutes: int = None,
+                          access_password: str = None):
+    """Vytvoří nové přiřazení testu skupině
+    
+    Args:
+        db: Database session
+        teacher_id: ID učitele (vlastníka testu)
+        group_id: ID skupiny
+        template_id: ID šablony testu
+        activate_from: ISO datetime string - kdy se test otevře
+        activate_to: ISO datetime string - kdy se test zavře
+        time_limit_minutes: Maximální čas na test (volitelné)
+        access_password: Heslo pro přístup k testu (volitelné)
+    
+    Returns:
+        ExamAssignment model instance
+    
+    Raises:
+        ValueError: Pokud nejsou splněny podmínky
+    """
+    from models import ExamAssignment
+    from datetime import datetime
+    
+    # Ověř, že grupa patří učiteli
+    group = db.query(Group).filter(
+        Group.group_id == group_id,
+        Group.teacher_id == teacher_id
+    ).first()
+    if not group:
+        raise ValueError(f"Skupina s ID {group_id} neexistuje nebo nepatří vám")
+    
+    # Ověř, že šablona patří učiteli
+    template = db.query(TestTemplate).filter(
+        TestTemplate.template_id == template_id,
+        TestTemplate.teacher_id == teacher_id
+    ).first()
+    if not template:
+        raise ValueError(f"Šablona testu s ID {template_id} neexistuje nebo nepatří vám")
+    
+    # Parsuj datumy
+    try:
+        activate_from_dt = datetime.fromisoformat(activate_from.replace('Z', '+00:00'))
+        activate_to_dt = datetime.fromisoformat(activate_to.replace('Z', '+00:00'))
+    except:
+        raise ValueError("Neplatný formát data - použijte ISO format (2024-04-27T10:00:00Z)")
+    
+    if activate_from_dt >= activate_to_dt:
+        raise ValueError("Čas otevření musí být dřív než čas zavření")
+    
+    # Vytvoř přiřazení
+    new_assignment = ExamAssignment(
+        template_id=template_id,
+        group_id=group_id,
+        activate_from=activate_from_dt,
+        activate_to=activate_to_dt,
+        time_limit_minutes=time_limit_minutes,
+        access_password=access_password
+    )
+    
+    db.add(new_assignment)
+    db.commit()
+    db.refresh(new_assignment)
+    
+    return new_assignment
+
+
+def get_group_assignments(db: Session, group_id: int, teacher_id: int):
+    """Získá všechna přiřazení testů pro skupinu
+    
+    Args:
+        db: Database session
+        group_id: ID skupiny
+        teacher_id: ID učitele (pro ověření vlastnictví)
+    
+    Returns:
+        List of ExamAssignment instances
+    
+    Raises:
+        ValueError: Pokud grupa nepatří učiteli
+    """
+    from models import ExamAssignment
+    
+    # Ověř vlastnictví
+    group = db.query(Group).filter(
+        Group.group_id == group_id,
+        Group.teacher_id == teacher_id
+    ).first()
+    if not group:
+        raise ValueError("Skupina neexistuje nebo nepatří vám")
+    
+    assignments = db.query(ExamAssignment).filter(
+        ExamAssignment.group_id == group_id
+    ).all()
+    
+    return assignments
+
+
+def get_assignment_details(db: Session, assignment_id: int, teacher_id: int):
+    """Získá detaily přiřazení testu
+    
+    Args:
+        db: Database session
+        assignment_id: ID přiřazení
+        teacher_id: ID učitele (pro ověření vlastnictví)
+    
+    Returns:
+        ExamAssignment instance s detaily
+    
+    Raises:
+        ValueError: Pokud přiřazení nepatří učiteli
+    """
+    from models import ExamAssignment
+    
+    assignment = db.query(ExamAssignment).filter(
+        ExamAssignment.assignment_id == assignment_id
+    ).first()
+    
+    if not assignment:
+        raise ValueError("Přiřazení neexistuje")
+    
+    # Ověř, že přiřazený test patří učiteli
+    template = db.query(TestTemplate).filter(
+        TestTemplate.template_id == assignment.template_id,
+        TestTemplate.teacher_id == teacher_id
+    ).first()
+    
+    if not template:
+        raise ValueError("Přiřazení nepatří vám")
+    
+    return assignment
+
+
+def update_assignment(db: Session, assignment_id: int, teacher_id: int, update_data: dict):
+    """Upraví přiřazení testu
+    
+    Args:
+        db: Database session
+        assignment_id: ID přiřazení
+        teacher_id: ID učitele
+        update_data: Dictionary s novými hodnotami (activate_from, activate_to, time_limit_minutes, access_password)
+    
+    Returns:
+        Updated ExamAssignment instance
+    """
+    from models import ExamAssignment
+    from datetime import datetime
+    
+    # Ověř vlastnictví
+    assignment = get_assignment_details(db, assignment_id, teacher_id)
+    
+    # Updatuj pole
+    if 'activate_from' in update_data and update_data['activate_from']:
+        assignment.activate_from = datetime.fromisoformat(update_data['activate_from'].replace('Z', '+00:00'))
+    
+    if 'activate_to' in update_data and update_data['activate_to']:
+        assignment.activate_to = datetime.fromisoformat(update_data['activate_to'].replace('Z', '+00:00'))
+    
+    if 'time_limit_minutes' in update_data and update_data['time_limit_minutes'] is not None:
+        assignment.time_limit_minutes = update_data['time_limit_minutes']
+    
+    if 'access_password' in update_data:
+        assignment.access_password = update_data['access_password']
+    
+    db.commit()
+    db.refresh(assignment)
+    
+    return assignment
+
+
+def delete_assignment(db: Session, assignment_id: int, teacher_id: int):
+    """Smaže přiřazení testu
+    
+    Args:
+        db: Database session
+        assignment_id: ID přiřazení
+        teacher_id: ID učitele
+    
+    Returns:
+        True pokud se smazalo
+    """
+    from models import ExamAssignment
+    
+    # Ověř vlastnictví
+    assignment = get_assignment_details(db, assignment_id, teacher_id)
+    
+    db.delete(assignment)
+    db.commit()
+    
+    return True
+
+
+def get_assignment_attempts(db: Session, assignment_id: int, teacher_id: int):
+    """Získá všechny pokusy v přiřazení testu
+    
+    Args:
+        db: Database session
+        assignment_id: ID přiřazení
+        teacher_id: ID učitele
+    
+    Returns:
+        List of StudentAttempt instances
+    """
+    from models import StudentAttempt
+    
+    # Ověř vlastnictví přiřazení
+    assignment = get_assignment_details(db, assignment_id, teacher_id)
+    
+    # Načti všechny pokusy
+    attempts = db.query(StudentAttempt).filter(
+        StudentAttempt.assignment_id == assignment_id
+    ).all()
+    
+    return attempts
+
+
+def get_attempt_details(db: Session, attempt_id: int, teacher_id: int = None):
+    """Získá detaily pokusu studenta
+    
+    Args:
+        db: Database session
+        attempt_id: ID pokusu
+        teacher_id: ID učitele (pro ověření - volitelné, pokud None, vrátí bez ověřování)
+    
+    Returns:
+        StudentAttempt instance
+    """
+    from models import StudentAttempt
+    
+    attempt = db.query(StudentAttempt).filter(
+        StudentAttempt.attempt_id == attempt_id
+    ).first()
+    
+    if not attempt:
+        raise ValueError("Pokus neexistuje")
+    
+    if teacher_id:
+        # Ověř, že přiřazení patří učiteli
+        assignment = get_assignment_details(db, attempt.assignment_id, teacher_id)
+    
+    return attempt
+
+
+def grade_attempt(db: Session, attempt_id: int, teacher_id: int, total_points: float, 
+                  student_answers: dict = None, teacher_note: str = None):
+    """Ohodnotí pokus studenta (ručně nebo po auto-gradu)
+    
+    Args:
+        db: Database session
+        attempt_id: ID pokusu
+        teacher_id: ID učitele
+        total_points: Celkový počet bodů
+        student_answers: Aktualizované odpovědi (JSONB)
+        teacher_note: Poznámka učitele
+    
+    Returns:
+        Updated StudentAttempt
+    """
+    from models import StudentAttempt, AttemptStatus
+    
+    # Ověř, že pokus patří přiřazení učitele
+    attempt = get_attempt_details(db, attempt_id, teacher_id)
+    
+    # Získej přiřazení pro max_points
+    assignment = db.query(type(attempt).__table__.c.assignment_id).filter(
+        type(attempt).__table__.c.attempt_id == attempt_id
+    ).first()
+    
+    # Vypočti score_percent
+    max_points = attempt.max_points or 0
+    score_percent = (total_points / max_points * 100) if max_points > 0 else 0
+    
+    # Updatuj pokus
+    attempt.total_points = total_points
+    attempt.score_percent = score_percent
+    attempt.status = AttemptStatus.GRADED
+    attempt.teacher_note = teacher_note
+    
+    if student_answers:
+        attempt.student_answers = student_answers
+    
+    db.commit()
+    db.refresh(attempt)
+    
+    return attempt
+
+
+def get_results_summary(db: Session, assignment_id: int, teacher_id: int):
+    """Generuje shrnutí výsledků pro přiřazení
+    
+    Args:
+        db: Database session
+        assignment_id: ID přiřazení
+        teacher_id: ID učitele
+    
+    Returns:
+        Dictionary se statistikami
+    """
+    from models import StudentAttempt, AttemptStatus
+    import statistics
+    
+    # Ověř vlastnictví
+    assignment = get_assignment_details(db, assignment_id, teacher_id)
+    
+    # Načti všechny pokusy
+    attempts = db.query(StudentAttempt).filter(
+        StudentAttempt.assignment_id == assignment_id
+    ).all()
+    
+    total_attempts = len(attempts)
+    submitted_attempts = len([a for a in attempts if a.status in [AttemptStatus.SUBMITTED, AttemptStatus.GRADED]])
+    graded_attempts = len([a for a in attempts if a.status == AttemptStatus.GRADED])
+    
+    # Vypočti statistiky
+    graded_scores = [a.score_percent for a in attempts if a.status == AttemptStatus.GRADED and a.score_percent is not None]
+    
+    result = {
+        "assignment_id": assignment_id,
+        "total_attempts": total_attempts,
+        "submitted_attempts": submitted_attempts,
+        "graded_attempts": graded_attempts,
+        "avg_score": None,
+        "median_score": None,
+        "min_score": None,
+        "max_score": None,
+        "pass_rate": None
+    }
+    
+    if graded_scores:
+        result["avg_score"] = round(statistics.mean(graded_scores), 2)
+        result["median_score"] = round(statistics.median(graded_scores), 2)
+        result["min_score"] = round(min(graded_scores), 2)
+        result["max_score"] = round(max(graded_scores), 2)
+        result["pass_rate"] = round(len([s for s in graded_scores if s >= 50]) / len(graded_scores) * 100, 2)
+    
+    return result
+
+
+# --- Template Questions Management (Option 1 - bez DB změn) ---
+
+def get_template_questions(db: Session, template_id: int, teacher_id: int):
+    """Získá všechny otázky v šabloně testu
+    
+    Args:
+        db: Database session
+        template_id: ID šablony testu
+        teacher_id: ID učitele (pro ověření vlastnictví)
+    
+    Returns:
+        List of association objects s informacemi o otázce a šabloně
+    
+    Raises:
+        ValueError: Pokud šablona nepatří učiteli
+    """
+    # Ověř vlastnictví šablony
+    template = db.query(TestTemplate).filter(
+        TestTemplate.template_id == template_id,
+        TestTemplate.teacher_id == teacher_id
+    ).first()
+    if not template:
+        raise ValueError("Šablona testu neexistuje nebo nepatří vám")
+    
+    # Načti všechny association objekty s otázkami
+    template_questions = db.query(TestTemplateQuestion, Question).join(
+        Question, TestTemplateQuestion.question_id == Question.question_id
+    ).filter(
+        TestTemplateQuestion.template_id == template_id
+    ).order_by(TestTemplateQuestion.position).all()
+    
+    return template_questions
+
+
+def update_template_question(db: Session, template_id: int, question_id: int, teacher_id: int, points_custom: int = None):
+    """Upraví otázku v šabloně testu (jen points_custom)
+    
+    Args:
+        db: Database session
+        template_id: ID šablony testu
+        question_id: ID otázky
+        teacher_id: ID učitele
+        points_custom: Nový počet bodů pro tuto otázku v šabloně
+    
+    Returns:
+        Updated TestTemplateQuestion instance
+    
+    Raises:
+        ValueError: Pokud šablona, otázka nebo vztah neexistuje
+    """
+    # Ověř vlastnictví šablony
+    template = db.query(TestTemplate).filter(
+        TestTemplate.template_id == template_id,
+        TestTemplate.teacher_id == teacher_id
+    ).first()
+    if not template:
+        raise ValueError("Šablona testu neexistuje nebo nepatří vám")
+    
+    # Ověř, že otázka existuje
+    question = db.query(Question).filter(Question.question_id == question_id).first()
+    if not question:
+        raise ValueError(f"Otázka s ID {question_id} neexistuje")
+    
+    # Ověř, že otázka je v šabloně
+    template_question = db.query(TestTemplateQuestion).filter(
+        TestTemplateQuestion.template_id == template_id,
+        TestTemplateQuestion.question_id == question_id
+    ).first()
+    if not template_question:
+        raise ValueError(f"Otázka s ID {question_id} není v šabloně {template_id}")
+    
+    # Updatuj points_custom
+    if points_custom is not None:
+        template_question.points_custom = points_custom
+    
+    db.commit()
+    db.refresh(template_question)
+    
+    return template_question
+
+
+def delete_template_question(db: Session, template_id: int, question_id: int, teacher_id: int):
+    """Odebere otázku ze šablony testu
+    
+    Args:
+        db: Database session
+        template_id: ID šablony testu
+        question_id: ID otázky
+        teacher_id: ID učitele
+    
+    Returns:
+        True pokud se smazalo
+    
+    Raises:
+        ValueError: Pokud šablona nepatří učiteli nebo vztah neexistuje
+    """
+    # Ověř vlastnictví šablony
+    template = db.query(TestTemplate).filter(
+        TestTemplate.template_id == template_id,
+        TestTemplate.teacher_id == teacher_id
+    ).first()
+    if not template:
+        raise ValueError("Šablona testu neexistuje nebo nepatří vám")
+    
+    # Ověř, že otázka je v šabloně
+    template_question = db.query(TestTemplateQuestion).filter(
+        TestTemplateQuestion.template_id == template_id,
+        TestTemplateQuestion.question_id == question_id
+    ).first()
+    if not template_question:
+        raise ValueError(f"Otázka s ID {question_id} není v šabloně {template_id}")
+    
+    # Smaž association
+    db.delete(template_question)
+    db.commit()
+    
+    return True
+
+
+def add_template_question(db: Session, template_id: int, question_id: int, teacher_id: int, 
+                         position: int, points_custom: int = None):
+    """Přidá otázku do šablony testu
+    
+    Args:
+        db: Database session
+        template_id: ID šablony testu
+        question_id: ID otázky z banky
+        teacher_id: ID učitele (pro ověření vlastnictví)
+        position: Pořadí otázky v testu
+        points_custom: Vlastní body (volitelné, pokud None, použije se default_points)
+    
+    Returns:
+        Created TestTemplateQuestion instance
+    
+    Raises:
+        ValueError: Pokud šablona, otázka neexistuje nebo je již přidána
+    """
+    # Ověř vlastnictví šablony
+    template = db.query(TestTemplate).filter(
+        TestTemplate.template_id == template_id,
+        TestTemplate.teacher_id == teacher_id
+    ).first()
+    if not template:
+        raise ValueError("Šablona testu neexistuje nebo nepatří vám")
+    
+    # Ověř, že otázka existuje
+    question = db.query(Question).filter(Question.question_id == question_id).first()
+    if not question:
+        raise ValueError(f"Otázka s ID {question_id} neexistuje")
+    
+    # Ověř, že banka otázky patří učiteli
+    bank = db.query(Bank).filter(
+        Bank.bank_id == question.bank_id,
+        Bank.teacher_id == teacher_id
+    ).first()
+    if not bank:
+        raise ValueError(f"Otázka s ID {question_id} nepatří do vaší banky otázek")
+    
+    # Ověř, že otázka není již v šabloně
+    existing = db.query(TestTemplateQuestion).filter(
+        TestTemplateQuestion.template_id == template_id,
+        TestTemplateQuestion.question_id == question_id
+    ).first()
+    if existing:
+        raise ValueError(f"Otázka s ID {question_id} je již v šabloně")
+    
+    # Ověř, že position není již obsazena
+    position_exists = db.query(TestTemplateQuestion).filter(
+        TestTemplateQuestion.template_id == template_id,
+        TestTemplateQuestion.position == position
+    ).first()
+    if position_exists:
+        raise ValueError(f"Pozice {position} je již obsazena v šabloně")
+    
+    # Vytvoř association
+    new_template_question = TestTemplateQuestion(
+        template_id=template_id,
+        question_id=question_id,
+        position=position,
+        points_custom=points_custom
+    )
+    
+    db.add(new_template_question)
+    db.commit()
+    db.refresh(new_template_question)
+    
+    return new_template_question
 

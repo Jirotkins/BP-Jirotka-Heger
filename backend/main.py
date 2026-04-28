@@ -14,7 +14,10 @@ from schemas import (
     LoginRequest, CreateStudentRequest, CreateTeacherRequest, Token, 
     CreateGroupRequest, CreateSingleStudentRequest, CreateBulkStudentsRequest, 
     CreateBankRequest, QuestionCreateRequest, QuestionResponse, AnswerResponse,
-    CreateTestTemplateRequest
+    CreateTestTemplateRequest, ExamAssignmentCreate, ExamAssignmentUpdate, 
+    ExamAssignmentResponse, StudentAttemptResponse, StudentAttemptDetailedResponse,
+    GradeAttemptRequest, ResultsSummary, TemplateQuestionResponse, UpdateTemplateQuestionRequest,
+    CreateTemplateQuestionRequest
 )
 
 security = HTTPBearer()
@@ -771,3 +774,597 @@ def validate_student_token(current_student: dict = Depends(require_student)):
         "student_id": current_student["user_id"],
         "message": "Token je platný"
     }
+
+
+# === PHASE 1: EXAM ASSIGNMENT ENDPOINTS ===
+
+@app.post("/groups/{group_id}/exam-assignments")
+def create_exam_assignment(
+    group_id: int,
+    assignment_data: ExamAssignmentCreate,
+    current_teacher: dict = Depends(require_teacher),
+    db: Session = Depends(get_db)
+):
+    """Vytvoří nové přiřazení testu skupině - pouze pro učitele
+    
+    Příklad requestu:
+    ```json
+    {
+        "template_id": 1,
+        "activate_from": "2024-04-27T10:00:00Z",
+        "activate_to": "2024-04-27T12:00:00Z",
+        "time_limit_minutes": 60,
+        "access_password": "heslo123"
+    }
+    ```
+    """
+    try:
+        assignment = db_layer.create_exam_assignment(
+            db=db,
+            teacher_id=current_teacher["user_id"],
+            group_id=group_id,
+            template_id=assignment_data.template_id,
+            activate_from=assignment_data.activate_from,
+            activate_to=assignment_data.activate_to,
+            time_limit_minutes=assignment_data.time_limit_minutes,
+            access_password=assignment_data.access_password
+        )
+        
+        return {
+            "success": True,
+            "message": "Přiřazení testu vytvořeno",
+            "assignment": {
+                "assignment_id": assignment.assignment_id,
+                "template_id": assignment.template_id,
+                "group_id": assignment.group_id,
+                "activate_from": assignment.activate_from.isoformat(),
+                "activate_to": assignment.activate_to.isoformat(),
+                "time_limit_minutes": assignment.time_limit_minutes,
+                "created_at": assignment.created_at.isoformat()
+            }
+        }
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Chyba při vytváření přiřazení: {str(e)}"
+        )
+
+
+@app.get("/groups/{group_id}/exam-assignments")
+def get_group_assignments(
+    group_id: int,
+    current_teacher: dict = Depends(require_teacher),
+    db: Session = Depends(get_db)
+):
+    """Získá všechna přiřazení testů pro skupinu - pouze pro učitele"""
+    try:
+        assignments = db_layer.get_group_assignments(
+            db=db,
+            group_id=group_id,
+            teacher_id=current_teacher["user_id"]
+        )
+        
+        assignment_list = []
+        for a in assignments:
+            assignment_list.append({
+                "assignment_id": a.assignment_id,
+                "template_id": a.template_id,
+                "group_id": a.group_id,
+                "activate_from": a.activate_from.isoformat(),
+                "activate_to": a.activate_to.isoformat(),
+                "time_limit_minutes": a.time_limit_minutes,
+                "created_at": a.created_at.isoformat(),
+                "attempt_count": len(a.attempts)
+            })
+        
+        return {
+            "group_id": group_id,
+            "assignment_count": len(assignment_list),
+            "assignments": assignment_list
+        }
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Chyba při získávání přiřazení: {str(e)}"
+        )
+
+
+@app.get("/exam-assignments/{assignment_id}")
+def get_assignment(
+    assignment_id: int,
+    current_teacher: dict = Depends(require_teacher),
+    db: Session = Depends(get_db)
+):
+    """Získá detaily přiřazení testu - pouze pro učitele"""
+    try:
+        assignment = db_layer.get_assignment_details(
+            db=db,
+            assignment_id=assignment_id,
+            teacher_id=current_teacher["user_id"]
+        )
+        
+        return {
+            "assignment_id": assignment.assignment_id,
+            "template_id": assignment.template_id,
+            "group_id": assignment.group_id,
+            "activate_from": assignment.activate_from.isoformat(),
+            "activate_to": assignment.activate_to.isoformat(),
+            "time_limit_minutes": assignment.time_limit_minutes,
+            "created_at": assignment.created_at.isoformat(),
+            "attempt_count": len(assignment.attempts)
+        }
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN if "nepatří" in str(e) else status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Chyba: {str(e)}"
+        )
+
+
+@app.put("/exam-assignments/{assignment_id}")
+def update_assignment(
+    assignment_id: int,
+    update_data: ExamAssignmentUpdate,
+    current_teacher: dict = Depends(require_teacher),
+    db: Session = Depends(get_db)
+):
+    """Upraví přiřazení testu - pouze pro učitele"""
+    try:
+        # Konvertuj na dict, jen nenull hodnoty
+        update_dict = {
+            k: v for k, v in update_data.dict().items() 
+            if v is not None
+        }
+        
+        assignment = db_layer.update_assignment(
+            db=db,
+            assignment_id=assignment_id,
+            teacher_id=current_teacher["user_id"],
+            update_data=update_dict
+        )
+        
+        return {
+            "success": True,
+            "message": "Přiřazení aktualizováno",
+            "assignment": {
+                "assignment_id": assignment.assignment_id,
+                "template_id": assignment.template_id,
+                "group_id": assignment.group_id,
+                "activate_from": assignment.activate_from.isoformat(),
+                "activate_to": assignment.activate_to.isoformat(),
+                "time_limit_minutes": assignment.time_limit_minutes
+            }
+        }
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN if "nepatří" in str(e) else status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Chyba: {str(e)}"
+        )
+
+
+@app.delete("/exam-assignments/{assignment_id}")
+def delete_assignment(
+    assignment_id: int,
+    current_teacher: dict = Depends(require_teacher),
+    db: Session = Depends(get_db)
+):
+    """Smaže přiřazení testu - pouze pro učitele"""
+    try:
+        db_layer.delete_assignment(
+            db=db,
+            assignment_id=assignment_id,
+            teacher_id=current_teacher["user_id"]
+        )
+        
+        return {
+            "success": True,
+            "message": "Přiřazení smazáno"
+        }
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN if "nepatří" in str(e) else status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Chyba: {str(e)}"
+        )
+
+
+@app.get("/exam-assignments/{assignment_id}/attempts")
+def get_attempts(
+    assignment_id: int,
+    current_teacher: dict = Depends(require_teacher),
+    db: Session = Depends(get_db)
+):
+    """Získá všechny pokusy v přiřazení testu - pouze pro učitele"""
+    try:
+        attempts = db_layer.get_assignment_attempts(
+            db=db,
+            assignment_id=assignment_id,
+            teacher_id=current_teacher["user_id"]
+        )
+        
+        attempt_list = []
+        for a in attempts:
+            attempt_list.append({
+                "attempt_id": a.attempt_id,
+                "student_id": a.student_id,
+                "started_at": a.started_at.isoformat(),
+                "finished_at": a.finished_at.isoformat() if a.finished_at else None,
+                "status": a.status.value,
+                "total_points": float(a.total_points) if a.total_points else None,
+                "max_points": float(a.max_points) if a.max_points else None,
+                "score_percent": float(a.score_percent) if a.score_percent else None
+            })
+        
+        return {
+            "assignment_id": assignment_id,
+            "attempt_count": len(attempt_list),
+            "attempts": attempt_list
+        }
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN if "nepatří" in str(e) else status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Chyba: {str(e)}"
+        )
+
+
+@app.get("/exam-assignments/{assignment_id}/attempts/{attempt_id}")
+def get_attempt_detail(
+    assignment_id: int,
+    attempt_id: int,
+    current_teacher: dict = Depends(require_teacher),
+    db: Session = Depends(get_db)
+):
+    """Získá detaily pokusu studenta - pouze pro učitele"""
+    try:
+        attempt = db_layer.get_attempt_details(
+            db=db,
+            attempt_id=attempt_id,
+            teacher_id=current_teacher["user_id"]
+        )
+        
+        # Ověř, že pokus patří danému přiřazení
+        if attempt.assignment_id != assignment_id:
+            raise ValueError("Pokus nepatří do tohoto přiřazení")
+        
+        return {
+            "attempt_id": attempt.attempt_id,
+            "assignment_id": attempt.assignment_id,
+            "student_id": attempt.student_id,
+            "started_at": attempt.started_at.isoformat(),
+            "finished_at": attempt.finished_at.isoformat() if attempt.finished_at else None,
+            "status": attempt.status.value,
+            "total_points": float(attempt.total_points) if attempt.total_points else None,
+            "max_points": float(attempt.max_points) if attempt.max_points else None,
+            "score_percent": float(attempt.score_percent) if attempt.score_percent else None,
+            "teacher_note": attempt.teacher_note,
+            "questions_snapshot": attempt.questions_snapshot,
+            "student_answers": attempt.student_answers or {}
+        }
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN if "nepatří" in str(e) else status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Chyba: {str(e)}"
+        )
+
+
+@app.put("/exam-assignments/{assignment_id}/attempts/{attempt_id}/grade")
+def grade_attempt(
+    assignment_id: int,
+    attempt_id: int,
+    grade_data: GradeAttemptRequest,
+    current_teacher: dict = Depends(require_teacher),
+    db: Session = Depends(get_db)
+):
+    """Ohodnotí pokus studenta (manuální hodnocení) - pouze pro učitele
+    
+    Příklad requestu:
+    ```json
+    {
+        "student_answers": {
+            "question_1": {"answer": "správná odpověď", "points": 5},
+            "question_2": {"answer": "výborné", "points": 10}
+        },
+        "total_points": 15,
+        "teacher_note": "Velmi dobře"
+    }
+    ```
+    """
+    try:
+        attempt = db_layer.get_attempt_details(
+            db=db,
+            attempt_id=attempt_id,
+            teacher_id=current_teacher["user_id"]
+        )
+        
+        # Ověř, že pokus patří danému přiřazení
+        if attempt.assignment_id != assignment_id:
+            raise ValueError("Pokus nepatří do tohoto přiřazení")
+        
+        graded_attempt = db_layer.grade_attempt(
+            db=db,
+            attempt_id=attempt_id,
+            teacher_id=current_teacher["user_id"],
+            total_points=grade_data.total_points,
+            student_answers=grade_data.student_answers,
+            teacher_note=grade_data.teacher_note
+        )
+        
+        return {
+            "success": True,
+            "message": "Pokus ohodnocen",
+            "attempt": {
+                "attempt_id": graded_attempt.attempt_id,
+                "status": graded_attempt.status.value,
+                "total_points": float(graded_attempt.total_points) if graded_attempt.total_points else None,
+                "score_percent": float(graded_attempt.score_percent) if graded_attempt.score_percent else None,
+                "teacher_note": graded_attempt.teacher_note
+            }
+        }
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN if "nepatří" in str(e) else status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Chyba: {str(e)}"
+        )
+
+
+@app.get("/exam-assignments/{assignment_id}/results-summary")
+def get_results_summary(
+    assignment_id: int,
+    current_teacher: dict = Depends(require_teacher),
+    db: Session = Depends(get_db)
+):
+    """Získá shrnutí výsledků testu - pouze pro učitele"""
+    try:
+        summary = db_layer.get_results_summary(
+            db=db,
+            assignment_id=assignment_id,
+            teacher_id=current_teacher["user_id"]
+        )
+        
+        return summary
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN if "nepatří" in str(e) else status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Chyba: {str(e)}"
+        )
+
+
+# === TEMPLATE QUESTIONS MANAGEMENT ENDPOINTS ===
+
+@app.post("/test-templates/{template_id}/questions")
+def add_template_question(
+    template_id: int,
+    question_data: CreateTemplateQuestionRequest,
+    current_teacher: dict = Depends(require_teacher),
+    db: Session = Depends(get_db)
+):
+    """Přidá otázku do šablony testu - pouze pro učitele
+    
+    Příklad requestu:
+    ```json
+    {
+        "question_id": 5,
+        "position": 1,
+        "points_custom": 10
+    }
+    ```
+    
+    Poznámka: Otázka musí existovat v bance otázek učitele a nesmí být už v šabloně.
+    """
+    try:
+        template_question = db_layer.add_template_question(
+            db=db,
+            template_id=template_id,
+            question_id=question_data.question_id,
+            teacher_id=current_teacher["user_id"],
+            position=question_data.position,
+            points_custom=question_data.points_custom
+        )
+        
+        return {
+            "success": True,
+            "message": "Otázka přidána do šablony",
+            "template_question": {
+                "question_id": template_question.question_id,
+                "position": template_question.position,
+                "points_custom": template_question.points_custom
+            }
+        }
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN if "nepatří" in str(e) else status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Chyba: {str(e)}"
+        )
+
+
+@app.get("/test-templates/{template_id}/questions")
+def get_template_questions(
+    template_id: int,
+    current_teacher: dict = Depends(require_teacher),
+    db: Session = Depends(get_db)
+):
+    """Získá všechny otázky v šabloně testu - pouze pro učitele
+    
+    Vrací otázky s informacemi z šablony (position, points_custom) a z question (text, type, answers, atd.)
+    """
+    try:
+        template_questions = db_layer.get_template_questions(
+            db=db,
+            template_id=template_id,
+            teacher_id=current_teacher["user_id"]
+        )
+        
+        response_questions = []
+        for template_q, question in template_questions:
+            # Seřadíme odpovědi podle order_index
+            sorted_answers = sorted(question.answers, key=lambda a: a.order_index)
+            
+            response_answers = [
+                {
+                    "answer_id": answer.answer_id,
+                    "text": answer.text,
+                    "is_correct": answer.is_correct,
+                    "order_index": answer.order_index
+                }
+                for answer in sorted_answers
+            ]
+            
+            response_questions.append({
+                "question_id": question.question_id,
+                "position": template_q.position,
+                "points_custom": template_q.points_custom,
+                "text": question.text,
+                "type": question.type.value,
+                "default_points": question.default_points,
+                "tags": question.tags,
+                "image_url": question.image_url,
+                "answers": response_answers
+            })
+        
+        return {
+            "template_id": template_id,
+            "question_count": len(response_questions),
+            "questions": response_questions
+        }
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN if "nepatří" in str(e) else status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Chyba: {str(e)}"
+        )
+
+
+@app.put("/test-templates/{template_id}/questions/{question_id}")
+def update_template_question(
+    template_id: int,
+    question_id: int,
+    update_data: UpdateTemplateQuestionRequest,
+    current_teacher: dict = Depends(require_teacher),
+    db: Session = Depends(get_db)
+):
+    """Upraví otázku v šabloně testu (jen points_custom) - pouze pro učitele
+    
+    Příklad requestu:
+    ```json
+    {
+        "points_custom": 5
+    }
+    ```
+    
+    Poznámka: Tímto se mění jen počet bodů pro daný test. Původní otázka v bance zůstane beze změn.
+    """
+    try:
+        template_question = db_layer.update_template_question(
+            db=db,
+            template_id=template_id,
+            question_id=question_id,
+            teacher_id=current_teacher["user_id"],
+            points_custom=update_data.points_custom
+        )
+        
+        return {
+            "success": True,
+            "message": "Otázka v šabloně aktualizována",
+            "template_question": {
+                "question_id": template_question.question_id,
+                "position": template_question.position,
+                "points_custom": template_question.points_custom
+            }
+        }
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN if "nepatří" in str(e) else status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Chyba: {str(e)}"
+        )
+
+
+@app.delete("/test-templates/{template_id}/questions/{question_id}")
+def delete_template_question(
+    template_id: int,
+    question_id: int,
+    current_teacher: dict = Depends(require_teacher),
+    db: Session = Depends(get_db)
+):
+    """Odebere otázku ze šablony testu - pouze pro učitele
+    
+    Poznámka: Otázka se pouze odebere ze šablony. V databázi zůstane zachována v bance.
+    """
+    try:
+        db_layer.delete_template_question(
+            db=db,
+            template_id=template_id,
+            question_id=question_id,
+            teacher_id=current_teacher["user_id"]
+        )
+        
+        return {
+            "success": True,
+            "message": "Otázka byla odebrána ze šablony"
+        }
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN if "nepatří" in str(e) else status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Chyba: {str(e)}"
+        )

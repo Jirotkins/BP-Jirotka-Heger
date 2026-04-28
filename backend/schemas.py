@@ -219,3 +219,158 @@ class QuestionResponse(BaseModel):
     
     class Config:
         from_attributes = True
+
+
+# --- Exam Assignment Schemas (Phase 1) ---
+
+class ExamAssignmentCreate(BaseModel):
+    """Schema pro vytvoření přiřazení testu skupině"""
+    template_id: int
+    activate_from: str  # ISO datetime: "2024-04-27T10:00:00Z"
+    activate_to: str    # ISO datetime
+    time_limit_minutes: int = None
+    access_password: str = None
+    
+    @field_validator('time_limit_minutes')
+    @classmethod
+    def validate_time_limit(cls, v):
+        if v is not None and v < 1:
+            raise ValueError("Čas limit musí být alespoň 1 minuta")
+        return v
+
+
+class ExamAssignmentUpdate(BaseModel):
+    """Schema pro update přiřazení testu"""
+    activate_from: str = None
+    activate_to: str = None
+    time_limit_minutes: int = None
+    access_password: str = None
+
+
+class ExamAssignmentResponse(BaseModel):
+    """Schema pro vrácení přiřazení testu"""
+    assignment_id: int
+    template_id: int
+    group_id: int
+    activate_from: str
+    activate_to: str
+    time_limit_minutes: int = None
+    access_password: str = None
+    created_at: str
+    
+    class Config:
+        from_attributes = True
+
+
+class StudentAnswerSnapshot(BaseModel):
+    """Snapshot studentovy odpovědi"""
+    question_id: int
+    answered_at: str = None
+    answer_data: dict = None  # Formát zavisle na typu otázky
+
+
+class StudentAttemptResponse(BaseModel):
+    """Schema pro vrácení pokusu studenta"""
+    attempt_id: int
+    assignment_id: int
+    student_id: int
+    started_at: str
+    finished_at: str = None
+    status: str  # STARTED, SUBMITTED, GRADED
+    total_points: float = None
+    max_points: float = None
+    score_percent: float = None
+    teacher_note: str = None
+    
+    class Config:
+        from_attributes = True
+
+
+class StudentAttemptDetailedResponse(BaseModel):
+    """Detailní info o pokusu - s otázkami a odpověďmi"""
+    attempt_id: int
+    assignment_id: int
+    student_id: int
+    started_at: str
+    finished_at: str = None
+    status: str
+    total_points: float = None
+    max_points: float = None
+    score_percent: float = None
+    teacher_note: str = None
+    questions_snapshot: dict  # JSONB - snapshot otázek
+    student_answers: dict = None  # JSONB - odpovědi studenta
+    
+    class Config:
+        from_attributes = True
+
+
+class GradeAttemptRequest(BaseModel):
+    """Schema pro hodnocení pokusu učitelem"""
+    student_answers: dict  # Aktualizované odpovědi s body
+    total_points: float
+    teacher_note: str = None
+
+
+class ResultsSummary(BaseModel):
+    """Shrnutí výsledků testování pro skupinu"""
+    assignment_id: int
+    total_attempts: int
+    submitted_attempts: int
+    graded_attempts: int
+    avg_score: float = None
+    median_score: float = None
+    min_score: float = None
+    max_score: float = None
+    pass_rate: float = None  # % studentů s > 50 bodů
+
+
+# --- Test Template Questions Management Schemas ---
+
+class TemplateQuestionResponse(BaseModel):
+    """Otázka v šabloně testu - s info z template a question"""
+    question_id: int
+    position: int
+    points_custom: int = None
+    text: str
+    type: str
+    default_points: int
+    tags: list[str] = None
+    image_url: str = None
+    answers: list[AnswerResponse] = []
+    
+    class Config:
+        from_attributes = True
+
+
+class UpdateTemplateQuestionRequest(BaseModel):
+    """Schema pro update otázky v šabloně"""
+    points_custom: int = None  # Vlastní body pro tuto šablonu
+    
+    @field_validator('points_custom')
+    @classmethod
+    def validate_points(cls, v):
+        if v is not None and v < 0:
+            raise ValueError("Počet bodů nemůže být negativní")
+        return v
+
+
+class CreateTemplateQuestionRequest(BaseModel):
+    """Schema pro přidání otázky do šablony testu"""
+    question_id: int  # ID otázky z banky
+    position: int  # Pořadí v testu
+    points_custom: int = None  # Volitelné: vlastní body (pokud None, použije se default_points)
+    
+    @field_validator('position')
+    @classmethod
+    def validate_position(cls, v):
+        if v < 1:
+            raise ValueError("Pořadí otázky musí být alespoň 1")
+        return v
+    
+    @field_validator('points_custom')
+    @classmethod
+    def validate_points(cls, v):
+        if v is not None and v < 0:
+            raise ValueError("Počet bodů nemůže být negativní")
+        return v
