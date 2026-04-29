@@ -4,8 +4,9 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 // IMPORT VŠECH POUŽÍVANÝCH STRÁNEK
 import 'pages/pages.dart';
 
-// IMPORT HLAVNÍHO UČITELSKÉHO LAYOUTU
+// IMPORT LAYOUTŮ (SPA RÁMCŮ)
 import 'layouts/teacher_main_layout.dart';
+import 'layouts/student_main_layout.dart'; // PŘIDÁNO: Import nového studentského layoutu
 
 void main() {
   // Spuštění samotné aplikace
@@ -99,11 +100,13 @@ class BakalarkaApp extends StatelessWidget {
               child: const OrderQuestionWidget(),
             ),
 
-        // --- STUDENT (Zatím bez obalu, nebo později přidáme StudentMainLayout) ---
-        '/studentOverview': (context) => const StudentOverviewWidget(),
+        // --- STUDENT ---
+        // Nyní máme jen jednu hlavní cestu (SPA), která obsahuje Přehled i Nastavení
+        '/studentHome': (context) => const StudentMainLayout(),
+        
+        // Detail předmětu a Aktivní test se otevírají "nad" lištou
         '/subjectPage': (context) => const SubjectPageWidget(),
         '/testActive': (context) => const TestActiveWidget(),
-        '/settingsStudent': (context) => const SettingsStudentWidget(),
       },
     );
   }

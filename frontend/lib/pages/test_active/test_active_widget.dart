@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
-import '../../components/test_submit_popup_widget.dart';
+import 'package:google_fonts/google_fonts.dart';
 
+import '../../components/test_submit_popup_widget.dart';
+import '../../components/test_exit_popup_widget.dart';
+
+// Hlavní obrazovka pro vyplňování testu studentem.
+// Dynamicky renderuje různé typy otázek a spravuje lokální stav odpovědí.
 class TestActiveWidget extends StatefulWidget {
   const TestActiveWidget({super.key});
 
@@ -11,200 +16,308 @@ class TestActiveWidget extends StatefulWidget {
 class _TestActiveWidgetState extends State<TestActiveWidget> {
   final scaffoldKey = GlobalKey<ScaffoldState>();
 
+  // --- STAVOVÉ PROMĚNNÉ ---
+  
+  // Index aktuálně zobrazené otázky (od 0 do _mockQuestions.length - 1)
+  int _currentIndex = 0;
+  
+  // Lokální úložiště odpovědí studenta.
+  // Klíč = index otázky, Hodnota = dynamická (String, List, nebo Map podle typu otázky).
+  // Tento objekt se po dokončení serializuje do JSONu a pošle na server.
+  final Map<int, dynamic> _selectedAnswers = {};
+
+  // Kontroler pro textová pole (otevřené a krátké odpovědi).
+  final TextEditingController _textController = TextEditingController();
+
+  // --- DATOVÝ MODEL (MOCK) ---
+  
+  final List<Map<String, dynamic>> _mockQuestions = [
+    {
+      "id": "q1",
+      "type": "choice",
+      "text": "Co je energetickým centrem buňky?",
+      "options": [
+        {"letter": "A", "text": "Jádro"},
+        {"letter": "B", "text": "Mitochondrie"},
+        {"letter": "C", "text": "Ribozom"},
+        {"letter": "D", "text": "Chloroplast"}
+      ]
+    },
+    {
+      "id": "q2",
+      "type": "open",
+      "text": "Stručně popište funkci buněčné membrány.",
+    },
+    {
+      "id": "q3",
+      "type": "short_answer",
+      "text": "Jak se nazývá proces dělení tělních buněk?",
+    },
+    {
+      "id": "q4",
+      "type": "order",
+      "text": "Seřaďte fáze buněčného cyklu (mitózy) ve správném pořadí.",
+      // API pošle položky náhodně zamíchané
+      "items": ["Telofáze", "Profáze", "Anafáze", "Metafáze"],
+    },
+    {
+      "id": "q5",
+      "type": "match",
+      "text": "Přiřaďte buněčné organely k jejich správným funkcím.",
+      "leftItems": ["Ribozom", "Chloroplast", "Jádro"],
+      "rightItems": ["Uchování DNA", "Syntéza bílkovin", "Fotosyntéza"],
+    }
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    // Načte případnou textovou odpověď do kontroleru při prvním spuštění
+    _loadAnswerForCurrentQuestion();
+  }
+
+  @override
+  void dispose() {
+    _textController.dispose();
+    super.dispose();
+  }
+
+  // --- NAVIGAČNÍ A OBSLUŽNÁ LOGIKA ---
+
+  // Zajistí, že při posunu vpřed/vzad se textové pole správně předvyplní uloženou odpovědí.
+  void _loadAnswerForCurrentQuestion() {
+    var qType = _mockQuestions[_currentIndex]['type'];
+    if (qType == 'open' || qType == 'short_answer') {
+      _textController.text = _selectedAnswers[_currentIndex] ?? '';
+    }
+  }
+
+  // Přechod na další otázku nebo odevzdání testu, pokud jsme na konci.
+  void _nextQuestion() {
+    if (_currentIndex < _mockQuestions.length - 1) {
+      setState(() {
+        _currentIndex++;
+        _loadAnswerForCurrentQuestion();
+      });
+    } else {
+      _submitTest();
+    }
+  }
+
+  // Návrat na předchozí otázku.
+  void _previousQuestion() {
+    if (_currentIndex > 0) {
+      setState(() {
+        _currentIndex--;
+        _loadAnswerForCurrentQuestion();
+      });
+    }
+  }
+
+  // Zobrazí popup pro finální odevzdání a po potvrzení odesílá data na API.
+  void _submitTest() {
+    int answeredCount = _selectedAnswers.length;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false, // Nelze zavřít kliknutím mimo okno
+      builder: (dialogContext) => TestSubmitPopupWidget(
+        answeredQuestions: answeredCount,
+        totalQuestions: _mockQuestions.length,
+        onSubmit: () {
+          // Odesíláme mapu '_selectedAnswers'.
+          print('Odesláno na backend: $_selectedAnswers');
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Test byl úspěšně odevzdán!'), backgroundColor: Color(0xFF16A34A)),
+          );
+          Navigator.pop(context); // Návrat do přehledu předmětu
+        },
+      ),
+    );
+  }
+
+  // Zobrazí varování před opuštěním rozepsaného testu (např. při kliknutí na křížek).
+  void _showExitWarning() {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => TestExitPopupWidget(
+        onExit: () {
+          Navigator.pop(context); 
+        }
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    // 1. Zpracování argumentů z navigace
+    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final String testTitle = args?['testTitle'] ?? 'Biologie - Buňka 1';
+
+    // 2. Výpočet pro progress bar
+    int totalQuestions = _mockQuestions.length;
+    double progress = (_currentIndex + 1) / totalQuestions;
+
+    // Aktuální otázka pro vykreslení
+    var currentQuestion = _mockQuestions[_currentIndex];
+
     return Scaffold(
       key: scaffoldKey,
       backgroundColor: const Color(0xFFF8F9FA),
       
-      // HORNÍ LIŠTA: Zpět a název předmětu
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: false,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: Colors.black87),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: const Text(
-          'Matematika',
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87, fontSize: 22),
-        ),
-      ),
-      
       body: SafeArea(
         child: Column(
           children: [
-            // HLAVIČKA TESTU: Stavový pruh, Čas, Progress
+            // --- SJEDNOCENÁ HLAVIČKA TESTU ---
+            // Obsahuje křížek, název testu, odpočet a plynulý progress bar.
             Container(
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: Colors.white,
-                boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4.0, offset: Offset(0, 2))],
+                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10.0, offset: const Offset(0, 4))],
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+              padding: const EdgeInsets.only(top: 16.0, left: 24.0, right: 24.0, bottom: 20.0),
               child: Column(
                 children: [
                   Row(
+                    children: [
+                      InkWell(
+                        onTap: _showExitWarning,
+                        borderRadius: BorderRadius.circular(20),
+                        child: const Padding(padding: EdgeInsets.all(4.0), child: Icon(Icons.close_rounded, color: Colors.black87, size: 24)),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(testTitle, style: GoogleFonts.inter(fontWeight: FontWeight.w800, color: Colors.black87, fontSize: 18)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24.0),
+                  Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        '25%',
-                        style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontSize: 14.0),
-                      ),
-                      const Text(
-                        '14:10',
-                        style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 24.0),
+                      Text('Otázka ${_currentIndex + 1} z $totalQuestions', style: GoogleFonts.inter(color: Colors.black87, fontWeight: FontWeight.w600, fontSize: 14.0)),
+                      Row(
+                        children: [
+                          const Icon(Icons.timer_outlined, color: Color(0xFFDC2626), size: 18),
+                          const SizedBox(width: 6),
+                          Text('14:10', style: GoogleFonts.inter(color: const Color(0xFFDC2626), fontWeight: FontWeight.bold, fontSize: 16.0)),
+                        ],
                       ),
                     ],
                   ),
                   const SizedBox(height: 12.0),
-                  // PŘEPRACOVÁNO: Skutečný Progress Bar
-                  LinearProgressIndicator(
-                    value: 0.25, // 25 % hotovo
-                    backgroundColor: Colors.grey.shade200,
-                    valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF3D5AF1)),
-                    minHeight: 8.0,
-                    borderRadius: BorderRadius.circular(4.0),
-                  ),
-                  const SizedBox(height: 12.0),
-                  const Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      'Otázka 5 / 20',
-                      style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontSize: 14.0),
-                    ),
+                  // Progress Bar
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      return Container(
+                        height: 6.0,
+                        width: constraints.maxWidth,
+                        decoration: BoxDecoration(color: const Color(0xFFF3F4F6), borderRadius: BorderRadius.circular(6.0)),
+                        child: Row(
+                          children: [
+                            AnimatedContainer(
+                              duration: const Duration(milliseconds: 400),
+                              curve: Curves.easeOutCubic, 
+                              width: constraints.maxWidth * progress,
+                              decoration: BoxDecoration(color: const Color(0xFF0056D2), borderRadius: BorderRadius.circular(6.0)),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),
             ),
+            // ------------------------------------
 
-            // OBLAST OTÁZKY A ODPOVĚDI
+            // --- OBLAST OTÁZKY A ODPOVĚDÍ ---
+            // Zde se dynamicky renderuje obsah podle typu otázky v JSONu.
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(24.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // TYP OTÁZKY (Ikona + Text)
+                    // Znění otázky
                     Container(
+                      width: double.infinity,
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(16.0),
-                        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 8.0, offset: Offset(0, 4))],
+                        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10.0, offset: const Offset(0, 4))],
                       ),
                       padding: const EdgeInsets.all(24.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                width: 52.0, height: 52.0,
-                                decoration: BoxDecoration(color: const Color(0xFFF0F4FF), borderRadius: BorderRadius.circular(14.0)),
-                                child: const Icon(Icons.calculate_outlined, color: Color(0xFF3D5AF1), size: 28.0),
-                              ),
-                              const SizedBox(width: 16.0),
-                              const Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('Předmět', style: TextStyle(color: Colors.grey, fontSize: 12.0)),
-                                    Text('Matematika', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18.0)),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 24.0),
-                          
-                          // ZNĚNÍ OTÁZKY
-                          const Text(
-                            'Která z následujících funkcí je sudá?',
-                            style: TextStyle(fontSize: 18.0, fontWeight: FontWeight.bold, color: Colors.black87),
-                          ),
-                          const SizedBox(height: 16.0),
-                          
-                          // PŘÍKLAD ODPOVĚDI
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(20.0),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF0F4FF),
-                              borderRadius: BorderRadius.circular(12.0),
-                            ),
-                            alignment: Alignment.center,
-                            child: const Text(
-                              'f(x) = ?',
-                              style: TextStyle(fontSize: 24.0, fontWeight: FontWeight.bold, color: Color(0xFF3D5AF1)),
-                            ),
-                          ),
-                        ],
+                      child: Text(
+                        currentQuestion['text'],
+                        style: GoogleFonts.inter(fontSize: 18.0, fontWeight: FontWeight.w700, color: Colors.black87, height: 1.4),
                       ),
                     ),
-                    
+                    const SizedBox(height: 32.0),
+
+                    // Dynamický renderovač odpovědí
+                    if (currentQuestion['type'] == 'choice')
+                      _buildChoiceQuestion(currentQuestion)
+                    else if (currentQuestion['type'] == 'open' || currentQuestion['type'] == 'short_answer')
+                      _buildTextQuestion(currentQuestion)
+                    else if (currentQuestion['type'] == 'order')
+                      _buildOrderQuestion(currentQuestion)
+                    else if (currentQuestion['type'] == 'match')
+                      _buildMatchQuestion(currentQuestion),
+
                     const SizedBox(height: 24.0),
-
-                    // POKYNY NEBO ZPĚTNÁ VAZBA
-                    const Text(
-                      'Vyberte správnou odpověď:',
-                      style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontSize: 14.0),
-                    ),
-                    const SizedBox(height: 8.0),
-
-                    // MOŽNOSTI ODPOVĚDÍ (Ukázka)
-                    _buildAnswerOption('A', 'f(x) = 2x + 1', isSelected: false, isCorrect: null),
-                    _buildAnswerOption('B', 'f(x) = x³', isSelected: false, isCorrect: null),
-                    _buildAnswerOption('C', 'f(x) = |x|', isSelected: true, isCorrect: true), // Příklad vybrané a správné
-                    _buildAnswerOption('D', 'f(x) = sin(x)', isSelected: false, isCorrect: false),
                   ],
                 ),
               ),
             ),
 
-            // SPODNÍ NAVIGAČNÍ TLAČÍTKA
+            // --- SPODNÍ NAVIGAČNÍ TLAČÍTKA ---
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-              color: const Color(0xFFF8F9FA),
-              child: Row(
-                children: [
-                  // TLAČÍTKO ZPĚT
-                  Container(
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF3D5AF1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
-                      onPressed: () => print('Předchozí otázka'),
-                    ),
-                  ),
-                  const SizedBox(width: 16.0),
-                  
-                  // TLAČÍTKO DALŠÍ OTÁZKA
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        // Tlačítko teď ukazuje dialog pro odevzdání
-                        showDialog(
-                          context: context,
-                          builder: (dialogContext) => const Dialog(
-                            backgroundColor: Colors.transparent,
-                            insetPadding: EdgeInsets.zero,
-                            child: TestSubmitPopupWidget(),
-                          ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF3D5AF1),
-                        padding: const EdgeInsets.symmetric(vertical: 16.0),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22.0)),
-                        elevation: 0,
+              decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))]),
+              child: SafeArea(
+                top: false, // Safe area řešíme jen pro spodní lištu (notch na iPhonech)
+                child: Row(
+                  children: [
+                    // Tlačítko zpět (schované na první otázce)
+                    if (_currentIndex > 0) ...[
+                      InkWell(
+                        onTap: _previousQuestion,
+                        borderRadius: BorderRadius.circular(24.0),
+                        child: Container(
+                          height: 52, width: 52,
+                          decoration: BoxDecoration(border: Border.all(color: const Color(0xFFE5E7EB), width: 1.5), shape: BoxShape.circle),
+                          child: const Icon(Icons.arrow_back, color: Colors.black87),
+                        ),
                       ),
-                      label: const Text('Další otázka', style: TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold, color: Colors.white)),
-                      icon: const Icon(Icons.arrow_forward, color: Colors.white, size: 20),
+                      const SizedBox(width: 16.0),
+                    ],
+                    // Hlavní tlačítko (Další otázka / Odevzdat test)
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: _nextQuestion,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF0056D2), 
+                          padding: const EdgeInsets.symmetric(vertical: 16.0),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26.0)),
+                          elevation: 0,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              _currentIndex == totalQuestions - 1 ? 'Odevzdat test' : 'Další otázka', 
+                              style: GoogleFonts.inter(fontSize: 16.0, fontWeight: FontWeight.bold, color: Colors.white)
+                            ),
+                            const SizedBox(width: 8),
+                            Icon(_currentIndex == totalQuestions - 1 ? Icons.check_circle_outline : Icons.arrow_forward, color: Colors.white, size: 20),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ],
@@ -213,73 +326,196 @@ class _TestActiveWidgetState extends State<TestActiveWidget> {
     );
   }
 
-  // Pomocný widget pro vykreslení jedné možnosti odpovědi
-  Widget _buildAnswerOption(String letter, String text, {required bool isSelected, bool? isCorrect}) {
-    // Logika barev
-    Color borderColor = Colors.grey.shade300;
-    Color bgColor = Colors.white;
-    Color iconColor = Colors.transparent;
-    IconData iconData = Icons.circle_outlined;
+  // =========================================================
+  // WIDGETY PRO JEDNOTLIVÉ TYPY OTÁZEK
+  // =========================================================
 
-    if (isSelected) {
-      if (isCorrect == true) {
-        borderColor = const Color(0xFF34C759); // Zelená (správně)
-        bgColor = const Color(0xFFECFDF4);
-        iconColor = const Color(0xFF34C759);
-        iconData = Icons.check_circle_rounded;
-      } else if (isCorrect == false) {
-        borderColor = Colors.red; // Červená (špatně)
-        bgColor = const Color(0xFFFDEDED);
-        iconColor = Colors.red;
-        iconData = Icons.cancel_rounded;
-      } else {
-        borderColor = const Color(0xFF3D5AF1); // Modrá (vybráno, zatím neopraveno)
-        bgColor = const Color(0xFFF0F4FF);
-        iconColor = const Color(0xFF3D5AF1);
-        iconData = Icons.radio_button_checked;
-      }
-    }
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12.0),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(14.0),
-        border: Border.all(color: borderColor, width: isSelected ? 2.0 : 1.0),
-      ),
-      padding: const EdgeInsets.all(12.0),
-      child: Row(
-        children: [
-          // Písmeno (A, B, C...)
-          Container(
-            width: 36.0, height: 36.0,
-            decoration: BoxDecoration(
-              color: isSelected ? iconColor.withOpacity(0.1) : const Color(0xFFF5F7FA),
-              borderRadius: BorderRadius.circular(10.0),
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              letter,
-              style: TextStyle(fontWeight: FontWeight.bold, color: isSelected ? iconColor : Colors.black54),
-            ),
-          ),
-          const SizedBox(width: 16.0),
-          // Text odpovědi
-          Expanded(
-            child: Text(
-              text,
-              style: TextStyle(
-                fontSize: 15.0,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                color: Colors.black87,
+  // 1. VÝBĚR Z MOŽNOSTÍ (Single Choice)
+  // Ukládá do state vybrané písmeno (např. 'A').
+  Widget _buildChoiceQuestion(Map<String, dynamic> question) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Vyberte jednu správnou odpověď:', style: GoogleFonts.inter(color: Colors.grey.shade600, fontWeight: FontWeight.bold, fontSize: 13.0)),
+        const SizedBox(height: 12.0),
+        ...List.generate(question['options'].length, (index) {
+          var option = question['options'][index];
+          bool isSelected = _selectedAnswers[_currentIndex] == option['letter'];
+          
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12.0),
+            child: InkWell(
+              onTap: () => setState(() => _selectedAnswers[_currentIndex] = option['letter']),
+              borderRadius: BorderRadius.circular(14.0),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: isSelected ? const Color(0xFFF0F4FF) : Colors.white,
+                  borderRadius: BorderRadius.circular(14.0),
+                  border: Border.all(color: isSelected ? const Color(0xFF0056D2) : const Color(0xFFE5E7EB), width: isSelected ? 2.0 : 1.0),
+                ),
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 36.0, height: 36.0,
+                      decoration: BoxDecoration(
+                        color: isSelected ? const Color(0xFF0056D2).withOpacity(0.1) : const Color(0xFFF5F7FA),
+                        borderRadius: BorderRadius.circular(10.0),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(option['letter'], style: GoogleFonts.inter(fontWeight: FontWeight.w700, color: isSelected ? const Color(0xFF0056D2) : Colors.black54)),
+                    ),
+                    const SizedBox(width: 16.0),
+                    Expanded(child: Text(option['text'], style: GoogleFonts.inter(fontSize: 15.0, fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500, color: Colors.black87))),
+                    Icon(isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked, color: isSelected ? const Color(0xFF0056D2) : Colors.grey.shade300, size: 22.0),
+                  ],
+                ),
               ),
             ),
+          );
+        }),
+      ],
+    );
+  }
+
+  // 2. TEXTOVÁ ODPOVĚĎ (Open / Short Answer)
+  // Ukládá do state napsaný text (String).
+  Widget _buildTextQuestion(Map<String, dynamic> question) {
+    bool isLong = question['type'] == 'open';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(isLong ? 'Zapište svou odpověď (vlastními slovy):' : 'Napište krátkou odpověď:', style: GoogleFonts.inter(color: Colors.grey.shade600, fontWeight: FontWeight.bold, fontSize: 13.0)),
+        const SizedBox(height: 12.0),
+        TextFormField(
+          controller: _textController,
+          maxLines: isLong ? 6 : 1,
+          onChanged: (val) {
+            // Ukládá potichu bez setState, aby nezmizela klávesnice při psaní!
+            _selectedAnswers[_currentIndex] = val;
+          },
+          style: GoogleFonts.inter(fontSize: 16.0, color: Colors.black87),
+          decoration: InputDecoration(
+            hintText: isLong ? 'Zde se můžete rozepsat...' : 'Vaše odpověď...',
+            filled: true,
+            fillColor: Colors.white,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16.0), borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
+            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16.0), borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
+            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16.0), borderSide: const BorderSide(color: Color(0xFF0056D2), width: 1.5)),
           ),
-          // Ikona stavu
-          if (isSelected) Icon(iconData, color: iconColor, size: 22.0)
-          else Icon(Icons.arrow_forward_ios, color: Colors.grey.shade400, size: 16.0),
-        ],
-      ),
+        ),
+      ],
+    );
+  }
+
+  // 3. SEŘAZENÍ (Drag & Drop)
+  // Ukládá do state nové pole s aktuálním pořadím prvků (List<String>).
+  Widget _buildOrderQuestion(Map<String, dynamic> question) {
+    // Pokud žák ještě nic nepřesunul, použijeme výchozí pole od serveru
+    List<String> items = _selectedAnswers[_currentIndex] ?? List<String>.from(question['items']);
+    
+    // Pro jistotu uložíme výchozí stav rovnou, pokud by žák jen kliknul na "Další"
+    _selectedAnswers[_currentIndex] = items;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Seřaďte položky (podržte a přetáhněte):', style: GoogleFonts.inter(color: Colors.grey.shade600, fontWeight: FontWeight.bold, fontSize: 13.0)),
+        const SizedBox(height: 12.0),
+        
+        // ReorderableListView nativně řeší plynulé animace přesunů
+        ReorderableListView.builder(
+          shrinkWrap: true, // Nutné uvnitř ScrollView
+          physics: const NeverScrollableScrollPhysics(), 
+          itemCount: items.length,
+          onReorder: (oldIndex, newIndex) {
+            setState(() {
+              if (newIndex > oldIndex) {
+                newIndex -= 1;
+              }
+              final String item = items.removeAt(oldIndex);
+              items.insert(newIndex, item);
+              _selectedAnswers[_currentIndex] = items; // Uložíme nové pořadí
+            });
+          },
+          itemBuilder: (context, index) {
+            return Container(
+              key: ValueKey(items[index]), // Klíč je vyžadován frameworkem pro správný drag & drop
+              margin: const EdgeInsets.only(bottom: 12.0),
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12.0), border: Border.all(color: const Color(0xFFE5E7EB))),
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+              child: Row(
+                children: [
+                  const Icon(Icons.drag_indicator_rounded, color: Colors.grey),
+                  const SizedBox(width: 16.0),
+                  Expanded(child: Text(items[index], style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: Colors.black87, fontSize: 15.0))),
+                ],
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  // 4. PÁROVÁNÍ (Dropdowny)
+  // Ukládá do state slovník vytvořených párů, např. {"Ribozom": "Syntéza bílkovin", ...} (Map<String, String>).
+  Widget _buildMatchQuestion(Map<String, dynamic> question) {
+    List<String> leftItems = List<String>.from(question['leftItems']);
+    List<String> rightOptions = List<String>.from(question['rightItems']);
+    
+    // Načteme dosud vytvořené páry, nebo vytvoříme novou prázdnou mapu
+    Map<String, String> pairs = _selectedAnswers[_currentIndex] ?? {};
+    _selectedAnswers[_currentIndex] = pairs;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Přiřaďte správný pojem ke každé položce:', style: GoogleFonts.inter(color: Colors.grey.shade600, fontWeight: FontWeight.bold, fontSize: 13.0)),
+        const SizedBox(height: 12.0),
+        
+        ...leftItems.map((leftItem) {
+          return Container(
+            margin: const EdgeInsets.only(bottom: 16.0),
+            padding: const EdgeInsets.all(16.0),
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16.0), border: Border.all(color: const Color(0xFFE5E7EB))),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(leftItem, style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 16.0, color: Colors.black87)),
+                const SizedBox(height: 12.0),
+                
+                // Roletka pro výběr pravé části páru
+                DropdownButtonFormField<String>(
+                  value: pairs[leftItem], 
+                  isExpanded: true,
+                  hint: Text('Vyberte správnou možnost', style: GoogleFonts.inter(fontSize: 14.0, color: Colors.grey)),
+                  decoration: InputDecoration(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0), borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
+                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0), borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
+                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0), borderSide: const BorderSide(color: Color(0xFF0056D2))),
+                    filled: true,
+                    fillColor: const Color(0xFFF9FAFB),
+                  ),
+                  items: rightOptions.map((String option) {
+                    return DropdownMenuItem<String>(
+                      value: option,
+                      child: Text(option, style: GoogleFonts.inter(fontSize: 14.0, fontWeight: FontWeight.w500)),
+                    );
+                  }).toList(),
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      if (newValue != null) pairs[leftItem] = newValue;
+                      _selectedAnswers[_currentIndex] = pairs; // Uložení do globálního stavu testu
+                    });
+                  },
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      ],
     );
   }
 }

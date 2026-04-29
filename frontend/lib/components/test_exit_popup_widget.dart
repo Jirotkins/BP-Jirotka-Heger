@@ -1,16 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class TestSubmitPopupWidget extends StatelessWidget {
-  final int answeredQuestions;
-  final int totalQuestions;
-  final VoidCallback onSubmit;
+class TestExitPopupWidget extends StatelessWidget {
+  final VoidCallback onExit;
 
-  const TestSubmitPopupWidget({
+  const TestExitPopupWidget({
     super.key,
-    required this.answeredQuestions, 
-    required this.totalQuestions,
-    required this.onSubmit,
+    required this.onExit,
   });
 
   @override
@@ -32,20 +28,20 @@ class TestSubmitPopupWidget extends StatelessWidget {
             // IKONA A NADPIS
             Container(
               padding: const EdgeInsets.all(16.0),
-              decoration: BoxDecoration(color: const Color(0xFFF0F4FF), shape: BoxShape.circle),
-              child: const Icon(Icons.check_circle_outline, color: Color(0xFF0056D2), size: 32),
+              decoration: const BoxDecoration(color: Color(0xFFFEF2F2), shape: BoxShape.circle),
+              child: const Icon(Icons.warning_amber_rounded, color: Color(0xFFDC2626), size: 32),
             ),
             const SizedBox(height: 16.0),
             Text(
-              'Opravdu chcete\nodevzdat test?',
+              'Opustit test?',
               textAlign: TextAlign.center,
-              style: GoogleFonts.inter(fontSize: 22.0, fontWeight: FontWeight.bold, color: Colors.black87),
+              style: GoogleFonts.inter(fontSize: 22.0, fontWeight: FontWeight.bold, color: const Color(0xFFDC2626)),
             ),
             const SizedBox(height: 12.0),
             Text(
-              'Vyplnili jste $answeredQuestions / $totalQuestions otázek',
+              'Pokud nyní odejdete, váš postup se neuloží a test bude vyhodnocen jako neodevzdaný.',
               textAlign: TextAlign.center,
-              style: GoogleFonts.inter(fontSize: 14.0, fontWeight: FontWeight.w500, color: Colors.grey.shade600),
+              style: GoogleFonts.inter(fontSize: 14.0, fontWeight: FontWeight.w500, color: Colors.grey.shade600, height: 1.4),
             ),
             
             const SizedBox(height: 32.0),
@@ -54,23 +50,23 @@ class TestSubmitPopupWidget extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // TLAČÍTKO "ODEVZDAT K HODNOCENÍ" (Hlavní akce)
+                // TLAČÍTKO "OPUSTIT TEST" (Hlavní výstražná akce)
                 ElevatedButton(
                   onPressed: () {
                     Navigator.of(context).pop(); // Zavře popup
-                    onSubmit(); // Spustí logiku odeslání v nadřazeném widgetu
+                    onExit(); // Spustí logiku odchodu
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0056D2),
+                    backgroundColor: const Color(0xFFDC2626),
                     foregroundColor: Colors.white,
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(vertical: 16.0),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22.0)),
                   ),
-                  child: Text('Odevzdat k hodnocení', style: GoogleFonts.inter(fontSize: 16.0, fontWeight: FontWeight.bold)),
+                  child: Text('Opustit test', style: GoogleFonts.inter(fontSize: 16.0, fontWeight: FontWeight.bold)),
                 ),
                 const SizedBox(height: 12.0),
-                // TLAČÍTKO "ZPĚT K TESTU" (Zrušení)
+                // TLAČÍTKO "ZRUŠIT" (Návrat k testování)
                 OutlinedButton(
                   onPressed: () => Navigator.of(context).pop(), 
                   style: OutlinedButton.styleFrom(
@@ -79,7 +75,7 @@ class TestSubmitPopupWidget extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(vertical: 16.0),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22.0)),
                   ),
-                  child: Text('Zpět k testu', style: GoogleFonts.inter(fontSize: 16.0, fontWeight: FontWeight.bold)),
+                  child: Text('Zrušit', style: GoogleFonts.inter(fontSize: 16.0, fontWeight: FontWeight.bold)),
                 ),
               ],
             ),

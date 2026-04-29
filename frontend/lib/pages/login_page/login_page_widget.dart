@@ -60,7 +60,8 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
       if (!_isStudent) {
         Navigator.pushReplacementNamed(context, '/classOverview'); 
       } else {
-        Navigator.pushReplacementNamed(context, '/studentOverview');
+        // Přesměruje rovnou na SPA Layout
+        Navigator.pushReplacementNamed(context, '/studentHome');
       }
     } catch (e) {
       if (!mounted) return;
@@ -84,114 +85,118 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
       key: scaffoldKey,
       backgroundColor: const Color(0xFFF5F7FA), // Světlé pozadí mimo okno
       body: SafeArea(
+        // Pokud je klávesnice schovaná, je to uprostřed. Pokud vyjede, začne se to scrollovat.
         child: Center(
-          child: Container(
-            width: 400.0,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16.0),
-              boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 20.0, offset: Offset(0, 4))],
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 40.0, vertical: 48.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // HLAVIČKA A IKONA
-                Column(
-                  children: [
-                    const Icon(Icons.school_rounded, color: Color(0xFF0056D2), size: 48.0),
-                    const SizedBox(height: 16.0),
-                    const Text(
-                      'Přihlášení', 
-                      textAlign: TextAlign.center, 
-                      style: TextStyle(fontSize: 28.0, fontWeight: FontWeight.w800, color: Colors.black87)
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 32.0),
-
-                // PŘEPÍNAČ ROLE
-                RoleToggleWidget(
-                  initialIsStudent: _isStudent,
-                  onRoleChanged: (isStudentSelected) {
-                    setState(() {
-                      _isStudent = isStudentSelected;
-                      _emailController.clear();
-                    });
-                  },
-                ),
-                const SizedBox(height: 32.0),
-
-                // FORMULÁŘ
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // E-MAIL / KÓD
-                    TextFormField(
-                      controller: _emailController,
-                      focusNode: _emailFocusNode,
-                      keyboardType: _isStudent ? TextInputType.text : TextInputType.emailAddress,
-                      textInputAction: TextInputAction.next,
-                      style: const TextStyle(fontSize: 16.0, fontWeight: FontWeight.w500),
-                      decoration: InputDecoration(
-                        hintText: _isStudent ? 'Přihlašovací kód' : 'Email',
-                        hintStyle: const TextStyle(color: Colors.grey, fontSize: 16.0),
-                        filled: true,
-                        fillColor: const Color(0xFFFAFAFA), // Šedé pozadí pole
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 18.0),
-                        border: _inputBorder(),
-                        enabledBorder: _inputBorder(),
-                        focusedBorder: _inputBorder().copyWith(borderSide: const BorderSide(color: Color(0xFF0056D2), width: 2.5)),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24.0), // Padding zaručí, že box nebude nalepený na okrajích
+            child: Container(
+              width: 400.0,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16.0),
+                boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 20.0, offset: Offset(0, 4))],
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 40.0, vertical: 48.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // HLAVIČKA A IKONA
+                  Column(
+                    children: [
+                      const Icon(Icons.school_rounded, color: Color(0xFF0056D2), size: 48.0),
+                      const SizedBox(height: 16.0),
+                      const Text(
+                        'Přihlášení', 
+                        textAlign: TextAlign.center, 
+                        style: TextStyle(fontSize: 28.0, fontWeight: FontWeight.w800, color: Colors.black87)
                       ),
-                    ),
-                    const SizedBox(height: 20.0),
+                    ],
+                  ),
+                  const SizedBox(height: 32.0),
 
-                    // HESLO
-                    TextFormField(
-                      controller: _passwordController,
-                      focusNode: _passwordFocusNode,
-                      obscureText: _isPasswordObscured,
-                      textInputAction: TextInputAction.done,
-                      onFieldSubmitted: (_) => _handleLogin(),
-                      style: const TextStyle(fontSize: 16.0, fontWeight: FontWeight.w500),
-                      decoration: InputDecoration(
-                        hintText: 'Heslo',
-                        hintStyle: const TextStyle(color: Colors.grey, fontSize: 16.0),
-                        filled: true,
-                        fillColor: const Color(0xFFFAFAFA),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 18.0),
-                        border: _inputBorder(),
-                        enabledBorder: _inputBorder(),
-                        focusedBorder: _inputBorder().copyWith(borderSide: const BorderSide(color: Color(0xFF0056D2), width: 2.5)),
-                        suffixIcon: Padding(
-                          padding: const EdgeInsets.only(right: 8.0),
-                          child: IconButton(
-                            icon: Icon(_isPasswordObscured ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: Colors.grey),
-                            onPressed: () => setState(() => _isPasswordObscured = !_isPasswordObscured),
+                  // PŘEPÍNAČ ROLE
+                  RoleToggleWidget(
+                    initialIsStudent: _isStudent,
+                    onRoleChanged: (isStudentSelected) {
+                      setState(() {
+                        _isStudent = isStudentSelected;
+                        _emailController.clear();
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 32.0),
+
+                  // FORMULÁŘ
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // E-MAIL / KÓD
+                      TextFormField(
+                        controller: _emailController,
+                        focusNode: _emailFocusNode,
+                        keyboardType: _isStudent ? TextInputType.text : TextInputType.emailAddress,
+                        textInputAction: TextInputAction.next,
+                        style: const TextStyle(fontSize: 16.0, fontWeight: FontWeight.w500),
+                        decoration: InputDecoration(
+                          hintText: _isStudent ? 'Přihlašovací kód' : 'Email',
+                          hintStyle: const TextStyle(color: Colors.grey, fontSize: 16.0),
+                          filled: true,
+                          fillColor: const Color(0xFFFAFAFA), // Šedé pozadí pole
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 18.0),
+                          border: _inputBorder(),
+                          enabledBorder: _inputBorder(),
+                          focusedBorder: _inputBorder().copyWith(borderSide: const BorderSide(color: Color(0xFF0056D2), width: 2.5)),
+                        ),
+                      ),
+                      const SizedBox(height: 20.0),
+
+                      // HESLO
+                      TextFormField(
+                        controller: _passwordController,
+                        focusNode: _passwordFocusNode,
+                        obscureText: _isPasswordObscured,
+                        textInputAction: TextInputAction.done,
+                        onFieldSubmitted: (_) => _handleLogin(),
+                        style: const TextStyle(fontSize: 16.0, fontWeight: FontWeight.w500),
+                        decoration: InputDecoration(
+                          hintText: 'Heslo',
+                          hintStyle: const TextStyle(color: Colors.grey, fontSize: 16.0),
+                          filled: true,
+                          fillColor: const Color(0xFFFAFAFA),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 18.0),
+                          border: _inputBorder(),
+                          enabledBorder: _inputBorder(),
+                          focusedBorder: _inputBorder().copyWith(borderSide: const BorderSide(color: Color(0xFF0056D2), width: 2.5)),
+                          suffixIcon: Padding(
+                            padding: const EdgeInsets.only(right: 8.0),
+                            child: IconButton(
+                              icon: Icon(_isPasswordObscured ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: Colors.grey),
+                              onPressed: () => setState(() => _isPasswordObscured = !_isPasswordObscured),
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 40.0),
-
-                // TLAČÍTKO "PŘIHLÁSIT SE"
-                ElevatedButton(
-                  onPressed: _isLoading ? null : _handleLogin,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0056D2),
-                    disabledBackgroundColor: const Color(0xFF0056D2).withOpacity(0.6),
-                    minimumSize: const Size(double.infinity, 56.0),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28.0)),
-                    elevation: 0,
+                    ],
                   ),
-                  child: _isLoading 
-                    ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : const Text('Přihlásit se', style: TextStyle(color: Colors.white, fontSize: 18.0, fontWeight: FontWeight.bold)),
-                ),
-              ],
+                  const SizedBox(height: 40.0),
+
+                  // TLAČÍTKO "PŘIHLÁSIT SE"
+                  ElevatedButton(
+                    onPressed: _isLoading ? null : _handleLogin,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF0056D2),
+                      disabledBackgroundColor: const Color(0xFF0056D2).withOpacity(0.6),
+                      minimumSize: const Size(double.infinity, 56.0),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28.0)),
+                      elevation: 0,
+                    ),
+                    child: _isLoading 
+                      ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      : const Text('Přihlásit se', style: TextStyle(color: Colors.white, fontSize: 18.0, fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
