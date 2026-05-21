@@ -1,26 +1,43 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+// IMPORT PROVIDERŮ
+import 'providers/theme_provider.dart';
 
 // IMPORT VŠECH POUŽÍVANÝCH STRÁNEK
 import 'pages/pages.dart';
 
 // IMPORT LAYOUTŮ (SPA RÁMCŮ)
 import 'layouts/teacher_main_layout.dart';
-import 'layouts/student_main_layout.dart'; // PŘIDÁNO: Import nového studentského layoutu
+import 'layouts/student_main_layout.dart'; 
 
 void main() {
-  // Spuštění samotné aplikace
-  runApp(const BakalarkaApp());
+  // Spuštění samotné aplikace obalené v ProviderScope pro Riverpod
+  runApp(
+    const ProviderScope(
+      child: BakalarkaApp(),
+    ),
+  );
 }
 
-class BakalarkaApp extends StatelessWidget {
+class BakalarkaApp extends ConsumerWidget {
   const BakalarkaApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Čtení aktuálního tématu (Světlý/Tmavý) z Riverpodu
+    final currentThemeMode = ref.watch(themeProvider);
+
     return MaterialApp(
       title: 'Quizzes',
       debugShowCheckedModeBanner: false,
+      themeMode: currentThemeMode,
+      darkTheme: ThemeData.dark().copyWith(
+        primaryColor: const Color(0xFF0056D2),
+        scaffoldBackgroundColor: const Color(0xFF121212),
+        useMaterial3: true,
+      ),
 
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
@@ -101,7 +118,6 @@ class BakalarkaApp extends StatelessWidget {
             ),
 
         // --- STUDENT ---
-        // Nyní máme jen jednu hlavní cestu (SPA), která obsahuje Přehled i Nastavení
         '/studentHome': (context) => const StudentMainLayout(),
         
         // Detail předmětu a Aktivní test se otevírají "nad" lištou

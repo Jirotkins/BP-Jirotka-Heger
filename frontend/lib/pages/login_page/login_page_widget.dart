@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../components/role_toggle_widget.dart';
+import '../../providers/auth_provider.dart';
 
-class LoginPageWidget extends StatefulWidget {
+class LoginPageWidget extends ConsumerStatefulWidget {
   const LoginPageWidget({super.key});
 
   @override
-  State<LoginPageWidget> createState() => _LoginPageWidgetState();
+  ConsumerState<LoginPageWidget> createState() => _LoginPageWidgetState();
 }
 
-class _LoginPageWidgetState extends State<LoginPageWidget> {
+class _LoginPageWidgetState extends ConsumerState<LoginPageWidget> {
   late TextEditingController _emailController;
   late FocusNode _emailFocusNode;
   late TextEditingController _passwordController;
@@ -57,6 +59,10 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
 
       // FALEŠNÝ ÚSPĚŠNÝ LOGIN
       if (!mounted) return;
+      
+      // Uložení stavu přihlášení do globálního Riverpod provideru
+      ref.read(authProvider.notifier).login(_isStudent);
+
       if (!_isStudent) {
         Navigator.pushReplacementNamed(context, '/classOverview'); 
       } else {
