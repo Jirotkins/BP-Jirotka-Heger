@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../components/page_header_widget.dart';
 import '../../components/question_type_menu_widget.dart';
 
@@ -13,7 +14,7 @@ class _AddNewQuestionWidgetState extends State<AddNewQuestionWidget> {
   @override
   Widget build(BuildContext context) {
     // ZÍSKÁNÍ DAT Z PŘEDCHOZÍ STRÁNKY 
-    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final args = GoRouterState.of(context).extra as Map<String, dynamic>?;
     
     // Získáme název banky
     final String targetName = args?['targetName'] ?? 'Nová otázka';

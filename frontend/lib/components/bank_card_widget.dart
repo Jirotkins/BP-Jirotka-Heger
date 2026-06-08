@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
 
 class BankCardWidget extends StatelessWidget {
   final String title;
@@ -91,10 +92,9 @@ class BankCardWidget extends StatelessWidget {
             child: ElevatedButton(
               onPressed: () {
                 // PŘIDANÁ NAVIGACE S PŘEDÁNÍM DAT
-                Navigator.pushNamed(
-                  context, 
+                context.push(
                   '/questionsOverview', // Cesta na přehled otázek
-                  arguments: {
+                  extra: {
                     'bankName': title, // Posíláme název (např. Gravitační pole)
                     'subject': subject,
                   },

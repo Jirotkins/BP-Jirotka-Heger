@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../components/page_header_widget.dart';
+import '../../providers/auth_provider.dart';
 
-class SettingsTeacherWidget extends StatefulWidget {
+class SettingsTeacherWidget extends ConsumerStatefulWidget {
   const SettingsTeacherWidget({super.key});
 
   @override
-  State<SettingsTeacherWidget> createState() => _SettingsTeacherWidgetState();
+  ConsumerState<SettingsTeacherWidget> createState() => _SettingsTeacherWidgetState();
 }
 
-class _SettingsTeacherWidgetState extends State<SettingsTeacherWidget> {
+class _SettingsTeacherWidgetState extends ConsumerState<SettingsTeacherWidget> {
   // Lokální stavy pro přepínače
   bool _isEmailNotificationsEnabled = false;
   bool _isDarkModeEnabled = false;
@@ -59,7 +61,7 @@ class _SettingsTeacherWidgetState extends State<SettingsTeacherWidget> {
                     title: 'E-mailová oznámení',
                     trailing: Switch(
                       value: _isEmailNotificationsEnabled,
-                      activeColor: const Color(0xFF3D5AF1),
+                      activeThumbColor: const Color(0xFF3D5AF1),
                       onChanged: (val) => setState(() => _isEmailNotificationsEnabled = val),
                     ),
                   ),
@@ -69,7 +71,7 @@ class _SettingsTeacherWidgetState extends State<SettingsTeacherWidget> {
                     title: 'Tmavý režim',
                     trailing: Switch(
                       value: _isDarkModeEnabled,
-                      activeColor: const Color(0xFF3D5AF1),
+                      activeThumbColor: const Color(0xFF3D5AF1),
                       onChanged: (val) => setState(() => _isDarkModeEnabled = val),
                     ),
                   ),
@@ -94,8 +96,9 @@ class _SettingsTeacherWidgetState extends State<SettingsTeacherWidget> {
                     titleColor: Colors.red,
                     iconColor: Colors.red,
                     showArrow: false,
-                    onTap: () {
-                      Navigator.pushReplacementNamed(context, '/');
+                    onTap: () async {
+                      await ref.read(authProvider.notifier).logout();
+                      // Redirect se provede automaticky přes RouterNotifier
                     },
                   ),
                 ]),

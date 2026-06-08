@@ -19,6 +19,7 @@ from schemas import (
     GradeAttemptRequest, ResultsSummary, TemplateQuestionResponse, UpdateTemplateQuestionRequest,
     CreateTemplateQuestionRequest
 )
+from fastapi.middleware.cors import CORSMiddleware
 
 security = HTTPBearer()
 
@@ -26,6 +27,14 @@ app = FastAPI(
     title="BP-Jirotka-Heger API",
     description="API for creating and managing test for schools",
     version="1.0.0"
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], # Povolí dotazy odkudkoliv (pro lokální vývoj)
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Configure JWT Bearer authentication in OpenAPI schema

@@ -4,9 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 // IMPORT PROVIDERŮ
 import 'providers/theme_provider.dart';
+import 'providers/auth_provider.dart';
 
-// IMPORT VŠECH POUŽÍVANÝCH STRÁNEK
+// IMPORT VŠECH POUŽÍVANÝCH STRÁNEK A ROUTERU
 import 'pages/pages.dart';
+import 'router/app_router.dart';
 
 // IMPORT LAYOUTŮ (SPA RÁMCŮ)
 import 'layouts/teacher_main_layout.dart';
@@ -28,8 +30,9 @@ class BakalarkaApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // Čtení aktuálního tématu (Světlý/Tmavý) z Riverpodu
     final currentThemeMode = ref.watch(themeProvider);
+    final router = ref.watch(routerProvider);
 
-    return MaterialApp(
+    return MaterialApp.router(
       title: 'Quizzes',
       debugShowCheckedModeBanner: false,
       themeMode: currentThemeMode,
@@ -55,75 +58,8 @@ class BakalarkaApp extends ConsumerWidget {
         useMaterial3: true,
       ),
 
-      // Kde má aplikace začít? Lomítko '/' je standardní označení pro domovskou/login obrazovku
-      initialRoute: '/',
-
-      // MAPA VŠECH CEST (ROUTES)
-      routes: {
-        // Výchozí obrazovka
-        '/': (context) => const LoginPageWidget(),
-        
-        // --- UČITEL (Obaleno v TeacherMainLayout SPA rámu) ---
-        '/classOverview': (context) => TeacherMainLayout(
-              activePage: 'classes',
-              child: const ClassOverviewWidget(), 
-            ),
-        '/classManager': (context) => TeacherMainLayout(
-              activePage: 'classes', 
-              child: const ClassManagerWidget(),
-            ),
-        '/bankOverview': (context) => TeacherMainLayout(
-              activePage: 'banks',
-              child: BankOverviewWidget(), 
-            ),
-        '/testEditor': (context) => TeacherMainLayout(
-              activePage: 'classes', 
-              child: const TestEditorWidget(),
-            ),
-        '/testEvaluation': (context) => TeacherMainLayout(
-              activePage: 'classes', 
-              child: const TestEvaluationWidget(),
-            ),
-        '/settingsTeacher': (context) => TeacherMainLayout(
-              activePage: 'settings',
-              child: const SettingsTeacherWidget(),
-            ),
-        '/questionsOverview': (context) => TeacherMainLayout(
-              activePage: 'banks',
-              child: const QuestionsOverviewWidget(),
-            ),
-        '/addNewQuestion': (context) => TeacherMainLayout(
-              activePage: 'banks',
-              child: const AddNewQuestionWidget(),
-            ),
-        '/multiChoiceQuestion': (context) => TeacherMainLayout(
-              activePage: 'banks',
-              child: const MultiChoiceQuestionWidget(),
-            ),
-        '/openQuestion': (context) => TeacherMainLayout(
-              activePage: 'banks',
-              child: const OpenQuestionWidget(),
-            ),
-        '/shortAnswerQuestion': (context) => TeacherMainLayout(
-              activePage: 'banks',
-              child: const ShortAnswerQuestionWidget(),
-            ),
-        '/connectQuestion': (context) => TeacherMainLayout(
-              activePage: 'banks',
-              child: const ConnectQuestionWidget(),
-            ),
-        '/orderQuestion': (context) => TeacherMainLayout(
-              activePage: 'banks',
-              child: const OrderQuestionWidget(),
-            ),
-
-        // --- STUDENT ---
-        '/studentHome': (context) => const StudentMainLayout(),
-        
-        // Detail předmětu a Aktivní test se otevírají "nad" lištou
-        '/subjectPage': (context) => const SubjectPageWidget(),
-        '/testActive': (context) => const TestActiveWidget(),
-      },
+      // Reaktivní hlavní obrazovka podle stavu přihlášení
+      routerConfig: router,
     );
   }
 }

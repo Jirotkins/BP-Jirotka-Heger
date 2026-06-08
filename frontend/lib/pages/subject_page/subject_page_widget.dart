@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 // Stránka s detailem konkrétního předmětu (např. Matematika).
@@ -53,7 +54,7 @@ class _SubjectPageWidgetState extends State<SubjectPageWidget> {
   Widget build(BuildContext context) {
     // Načtení argumentů předaných přes navigaci (např. z domovské stránky)
     // Předáváme id a název předmětu, aby se nemusel název tahat z API jen kvůli hlavičce
-    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final args = GoRouterState.of(context).extra as Map<String, dynamic>?;
     final String subjectName = args?['subjectName'] ?? 'Matematika';
 
     return Scaffold(
@@ -135,11 +136,7 @@ class _SubjectPageWidgetState extends State<SubjectPageWidget> {
                 InkWell(
                   onTap: () {
                     // Navigace do ostrého testu s předáním ID testu
-                    Navigator.pushNamed(
-                      context, 
-                      '/testActive', 
-                      arguments: {'testId': _activeTest!['id'], 'testTitle': _activeTest!['title']}
-                    );
+                    context.push('/testActive', extra: {'testId': _activeTest!['id'], 'testTitle': _activeTest!['title']});
                   },
                   borderRadius: BorderRadius.circular(12.0),
                   child: Container(
@@ -260,7 +257,7 @@ class _SubjectPageWidgetState extends State<SubjectPageWidget> {
   Widget _buildUpcomingTestCard(Map<String, dynamic> test) {
     return InkWell(
       onTap: () {
-         Navigator.pushNamed(context, '/testActive', arguments: {'testId': test['id'], 'testTitle': test['title']});
+         context.push('/testActive', extra: {'testId': test['id'], 'testTitle': test['title']});
       },
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 20.0),

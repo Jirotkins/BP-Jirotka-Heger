@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class SidebarTeacherWidget extends StatefulWidget {
   final String? activePage;
@@ -19,7 +20,7 @@ class _SidebarTeacherWidgetState extends State<SidebarTeacherWidget> {
   @override
   Widget build(BuildContext context) {
     // Získáme přesnou aktuální cestu z navigátoru (např. '/classManager')
-    final currentRoute = ModalRoute.of(context)?.settings.name;
+    final currentRoute = GoRouterState.of(context).uri.path;
 
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
@@ -66,7 +67,7 @@ class _SidebarTeacherWidgetState extends State<SidebarTeacherWidget> {
                             // Kontroluje REÁLNOU cestu. 
                             // Pokud jsme v detailu třídy, pustí nás to zpět na přehled
                             if (currentRoute != '/classOverview') {
-                              Navigator.pushReplacementNamed(context, '/classOverview');
+                              context.go('/classOverview');
                             }
                           },
                         ),
@@ -77,7 +78,7 @@ class _SidebarTeacherWidgetState extends State<SidebarTeacherWidget> {
                           pageKey: 'banks',
                           onTap: () {
                             if (currentRoute != '/bankOverview') {
-                              Navigator.pushReplacementNamed(context, '/bankOverview');
+                              context.go('/bankOverview');
                             }
                           },
                         ),
@@ -88,7 +89,7 @@ class _SidebarTeacherWidgetState extends State<SidebarTeacherWidget> {
                           pageKey: 'settings',
                           onTap: () {
                             if (currentRoute != '/settingsTeacher') {
-                              Navigator.pushReplacementNamed(context, '/settingsTeacher');
+                              context.go('/settingsTeacher');
                             }
                           },
                         ),

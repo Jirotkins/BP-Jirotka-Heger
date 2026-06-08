@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../test_evaluation/test_evaluation_widget.dart';
 import '../../components/active_test_card_widget.dart';
@@ -28,7 +29,7 @@ class _ClassManagerWidgetState extends State<ClassManagerWidget> {
   @override
   Widget build(BuildContext context) {
     // ZÍSKÁNÍ PARAMETRŮ Z NAVIGACE (Přebírá z ClassCardWidget)
-    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final args = GoRouterState.of(context).extra as Map<String, dynamic>?;
     final String className = args?['className'] ?? 'Neznámá třída';
 
     return Column(
@@ -73,13 +74,9 @@ class _ClassManagerWidgetState extends State<ClassManagerWidget> {
             ElevatedButton.icon(
               onPressed: () {
                 // Přesměrování na testEditor s předáním názvu třídy
-                Navigator.pushNamed(
-                  context,
-                  '/testEditor', 
-                  arguments: {
+                context.push('/testEditor', extra: {
                     'targetName': className, 
-                  },
-                );
+                  },);
               },
               icon: const Icon(Icons.post_add, size: 18),
               label: Text(
@@ -170,6 +167,7 @@ class _ClassManagerWidgetState extends State<ClassManagerWidget> {
                   ),
                 ),
 
+
                 const SizedBox(height: 48.0),
                 
                 // --- AKTIVNÍ TESTY ---
@@ -195,12 +193,7 @@ class _ClassManagerWidgetState extends State<ClassManagerWidget> {
                   subtitle: 'Ukončeno: 12. 5. 2025 · 22/29 odevzdalo',
                   onTap: () {
                     // NAVIGACE DO HODNOCENÍ TESTU
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const TestEvaluationWidget(),
-                      ),
-                    );
+                    context.push('/testEvaluation');
                   },
                 ),
                 

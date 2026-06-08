@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../components/page_header_widget.dart';
 import '../../components/next_question_button_widget.dart';
@@ -215,7 +216,7 @@ class _MultiChoiceQuestionWidgetState extends State<MultiChoiceQuestionWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final args = GoRouterState.of(context).extra as Map<String, dynamic>?;
     final String targetName = args?['targetName'] ?? 'Neznámá banka';
 
     return Column(

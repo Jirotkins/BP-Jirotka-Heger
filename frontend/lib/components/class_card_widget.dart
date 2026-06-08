@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class ClassCardWidget extends StatelessWidget {
@@ -111,15 +112,11 @@ class ClassCardWidget extends StatelessWidget {
             width: double.infinity,
             child: ElevatedButton(
               onPressed: () {
-                Navigator.pushNamed(
-                  context, 
-                  '/classManager',
-                  arguments: {
+                context.push('/classManager', extra: {
                     'className': title,
                     'subject': subject,
                     // 'classId': classId
-                  },
-                ); 
+                  },); 
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFEFF6FF),

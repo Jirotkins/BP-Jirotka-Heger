@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../components/page_header_widget.dart';
 import '../../components/question_row_widget.dart';
@@ -25,7 +26,7 @@ class _QuestionsOverviewWidgetState extends State<QuestionsOverviewWidget> {
   @override
   Widget build(BuildContext context) {
     // ZÍSKÁNÍ PARAMETRŮ Z NAVIGACE (Přebírá z BankCardWidget)
-    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final args = GoRouterState.of(context).extra as Map<String, dynamic>?;
     final String bankName = args?['bankName'] ?? 'Neznámá banka';
 
     return Column(
@@ -40,13 +41,9 @@ class _QuestionsOverviewWidgetState extends State<QuestionsOverviewWidget> {
             ElevatedButton.icon(
               onPressed: () {
                 // Přesměrování na tvorbu otázky s předáním názvu banky
-                Navigator.pushNamed(
-                  context, 
-                  '/addNewQuestion',
-                  arguments: {
+                context.push('/addNewQuestion', extra: {
                     'targetName': bankName, 
-                  },
-                );
+                  },);
               },
               icon: const Icon(Icons.add_circle_outline, size: 18),
               label: Text(

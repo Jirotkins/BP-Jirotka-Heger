@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../components/subject_card_widget.dart'; 
 
@@ -180,7 +181,7 @@ class _StudentOverviewWidgetState extends State<StudentOverviewWidget> {
                 onPressed: () {
                   // Otevře ostrý test a předá do něj ID testu, aby si TestActiveWidget
                   // mohl z API (GET /api/tests/{testId}/take) načíst příslušné otázky.
-                  Navigator.pushNamed(context, '/testActive', arguments: {'testId': test['id'], 'testTitle': test['title']});
+                  context.push('/testActive', extra: {'testId': test['id'], 'testTitle': test['title']});
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFDC2626),

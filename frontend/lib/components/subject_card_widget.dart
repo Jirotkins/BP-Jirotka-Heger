@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class SubjectCardWidget extends StatelessWidget {
@@ -54,14 +55,10 @@ class SubjectCardWidget extends StatelessWidget {
     return InkWell(
       onTap: () {
         // Navigace do detailu předmětu s předáním parametrů
-        Navigator.pushNamed(
-          context, 
-          '/subjectPage',
-          arguments: {
+        context.push('/subjectPage', extra: {
             'subjectId': id,
             'subjectName': name,
-          }
-        );
+          });
       },
       borderRadius: BorderRadius.circular(16),
       child: Container(

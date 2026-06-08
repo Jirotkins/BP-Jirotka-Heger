@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../components/page_header_widget.dart';
 import '../../components/bank_select_row_widget.dart';
@@ -52,7 +53,7 @@ class _TestEditorWidgetState extends State<TestEditorWidget> {
   @override
   Widget build(BuildContext context) {
     // ZÍSKÁNÍ DAT Z NAVIGACE (z ClassManagerWidget)
-    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final args = GoRouterState.of(context).extra as Map<String, dynamic>?;
     final String targetClass = args?['targetName'] ?? 'Neznámá třída';
 
     return Column(

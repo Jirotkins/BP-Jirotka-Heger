@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../providers/auth_provider.dart';
 
 // Obrazovka nastavení studentského účtu a aplikace.
 // Umožňuje správu profilu, notifikací, vzhledu a odhlášení.
-class SettingsStudentWidget extends StatefulWidget {
+class SettingsStudentWidget extends ConsumerStatefulWidget {
   const SettingsStudentWidget({super.key});
 
   @override
-  State<SettingsStudentWidget> createState() => _SettingsStudentWidgetState();
+  ConsumerState<SettingsStudentWidget> createState() => _SettingsStudentWidgetState();
 }
 
-class _SettingsStudentWidgetState extends State<SettingsStudentWidget> {
+class _SettingsStudentWidgetState extends ConsumerState<SettingsStudentWidget> {
   final scaffoldKey = GlobalKey<ScaffoldState>();
 
   bool _isEmailNotificationsEnabled = false;
@@ -93,7 +96,7 @@ class _SettingsStudentWidgetState extends State<SettingsStudentWidget> {
                   title: 'Tmavý režim',
                   trailing: Switch(
                     value: _isDarkModeEnabled,
-                    activeColor: const Color(0xFF3D5AF1),
+                    activeThumbColor: const Color(0xFF3D5AF1),
                     onChanged: (val) {
                       setState(() => _isDarkModeEnabled = val);
                     },
@@ -107,7 +110,7 @@ class _SettingsStudentWidgetState extends State<SettingsStudentWidget> {
                   title: 'E-mailová oznámení',
                   trailing: Switch(
                     value: _isEmailNotificationsEnabled,
-                    activeColor: const Color(0xFF3D5AF1),
+                    activeThumbColor: const Color(0xFF3D5AF1),
                     onChanged: (val) {
                       setState(() => _isEmailNotificationsEnabled = val);
                     },
@@ -136,8 +139,8 @@ class _SettingsStudentWidgetState extends State<SettingsStudentWidget> {
                   title: 'Odhlásit se',
                   titleColor: const Color(0xFFFF3B30),
                   showArrow: false,
-                  onTap: () {
-                    Navigator.pushReplacementNamed(context, '/');
+                  onTap: () async {
+                    await ref.read(authProvider.notifier).logout();
                   },
                 ),
               ]),

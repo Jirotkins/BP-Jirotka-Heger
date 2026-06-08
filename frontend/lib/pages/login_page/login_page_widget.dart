@@ -42,7 +42,7 @@ class _LoginPageWidgetState extends ConsumerState<LoginPageWidget> {
     super.dispose();
   }
 
-  // --- HLAVNÍ LOGIKA PŘIHLÁŠENÍ (MOCK VERZE) ---
+  // --- HLAVNÍ LOGIKA PŘIHLÁŠENÍ (NYNÍ S REÁLNÝM API) ---
   Future<void> _handleLogin() async {
     if (_emailController.text.trim().isEmpty || _passwordController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -54,24 +54,26 @@ class _LoginPageWidgetState extends ConsumerState<LoginPageWidget> {
     setState(() => _isLoading = true);
 
     try {
-      // FALEŠNÉ NAČÍTÁNÍ
-      await Future.delayed(const Duration(seconds: 1));
+      // Skutečné volání API přes Riverpod provider
+      await ref.read(authProvider.notifier).login(
+        _emailController.text.trim(),
+        _passwordController.text.trim(),
+        _isStudent,
+      );
 
-      // FALEŠNÝ ÚSPĚŠNÝ LOGIN
       if (!mounted) return;
       
-      // Uložení stavu přihlášení do globálního Riverpod provideru
-      ref.read(authProvider.notifier).login(_isStudent);
-
-      if (!_isStudent) {
-        Navigator.pushReplacementNamed(context, '/classOverview'); 
-      } else {
-        // Přesměruje rovnou na SPA Layout
-        Navigator.pushReplacementNamed(context, '/studentHome');
-      }
+      // Pozn.: Už se nestaráme o Navigator.pushReplacementNamed, 
+      // protože reaktivní widget v main.dart nás automaticky přenese do hlavní aplikace.
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Chyba: $e')));
+      // Zobrazení chybové hlášky, kterou vrátil backend nebo síťová vrstva
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString()), 
+          backgroundColor: Colors.red.shade700,
+        )
+      );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

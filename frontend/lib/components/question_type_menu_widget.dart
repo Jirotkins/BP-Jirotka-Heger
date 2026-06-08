@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class QuestionTypeMenuWidget extends StatelessWidget {
@@ -7,15 +8,14 @@ class QuestionTypeMenuWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // ZÍSKÁNÍ DAT Z PŘEDCHOZÍ STRÁNKY (Z AddNewQuestionWidget)
-    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final args = GoRouterState.of(context).extra as Map<String, dynamic>?;
     final String targetName = args?['targetName'] ?? 'Neznámá banka';
 
     // Pomocná funkce pro navigaci, která rovnou předá název banky dál
     void navigateToEditor(String routeName) {
-      Navigator.pushNamed(
-        context,
+      context.push(
         routeName,
-        arguments: {'targetName': targetName},
+        extra: args,
       );
     }
 

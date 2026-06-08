@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../components/test_submit_popup_widget.dart';
@@ -152,7 +153,7 @@ class _TestActiveWidgetState extends State<TestActiveWidget> {
   @override
   Widget build(BuildContext context) {
     // 1. Zpracování argumentů z navigace
-    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final args = GoRouterState.of(context).extra as Map<String, dynamic>?;
     final String testTitle = args?['testTitle'] ?? 'Biologie - Buňka 1';
 
     // 2. Výpočet pro progress bar
