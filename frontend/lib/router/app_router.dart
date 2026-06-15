@@ -15,10 +15,7 @@ class RouterNotifier extends ChangeNotifier {
   final Ref _ref;
 
   RouterNotifier(this._ref) {
-    _ref.listen<AuthState>(
-      authProvider,
-      (_, __) => notifyListeners(),
-    );
+    _ref.listen<AuthState>(authProvider, (_, __) => notifyListeners());
   }
 }
 
@@ -35,7 +32,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Aktuální stav přihlášení
       final authState = ref.read(authProvider);
       final isLoggingIn = state.uri.path == '/' || state.uri.path == '/login';
-      
+
       // 1. Pokud se stav teprve načítá z paměti, přesměrujeme na /loading
       if (authState.isLoading) {
         return state.uri.path == '/loading' ? null : '/loading';
@@ -48,25 +45,36 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       // 3. Pokud je přihlášený a snaží se jít na login/loading, hodíme ho na dashboard
       if (isLoggingIn || state.uri.path == '/loading') {
-        return authState.role == UserRole.teacher ? '/classOverview' : '/studentHome';
+        return authState.role == UserRole.teacher
+            ? '/classOverview'
+            : '/studentHome';
       }
 
       // 4. Ochrana rolí (Učitel vs Student)
       final teacherRoutes = [
-        '/classOverview', '/classManager', '/bankOverview', '/testEditor',
-        '/testEvaluation', '/settingsTeacher', '/questionsOverview',
-        '/addNewQuestion', '/multiChoiceQuestion', '/openQuestion',
-        '/shortAnswerQuestion', '/connectQuestion', '/orderQuestion'
+        '/classOverview',
+        '/classManager',
+        '/bankOverview',
+        '/testEditor',
+        '/testEvaluation',
+        '/settingsTeacher',
+        '/questionsOverview',
+        '/addNewQuestion',
+        '/multiChoiceQuestion',
+        '/openQuestion',
+        '/shortAnswerQuestion',
+        '/connectQuestion',
+        '/orderQuestion',
       ];
-      final studentRoutes = [
-        '/studentHome', '/subjectPage', '/testActive'
-      ];
+      final studentRoutes = ['/studentHome', '/subjectPage', '/testActive'];
 
-      if (teacherRoutes.contains(state.uri.path) && authState.role != UserRole.teacher) {
+      if (teacherRoutes.contains(state.uri.path) &&
+          authState.role != UserRole.teacher) {
         return '/studentHome'; // Student se snaží na učitelskou
       }
-      
-      if (studentRoutes.contains(state.uri.path) && authState.role != UserRole.student) {
+
+      if (studentRoutes.contains(state.uri.path) &&
+          authState.role != UserRole.student) {
         return '/classOverview'; // Učitel se snaží na studentskou
       }
 
@@ -74,109 +82,85 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
-      GoRoute(
-        path: '/',
-        builder: (context, state) => const LoginPageWidget(),
-      ),
+      GoRoute(path: '/', builder: (context, state) => const LoginPageWidget()),
       GoRoute(
         path: '/loading',
         builder: (context, state) => const Scaffold(
           backgroundColor: Color(0xFFF5F7FA),
-          body: Center(child: CircularProgressIndicator(color: Color(0xFF0056D2))),
+          body: Center(
+            child: CircularProgressIndicator(color: Color(0xFF0056D2)),
+          ),
         ),
       ),
 
-      // --- UČITELSKÉ CESTY ---
-      GoRoute(
-        path: '/classOverview',
-        builder: (context, state) => TeacherMainLayout(
-          activePage: 'classes',
-          child: const ClassOverviewWidget(),
-        ),
-      ),
-      GoRoute(
-        path: '/classManager',
-        builder: (context, state) => TeacherMainLayout(
-          activePage: 'classes',
-          child: const ClassManagerWidget(),
-        ),
-      ),
-      GoRoute(
-        path: '/bankOverview',
-        builder: (context, state) => TeacherMainLayout(
-          activePage: 'banks',
-          child: BankOverviewWidget(),
-        ),
-      ),
-      GoRoute(
-        path: '/testEditor',
-        builder: (context, state) => TeacherMainLayout(
-          activePage: 'classes',
-          child: const TestEditorWidget(),
-        ),
-      ),
-      GoRoute(
-        path: '/testEvaluation',
-        builder: (context, state) => TeacherMainLayout(
-          activePage: 'classes',
-          child: const TestEvaluationWidget(),
-        ),
-      ),
-      GoRoute(
-        path: '/settingsTeacher',
-        builder: (context, state) => TeacherMainLayout(
-          activePage: 'settings',
-          child: const SettingsTeacherWidget(),
-        ),
-      ),
-      GoRoute(
-        path: '/questionsOverview',
-        builder: (context, state) => TeacherMainLayout(
-          activePage: 'banks',
-          child: const QuestionsOverviewWidget(),
-        ),
-      ),
-      GoRoute(
-        path: '/addNewQuestion',
-        builder: (context, state) => TeacherMainLayout(
-          activePage: 'banks',
-          child: const AddNewQuestionWidget(),
-        ),
-      ),
-      GoRoute(
-        path: '/multiChoiceQuestion',
-        builder: (context, state) => TeacherMainLayout(
-          activePage: 'banks',
-          child: const MultiChoiceQuestionWidget(),
-        ),
-      ),
-      GoRoute(
-        path: '/openQuestion',
-        builder: (context, state) => TeacherMainLayout(
-          activePage: 'banks',
-          child: const OpenQuestionWidget(),
-        ),
-      ),
-      GoRoute(
-        path: '/shortAnswerQuestion',
-        builder: (context, state) => TeacherMainLayout(
-          activePage: 'banks',
-          child: const ShortAnswerQuestionWidget(),
-        ),
-      ),
-      GoRoute(
-        path: '/connectQuestion',
-        builder: (context, state) => TeacherMainLayout(
-          activePage: 'banks',
-          child: const ConnectQuestionWidget(),
-        ),
-      ),
-      GoRoute(
-        path: '/orderQuestion',
-        builder: (context, state) => TeacherMainLayout(
-          activePage: 'banks',
-          child: const OrderQuestionWidget(),
-        ),
+      // --- UČITELSKÉ CESTY (SPA Layout) ---
+      ShellRoute(
+        builder: (context, state, child) {
+          // Určení aktivní záložky v menu podle URL
+          String activePage = 'classes';
+          if (state.uri.path.contains('bank') ||
+              state.uri.path.contains('Question')) {
+            activePage = 'banks';
+          } else if (state.uri.path.contains('settingsTeacher')) {
+            activePage = 'settings';
+          }
+
+          return TeacherMainLayout(activePage: activePage, child: child);
+        },
+        routes: [
+          GoRoute(
+            path: '/classOverview',
+            builder: (context, state) => const ClassOverviewWidget(),
+          ),
+          GoRoute(
+            path: '/classManager',
+            builder: (context, state) => const ClassManagerWidget(),
+          ),
+          GoRoute(
+            path: '/bankOverview',
+            builder: (context, state) => BankOverviewWidget(),
+          ),
+          GoRoute(
+            path: '/testEditor',
+            builder: (context, state) => const TestEditorWidget(),
+          ),
+          GoRoute(
+            path: '/testEvaluation',
+            builder: (context, state) => const TestEvaluationWidget(),
+          ),
+          GoRoute(
+            path: '/settingsTeacher',
+            builder: (context, state) => const SettingsTeacherWidget(),
+          ),
+          GoRoute(
+            path: '/questionsOverview',
+            builder: (context, state) => const QuestionsOverviewWidget(),
+          ),
+          GoRoute(
+            path: '/addNewQuestion',
+            builder: (context, state) => const AddNewQuestionWidget(),
+          ),
+          GoRoute(
+            path: '/multiChoiceQuestion',
+            builder: (context, state) => const MultiChoiceQuestionWidget(),
+          ),
+          GoRoute(
+            path: '/openQuestion',
+            builder: (context, state) => const OpenQuestionWidget(),
+          ),
+          GoRoute(
+            path: '/shortAnswerQuestion',
+            builder: (context, state) => const ShortAnswerQuestionWidget(),
+          ),
+          GoRoute(
+            path: '/connectQuestion',
+            builder: (context, state) => const ConnectQuestionWidget(),
+          ),
+          GoRoute(
+            path: '/orderQuestion',
+            builder: (context, state) => const OrderQuestionWidget(),
+          ),
+        ],
       ),
 
       // --- STUDENTSKÉ CESTY ---
@@ -186,11 +170,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/subjectPage',
-        builder: (context, state) => const SubjectPageWidget(), // Případně doplníme předávání parametrů
+        builder: (context, state) =>
+            const SubjectPageWidget(), // Případně doplníme předávání parametrů
       ),
       GoRoute(
         path: '/testActive',
-        builder: (context, state) => const TestActiveWidget(), // Případně doplníme předávání parametrů
+        builder: (context, state) =>
+            const TestActiveWidget(), // Případně doplníme předávání parametrů
       ),
     ],
   );
