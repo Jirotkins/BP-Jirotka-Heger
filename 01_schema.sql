@@ -126,10 +126,14 @@ CREATE TABLE exam_assignments (
     assignment_id SERIAL PRIMARY KEY,
     template_id INT REFERENCES test_templates(template_id) ON DELETE CASCADE,
     group_id INT REFERENCES groups(group_id) ON DELETE CASCADE,
-    activate_from TIMESTAMP,
-    activate_to TIMESTAMP,
-    time_limit_minutes INT, -- Časový limit v minutách (např. 45)
-    access_password VARCHAR(50), -- Volitelné heslo pro spuštění testu
+    activate_from TIMESTAMP,             -- Volitelné: začátek časového okna
+    activate_to TIMESTAMP,               -- Volitelné: konec časového okna
+    -- is_active: ruční přepínač učitele.
+    -- Test je dostupný POUZE pokud is_active = TRUE a (žádné časy NEBO now je v okně).
+    -- DEFAULT FALSE = test čeká na explicitní aktivaci nebo naplánování.
+    is_active BOOLEAN DEFAULT FALSE,
+    time_limit_minutes INT,              -- Časový limit v minutách (např. 45)
+    access_password VARCHAR(50),         -- Volitelné heslo pro spuštění testu
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -152,3 +156,10 @@ CREATE TABLE student_attempts (
     status attempt_status DEFAULT 'STARTED',
     teacher_note TEXT
 );
+
+-- ============================================================
+-- MIGRACE: Spustit na existující DB (nemaže data)
+-- ============================================================
+-- ALTER TABLE exam_assignments
+--     ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT FALSE;
+-- ============================================================

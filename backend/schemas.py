@@ -224,13 +224,18 @@ class QuestionResponse(BaseModel):
 # --- Exam Assignment Schemas (Phase 1) ---
 
 class ExamAssignmentCreate(BaseModel):
-    """Schema pro vytvoření přiřazení testu skupině"""
+    """Schema pro vytvoření přiřazení testu skupině.
+
+    Dva režimy:
+    - Naplánovaný test: vyplnit activate_from + activate_to → is_active se nastaví na True automaticky
+    - Manuální test:    nechat časy prázdné → is_active = False, spustit ručně přes /activate
+    """
     template_id: int
-    activate_from: str  # ISO datetime: "2024-04-27T10:00:00Z"
-    activate_to: str    # ISO datetime
-    time_limit_minutes: int = None
-    access_password: str = None
-    
+    activate_from: str | None = None  # ISO datetime: "2024-04-27T10:00:00Z"
+    activate_to: str | None = None    # ISO datetime
+    time_limit_minutes: int | None = None
+    access_password: str | None = None
+
     @field_validator('time_limit_minutes')
     @classmethod
     def validate_time_limit(cls, v):
@@ -238,13 +243,34 @@ class ExamAssignmentCreate(BaseModel):
             raise ValueError("Čas limit musí být alespoň 1 minuta")
         return v
 
+    @field_validator('activate_to')
+    @classmethod
+    def validate_time_window(cls, v, info):
+        """Pokud jsou zadány oba časy, activate_from musí být dřív než activate_to."""
+        activate_from = info.data.get('activate_from')
+        if v is not None and activate_from is not None:
+            from datetime import datetime
+            try:
+                dt_from = datetime.fromisoformat(activate_from.replace('Z', '+00:00'))
+                dt_to = datetime.fromisoformat(v.replace('Z', '+00:00'))
+                if dt_from >= dt_to:
+                    raise ValueError("activate_from musí být dřív než activate_to")
+            except ValueError as e:
+                raise e
+        return v
+
 
 class ExamAssignmentUpdate(BaseModel):
-    """Schema pro update přiřazení testu"""
-    activate_from: str = None
-    activate_to: str = None
-    time_limit_minutes: int = None
-    access_password: str = None
+    """Schema pro update přiřazení testu.
+
+    Všechna pole jsou volitelná – posílej jen to, co chceš změnit.
+    Ke změně is_active použij dedikované endpointy /activate a /deactivate.
+    """
+    activate_from: str | None = None
+    activate_to: str | None = None
+    time_limit_minutes: int | None = None
+    access_password: str | None = None
+    is_active: bool | None = None
 
 
 class ExamAssignmentResponse(BaseModel):
@@ -252,12 +278,13 @@ class ExamAssignmentResponse(BaseModel):
     assignment_id: int
     template_id: int
     group_id: int
-    activate_from: str
-    activate_to: str
-    time_limit_minutes: int = None
-    access_password: str = None
+    activate_from: str | None = None
+    activate_to: str | None = None
+    is_active: bool
+    time_limit_minutes: int | None = None
+    access_password: str | None = None
     created_at: str
-    
+
     class Config:
         from_attributes = True
 

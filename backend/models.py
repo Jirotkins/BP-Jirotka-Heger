@@ -165,8 +165,11 @@ class ExamAssignment(Base):
     assignment_id = Column(Integer, primary_key=True, index=True)
     template_id = Column(Integer, ForeignKey("test_templates.template_id"))
     group_id = Column(Integer, ForeignKey("groups.group_id"))
-    activate_from = Column(DateTime(timezone=True))
-    activate_to = Column(DateTime(timezone=True))
+    activate_from = Column(DateTime(timezone=True), nullable=True)   # Volitelné: začátek časového okna
+    activate_to = Column(DateTime(timezone=True), nullable=True)     # Volitelné: konec časového okna
+    # Ruční přepínač učitele. Test je dostupný POUZE pokud is_active=True
+    # a (žádné časy NEBO now je v časovém okně).
+    is_active = Column(Boolean, default=False)
     time_limit_minutes = Column(Integer)
     access_password = Column(String)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

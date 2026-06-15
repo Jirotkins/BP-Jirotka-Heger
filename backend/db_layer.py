@@ -441,30 +441,35 @@ def get_teacher_test_templates(db: Session, teacher_id: int):
 
 # --- Exam Assignment Functions (Phase 1) ---
 
-def create_exam_assignment(db: Session, teacher_id: int, group_id: int, template_id: int, 
-                          activate_from: str, activate_to: str, time_limit_minutes: int = None,
-                          access_password: str = None):
-    """Vytvoří nové přiřazení testu skupině
-    
+def create_exam_assignment(db: Session, teacher_id: int, group_id: int, template_id: int,
+                          activate_from: str = None, activate_to: str = None,
+                          time_limit_minutes: int = None, access_password: str = None):
+    """Vytvoří nové přiřazení testu skupině.
+
+    Dva režimy:
+    - Naplánovaný: zadej activate_from + activate_to → is_active = True automaticky.
+      Test se stane dostupným až když nastane čas (ověřuje se při každém requestu).
+    - Manuální: bez časů → is_active = False. Učitel spustí ručně přes /activate.
+
     Args:
         db: Database session
         teacher_id: ID učitele (vlastníka testu)
         group_id: ID skupiny
         template_id: ID šablony testu
-        activate_from: ISO datetime string - kdy se test otevře
-        activate_to: ISO datetime string - kdy se test zavře
+        activate_from: ISO datetime string - kdy se test otevře (volitelné)
+        activate_to: ISO datetime string - kdy se test zavře (volitelné)
         time_limit_minutes: Maximální čas na test (volitelné)
         access_password: Heslo pro přístup k testu (volitelné)
-    
+
     Returns:
         ExamAssignment model instance
-    
+
     Raises:
         ValueError: Pokud nejsou splněny podmínky
     """
     from models import ExamAssignment
     from datetime import datetime
-    
+
     # Ověř, že grupa patří učiteli
     group = db.query(Group).filter(
         Group.group_id == group_id,
@@ -472,7 +477,7 @@ def create_exam_assignment(db: Session, teacher_id: int, group_id: int, template
     ).first()
     if not group:
         raise ValueError(f"Skupina s ID {group_id} neexistuje nebo nepatří vám")
-    
+
     # Ověř, že šablona patří učiteli
     template = db.query(TestTemplate).filter(
         TestTemplate.template_id == template_id,
@@ -480,31 +485,42 @@ def create_exam_assignment(db: Session, teacher_id: int, group_id: int, template
     ).first()
     if not template:
         raise ValueError(f"Šablona testu s ID {template_id} neexistuje nebo nepatří vám")
-    
-    # Parsuj datumy
-    try:
-        activate_from_dt = datetime.fromisoformat(activate_from.replace('Z', '+00:00'))
-        activate_to_dt = datetime.fromisoformat(activate_to.replace('Z', '+00:00'))
-    except:
-        raise ValueError("Neplatný formát data - použijte ISO format (2024-04-27T10:00:00Z)")
-    
-    if activate_from_dt >= activate_to_dt:
-        raise ValueError("Čas otevření musí být dřív než čas zavření")
-    
+
+    # Parsuj datumy (pokud jsou zadány)
+    activate_from_dt = None
+    activate_to_dt = None
+
+    if activate_from is not None and activate_to is not None:
+        try:
+            activate_from_dt = datetime.fromisoformat(activate_from.replace('Z', '+00:00'))
+            activate_to_dt = datetime.fromisoformat(activate_to.replace('Z', '+00:00'))
+        except Exception:
+            raise ValueError("Neplatný formát data - použijte ISO format (2024-04-27T10:00:00Z)")
+
+        if activate_from_dt >= activate_to_dt:
+            raise ValueError("Čas otevření musí být dřív než čas zavření")
+    elif activate_from is not None or activate_to is not None:
+        raise ValueError("Musí být zadány oba časy (activate_from i activate_to) nebo žádný")
+
+    # Test s časy = napánovaný → is_active = True (stane se dostupným až v okně)
+    # Test bez časů = manuální → is_active = False (spustí učitel ručně)
+    is_active = activate_from_dt is not None
+
     # Vytvoř přiřazení
     new_assignment = ExamAssignment(
         template_id=template_id,
         group_id=group_id,
         activate_from=activate_from_dt,
         activate_to=activate_to_dt,
+        is_active=is_active,
         time_limit_minutes=time_limit_minutes,
         access_password=access_password
     )
-    
+
     db.add(new_assignment)
     db.commit()
     db.refresh(new_assignment)
-    
+
     return new_assignment
 
 
@@ -575,36 +591,41 @@ def get_assignment_details(db: Session, assignment_id: int, teacher_id: int):
 
 
 def update_assignment(db: Session, assignment_id: int, teacher_id: int, update_data: dict):
-    """Upraví přiřazení testu
-    
+    """Upraví přiřazení testu.
+
     Args:
         db: Database session
         assignment_id: ID přiřazení
         teacher_id: ID učitele
-        update_data: Dictionary s novými hodnotami (activate_from, activate_to, time_limit_minutes, access_password)
-    
+        update_data: Dictionary s novými hodnotami
+            (activate_from, activate_to, time_limit_minutes, access_password, is_active)
+
     Returns:
         Updated ExamAssignment instance
     """
     from models import ExamAssignment
     from datetime import datetime
-    
+
     # Ověř vlastnictví
     assignment = get_assignment_details(db, assignment_id, teacher_id)
-    
-    # Updatuj pole
+
+    # Updatuj časové pole
     if 'activate_from' in update_data and update_data['activate_from']:
         assignment.activate_from = datetime.fromisoformat(update_data['activate_from'].replace('Z', '+00:00'))
-    
+
     if 'activate_to' in update_data and update_data['activate_to']:
         assignment.activate_to = datetime.fromisoformat(update_data['activate_to'].replace('Z', '+00:00'))
-    
+
     if 'time_limit_minutes' in update_data and update_data['time_limit_minutes'] is not None:
         assignment.time_limit_minutes = update_data['time_limit_minutes']
-    
+
     if 'access_password' in update_data:
         assignment.access_password = update_data['access_password']
-    
+
+    # is_active lze měnit přímo přes PUT (případně přes /activate a /deactivate)
+    if 'is_active' in update_data and update_data['is_active'] is not None:
+        assignment.is_active = update_data['is_active']
+
     db.commit()
     db.refresh(assignment)
     
@@ -967,3 +988,160 @@ def add_template_question(db: Session, template_id: int, question_id: int, teach
     
     return new_template_question
 
+
+# --- Groups with stats (bod 2) ---
+
+def get_teacher_groups_with_stats(db: Session, teacher_id: int) -> list:
+    """Získá všechny skupiny učitele obohacené o statistiky.
+
+    Pro každou skupinu vrací:
+    - student_count           -- počet studentů ve skupině
+    - active_assignment_count -- počet přiřazení probíhajících právě teď
+    - pending_grade_count     -- počet pokusů se statusem SUBMITTED čekajících na opravu
+
+    Args:
+        db: Database session
+        teacher_id: ID učitele
+
+    Returns:
+        List of dict se všemi poli skupiny + statistiky
+    """
+    from datetime import datetime
+    from models import ExamAssignment, StudentAttempt, AttemptStatus
+
+    # PostgreSQL ukládá TIMESTAMP bez timezone -> používáme naive UTC
+    now = datetime.utcnow()
+
+    groups = db.query(Group).filter(Group.teacher_id == teacher_id).all()
+
+    result = []
+    for group in groups:
+        assignments = db.query(ExamAssignment).filter(
+            ExamAssignment.group_id == group.group_id
+        ).all()
+
+        active_assignment_count = sum(
+            1 for a in assignments
+            if a.is_active
+            and a.activate_from is not None
+            and a.activate_to is not None
+            and a.activate_from <= now <= a.activate_to
+            or (
+                a.is_active
+                and a.activate_from is None
+                and a.activate_to is None
+            )
+        )
+
+        assignment_ids = [a.assignment_id for a in assignments]
+        if assignment_ids:
+            pending_grade_count = db.query(StudentAttempt).filter(
+                StudentAttempt.assignment_id.in_(assignment_ids),
+                StudentAttempt.status == AttemptStatus.SUBMITTED
+            ).count()
+        else:
+            pending_grade_count = 0
+
+        result.append({
+            "group_id": group.group_id,
+            "name": group.name,
+            "description": group.description,
+            "created_at": group.created_at,
+            "student_count": len(group.students),
+            "active_assignment_count": active_assignment_count,
+            "pending_grade_count": pending_grade_count,
+        })
+
+    return result
+
+
+# --- Exam assignments overview (bod 3) ---
+
+def get_group_assignments_overview(db: Session, group_id: int, teacher_id: int) -> dict:
+    """Vrátí přehled přiřazení testů pro skupinu rozdělený na aktivní / nadcházející / dokončené.
+
+    Každé přiřazení je obohaceno o:
+    - template_name   -- název šablony testu
+    - submitted_count -- počet pokusů se statusem SUBMITTED nebo GRADED
+    - total_students  -- celkový počet studentů ve skupině
+
+    Kategorizace podle aktuálního UTC času:
+    - active:   activate_from <= now <= activate_to
+    - upcoming: activate_from > now
+    - finished: activate_to < now
+
+    Args:
+        db: Database session
+        group_id: ID skupiny
+        teacher_id: ID učitele (pro ověření vlastnictví)
+
+    Returns:
+        Dict s klíči group_id, active, upcoming, finished
+
+    Raises:
+        ValueError: Pokud skupina nepatří učiteli
+    """
+    from datetime import datetime
+    from models import ExamAssignment, StudentAttempt, AttemptStatus, TestTemplate
+
+    group = db.query(Group).filter(
+        Group.group_id == group_id,
+        Group.teacher_id == teacher_id
+    ).first()
+    if not group:
+        raise ValueError("Skupina neexistuje nebo nepatří vám")
+
+    total_students = len(group.students)
+    # PostgreSQL ukládá TIMESTAMP bez timezone -> používáme naive UTC
+    now = datetime.utcnow()
+
+    assignments = db.query(ExamAssignment).filter(
+        ExamAssignment.group_id == group_id
+    ).all()
+
+    active = []
+    upcoming = []
+    finished = []
+
+    for a in assignments:
+        template = db.query(TestTemplate).filter(
+            TestTemplate.template_id == a.template_id
+        ).first()
+        template_name = template.name if template else None
+
+        submitted_count = db.query(StudentAttempt).filter(
+            StudentAttempt.assignment_id == a.assignment_id,
+            StudentAttempt.status.in_([AttemptStatus.SUBMITTED, AttemptStatus.GRADED])
+        ).count()
+
+        entry = {
+            "assignment_id": a.assignment_id,
+            "template_name": template_name,
+            "activate_from": a.activate_from.isoformat() if a.activate_from else None,
+            "activate_to": a.activate_to.isoformat() if a.activate_to else None,
+            "is_active": a.is_active,
+            "time_limit_minutes": a.time_limit_minutes,
+            "submitted_count": submitted_count,
+            "total_students": total_students,
+        }
+
+        # Test je "aktivní" pokud is_active=True a je v časovém okně (nebo bez časů)
+        is_live = a.is_active and (
+            (a.activate_from is None and a.activate_to is None)
+            or (a.activate_from is not None and a.activate_to is not None
+                and a.activate_from <= now <= a.activate_to)
+        )
+
+        if is_live:
+            active.append(entry)
+        elif a.activate_to is not None and a.activate_to < now:
+            finished.append(entry)
+        else:
+            upcoming.append(entry)
+
+    return {
+        "group_id": group_id,
+        "active": active,
+        "upcoming": upcoming,
+        "finished": finished,
+    }
