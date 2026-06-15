@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class ClassCardWidget extends StatelessWidget {
-  // final String classId;
+  final int groupId;
   final String title;
   final String subject;
   final int studentCount;
@@ -13,7 +13,7 @@ class ClassCardWidget extends StatelessWidget {
 
   const ClassCardWidget({
     super.key,
-    // required this.classId
+    required this.groupId,
     required this.title,
     required this.subject,
     required this.studentCount,
@@ -115,7 +115,7 @@ class ClassCardWidget extends StatelessWidget {
                 context.push('/classManager', extra: {
                     'className': title,
                     'subject': subject,
-                    // 'classId': classId
+                    'groupId': groupId,
                   },); 
               },
               style: ElevatedButton.styleFrom(
