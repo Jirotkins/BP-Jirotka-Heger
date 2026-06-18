@@ -22,13 +22,8 @@ class _ClassManagerWidgetState extends ConsumerState<ClassManagerWidget> {
   bool _isLoading = true;
   String? _errorMessage;
   Map<String, dynamic>? _overviewData;
+  List<dynamic> _studentsData = [];
   int? _lastGroupId;
-
-  final List<Map<String, dynamic>> _mockStudents = [
-    {'id': 1000, 'name': 'Jana Nováková'},
-    {'id': 1001, 'name': 'Tomáš Kovář'},
-    {'id': 1002, 'name': 'Karel Vratný'},
-  ];
 
   @override
   void didChangeDependencies() {
@@ -55,9 +50,15 @@ class _ClassManagerWidgetState extends ConsumerState<ClassManagerWidget> {
       });
       try {
         final apiClient = ref.read(apiClientProvider);
-        final data = await apiClient.get('/groups/$groupId/exam-assignments/overview');
+        // Spustíme oba požadavky paralelně
+        final results = await Future.wait([
+          apiClient.get('/groups/$groupId/exam-assignments/overview'),
+          apiClient.get('/groups/$groupId/students'),
+        ]);
+        
         setState(() {
-          _overviewData = data;
+          _overviewData = results[0];
+          _studentsData = results[1] as List<dynamic>? ?? [];
           _isLoading = false;
         });
       } catch (e) {
@@ -82,16 +83,21 @@ class _ClassManagerWidgetState extends ConsumerState<ClassManagerWidget> {
           actions: [
             ElevatedButton.icon(
               onPressed: () {
-                showDialog(
-                  context: context,
-                  barrierColor: Colors.black54,
-                  builder: (dialogContext) => const Dialog(
-                    elevation: 0,
-                    backgroundColor: Colors.transparent,
-                    insetPadding: EdgeInsets.zero,
-                    child: AddNewStudentsPopupWidget(),
-                  ),
-                );
+                if (_lastGroupId != null) {
+                  showDialog(
+                    context: context,
+                    barrierColor: Colors.black54,
+                    builder: (dialogContext) => Dialog(
+                      elevation: 0,
+                      backgroundColor: Colors.transparent,
+                      insetPadding: EdgeInsets.zero,
+                      child: AddNewStudentsPopupWidget(
+                        groupId: _lastGroupId!,
+                        onSuccess: () => _fetchData(_lastGroupId!),
+                      ),
+                    ),
+                  );
+                }
               },
               icon: const Icon(Icons.add_circle_outline, size: 18),
               label: Text('Přidat studenty', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14)),
@@ -175,7 +181,7 @@ class _ClassManagerWidgetState extends ConsumerState<ClassManagerWidget> {
                       width: 24, height: 24,
                       decoration: const BoxDecoration(color: Color(0xFF0056D2), shape: BoxShape.circle),
                       alignment: Alignment.center,
-                      child: Text(_mockStudents.length.toString(), style: GoogleFonts.inter(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                      child: Text(_studentsData.length.toString(), style: GoogleFonts.inter(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
                     ),
                   ],
                 ),
@@ -184,21 +190,29 @@ class _ClassManagerWidgetState extends ConsumerState<ClassManagerWidget> {
                   child: Text('Rozklikněte pro rozbalení seznamu studentů', style: GoogleFonts.inter(color: const Color(0xFF9CA3AF), fontSize: 12)),
                 ),
                 children: [
-                  ListView.separated(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: _mockStudents.length,
-                    separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFFF3F4F6), indent: 20, endIndent: 20),
-                    itemBuilder: (context, index) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                        child: StudentRowWidget(
-                          id: _mockStudents[index]['id'],
-                          studentName: _mockStudents[index]['name'],
-                        ),
-                      );
-                    },
-                  ),
+                  if (_studentsData.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Text('Zatím nejsou přidáni žádní studenti.', style: GoogleFonts.inter(color: Colors.grey)),
+                    )
+                  else
+                    ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: _studentsData.length,
+                      separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFFF3F4F6), indent: 20, endIndent: 20),
+                      itemBuilder: (context, index) {
+                        final student = _studentsData[index];
+                        // Backend vrací např. email, user_id
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                          child: StudentRowWidget(
+                            id: student['user_id'] ?? 0,
+                            studentName: student['email'] ?? 'Neznámý student',
+                          ),
+                        );
+                      },
+                    ),
                 ],
               ),
             ),

@@ -1,23 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../services/api_client.dart';
 
-class AddNewClassPopupWidget extends StatefulWidget {
-  const AddNewClassPopupWidget({super.key});
+class AddNewClassPopupWidget extends ConsumerStatefulWidget {
+  final VoidCallback? onSuccess;
+
+  const AddNewClassPopupWidget({super.key, this.onSuccess});
 
   @override
-  State<AddNewClassPopupWidget> createState() => _AddNewClassPopupWidgetState();
+  ConsumerState<AddNewClassPopupWidget> createState() => _AddNewClassPopupWidgetState();
 }
 
-class _AddNewClassPopupWidgetState extends State<AddNewClassPopupWidget> {
-  // Ovladače pro textová pole
+class _AddNewClassPopupWidgetState extends ConsumerState<AddNewClassPopupWidget> {
   late TextEditingController _nameController;
   late FocusNode _nameFocusNode;
   late TextEditingController _subjectController;
   late FocusNode _subjectFocusNode;
 
-  // Index vybrané ikony (výchozí 0)
   int _selectedIconIndex = 0;
+  bool _isSaving = false;
+  String? _errorMessage;
 
-  // Seznam ikon pro výběr
   final List<IconData> _availableIcons = [
     Icons.menu_book_outlined,
     Icons.calculate_outlined,
@@ -44,6 +47,40 @@ class _AddNewClassPopupWidgetState extends State<AddNewClassPopupWidget> {
     super.dispose();
   }
 
+  Future<void> _saveClass() async {
+    if (_nameController.text.trim().isEmpty) {
+      setState(() => _errorMessage = 'Název třídy je povinný.');
+      return;
+    }
+
+    setState(() {
+      _isSaving = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      
+      // Voláme API POST /groups
+      await apiClient.post('/groups', {
+        'name': _nameController.text.trim(),
+        'description': _subjectController.text.trim().isEmpty 
+            ? 'Předmět neuveden' 
+            : _subjectController.text.trim(),
+      });
+      
+      if (mounted) {
+        Navigator.of(context).pop();
+        widget.onSuccess?.call(); // Upozorníme nadřazený widget na úspěch
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Chyba: ${e.toString()}';
+        _isSaving = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -57,33 +94,34 @@ class _AddNewClassPopupWidgetState extends State<AddNewClassPopupWidget> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // NADPIS
           const Text(
             'Přidat novou třídu',
             textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 20.0,
-              fontWeight: FontWeight.w800,
-              color: Colors.black87,
-            ),
+            style: TextStyle(fontSize: 20.0, fontWeight: FontWeight.w800, color: Colors.black87),
           ),
           const SizedBox(height: 24.0),
 
-          // VSTUP: NÁZEV TŘÍDY
+          if (_errorMessage != null) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(color: Colors.red.shade50, borderRadius: BorderRadius.circular(8)),
+              child: Text(_errorMessage!, style: const TextStyle(color: Colors.red, fontSize: 13)),
+            ),
+            const SizedBox(height: 16.0),
+          ],
+
           _buildInputLabel('Název'),
           const SizedBox(height: 6.0),
-          _buildTextField(_nameController, _nameFocusNode, 'Zadejte název'),
+          _buildTextField(_nameController, _nameFocusNode, 'Zadejte název (např. 1.A)'),
           
           const SizedBox(height: 16.0),
 
-          // VSTUP: PŘEDMĚT
           _buildInputLabel('Předmět'),
           const SizedBox(height: 6.0),
-          _buildTextField(_subjectController, _subjectFocusNode, 'Zadejte předmět'),
+          _buildTextField(_subjectController, _subjectFocusNode, 'Zadejte předmět (volitelné)'),
 
           const SizedBox(height: 16.0),
 
-          // VÝBĚR IKONY
           _buildInputLabel('Vyberte ikonu'),
           const SizedBox(height: 10.0),
           Row(
@@ -116,12 +154,11 @@ class _AddNewClassPopupWidgetState extends State<AddNewClassPopupWidget> {
           ),
           const SizedBox(height: 32.0),
 
-          // TLAČÍTKA
           Row(
             children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: () => Navigator.of(context).pop(),
+                  onPressed: _isSaving ? null : () => Navigator.of(context).pop(),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16.0),
                     side: BorderSide(color: Colors.grey.shade300),
@@ -133,17 +170,16 @@ class _AddNewClassPopupWidgetState extends State<AddNewClassPopupWidget> {
               const SizedBox(width: 12.0),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () {
-                    print('Třída ${_nameController.text} uložena!');
-                    Navigator.of(context).pop();
-                  },
+                  onPressed: _isSaving ? null : _saveClass,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF0056D2),
                     padding: const EdgeInsets.symmetric(vertical: 16.0),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22.0)),
                     elevation: 0,
                   ),
-                  child: const Text('Uložit', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  child: _isSaving
+                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      : const Text('Uložit', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                 ),
               ),
             ],
@@ -153,18 +189,15 @@ class _AddNewClassPopupWidgetState extends State<AddNewClassPopupWidget> {
     );
   }
 
-  // Pomocné metody pro čistší build metodu
   Widget _buildInputLabel(String label) {
-    return Text(
-      label,
-      style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.w600, fontSize: 13.0),
-    );
+    return Text(label, style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.w600, fontSize: 13.0));
   }
 
   Widget _buildTextField(TextEditingController controller, FocusNode focusNode, String hint) {
     return TextFormField(
       controller: controller,
       focusNode: focusNode,
+      enabled: !_isSaving,
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: const TextStyle(color: Colors.grey, fontSize: 14.0),

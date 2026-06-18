@@ -61,11 +61,15 @@ class _ClassOverviewWidgetState extends ConsumerState<ClassOverviewWidget> {
                 showDialog(
                   context: context,
                   barrierColor: Colors.black54,
-                  builder: (dialogContext) => const Dialog(
+                  builder: (dialogContext) => Dialog(
                     elevation: 0,
                     backgroundColor: Colors.transparent,
                     insetPadding: EdgeInsets.zero,
-                    child: AddNewClassPopupWidget(),
+                    child: AddNewClassPopupWidget(
+                      onSuccess: () {
+                        _fetchGroups();
+                      },
+                    ),
                   ),
                 );
               },
