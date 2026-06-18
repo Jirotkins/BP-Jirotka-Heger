@@ -22,8 +22,8 @@ class _BankSelectRowWidgetState extends State<BankSelectRowWidget> {
 
   @override
   Widget build(BuildContext context) {
-    const Color primaryBlue = Color(0xFF3D5AF1);
-    const Color lightBlueBg = Color(0xFFF0F4FA);
+    final Color primaryBlue = Theme.of(context).colorScheme.primary;
+    final Color lightBlueBg = Theme.of(context).colorScheme.primaryContainer;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
@@ -37,11 +37,11 @@ class _BankSelectRowWidgetState extends State<BankSelectRowWidget> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           decoration: BoxDecoration(
-            color: _isSelected ? lightBlueBg : Colors.grey.shade50,
-            borderRadius: BorderRadius.circular(16.0),
+            color: _isSelected ? lightBlueBg : Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(12.0),
             border: Border.all(
-              color: _isSelected ? primaryBlue : Colors.grey.shade200,
-              width: 1.5,
+              color: _isSelected ? primaryBlue : Theme.of(context).colorScheme.outline,
+              width: _isSelected ? 2.0 : 1.0,
             ),
           ),
           padding: const EdgeInsets.all(12.0),
@@ -49,10 +49,10 @@ class _BankSelectRowWidgetState extends State<BankSelectRowWidget> {
             children: [
               // IKONA BANKY
               Container(
-                width: 36.0,
-                height: 36.0,
+                width: 42.0,
+                height: 42.0,
                 decoration: BoxDecoration(
-                  color: primaryBlue,
+                  color: Theme.of(context).colorScheme.primaryContainer,
                   borderRadius: BorderRadius.circular(8.0),
                 ),
                 alignment: Alignment.center,
@@ -65,9 +65,9 @@ class _BankSelectRowWidgetState extends State<BankSelectRowWidget> {
                 width: 80.0,
                 child: Text(
                   '${widget.questions} otázek',
-                  style: const TextStyle(
-                    color: Colors.grey,
-                    fontSize: 12.0,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.secondary,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
@@ -79,7 +79,7 @@ class _BankSelectRowWidgetState extends State<BankSelectRowWidget> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: Colors.black87,
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontWeight: _isSelected ? FontWeight.bold : FontWeight.w500,
                     fontSize: 14.0,
                   ),
@@ -88,9 +88,9 @@ class _BankSelectRowWidgetState extends State<BankSelectRowWidget> {
 
               // INDIKÁTOR VÝBĚRU (Fajfka)
               if (_isSelected)
-                const Icon(Icons.check_circle_rounded, color: primaryBlue, size: 24.0)
+                Icon(Icons.check_circle_rounded, color: primaryBlue, size: 24.0)
               else
-                Icon(Icons.radio_button_unchecked_rounded, color: Colors.grey.shade300, size: 24.0),
+                Icon(Icons.radio_button_unchecked_rounded, color: Theme.of(context).colorScheme.outline, size: 24.0),
             ],
           ),
         ),

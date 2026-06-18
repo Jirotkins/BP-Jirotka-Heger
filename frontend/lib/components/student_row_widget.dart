@@ -17,7 +17,7 @@ class StudentRowWidget extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Colors.transparent,
           borderRadius: BorderRadius.circular(12.0),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
@@ -28,8 +28,8 @@ class StudentRowWidget extends StatelessWidget {
               width: 45.0,
               child: Text(
                 id.toString(),
-                style: const TextStyle(
-                  color: Colors.grey,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.secondary,
                   fontWeight: FontWeight.w600,
                   fontSize: 13.0,
                 ),
@@ -42,10 +42,10 @@ class StudentRowWidget extends StatelessWidget {
                 studentName,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.w500,
                   fontSize: 14.0,
-                  color: Colors.black87,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
             ),
@@ -56,7 +56,7 @@ class StudentRowWidget extends StatelessWidget {
               children: [
                 // Tlačítko Upravit
                 IconButton(
-                  icon: const Icon(Icons.edit_outlined, color: Color(0xFF3D5AF1), size: 18.0),
+                  icon: Icon(Icons.edit_outlined, color: Theme.of(context).colorScheme.primary, size: 18.0),
                   onPressed: () => print('Upravit studenta: $studentName'),
                   constraints: const BoxConstraints(),
                   padding: const EdgeInsets.all(8.0),
@@ -64,7 +64,7 @@ class StudentRowWidget extends StatelessWidget {
                 ),
                 // Tlačítko Smazat
                 IconButton(
-                  icon: const Icon(Icons.delete_outline, color: Colors.red, size: 18.0),
+                  icon: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error, size: 18.0),
                   onPressed: () => print('Smazat studenta: $id'),
                   constraints: const BoxConstraints(),
                   padding: const EdgeInsets.all(8.0),

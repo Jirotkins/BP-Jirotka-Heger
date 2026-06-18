@@ -17,17 +17,17 @@ class PageHeaderWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16.0)),
         
         border: Border.all(
-          color: const Color(0xFFE5E7EB), 
+          color: Theme.of(context).colorScheme.outline, 
           width: 1.0,
         ),
         
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -52,7 +52,7 @@ class PageHeaderWidget extends StatelessWidget {
                     fontWeight: FontWeight.w800, 
                     letterSpacing: -0.5,
                     height: 1.1, 
-                    color: const Color(0xFF1A1A2E), 
+                    color: Theme.of(context).colorScheme.onSurface, 
                   ),
                 ),
                 if (subtitle != null) ...[
@@ -61,7 +61,7 @@ class PageHeaderWidget extends StatelessWidget {
                     subtitle!,
                     style: GoogleFonts.inter(
                       fontSize: 14.0,
-                      color: Colors.grey.shade600,
+                      color: Theme.of(context).colorScheme.secondary,
                       fontWeight: FontWeight.w500,
                       height: 1.1,
                     ),

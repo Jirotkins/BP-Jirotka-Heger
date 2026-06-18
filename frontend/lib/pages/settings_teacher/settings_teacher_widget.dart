@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../components/page_header_widget.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/theme_provider.dart';
 
 class SettingsTeacherWidget extends ConsumerStatefulWidget {
   const SettingsTeacherWidget({super.key});
@@ -13,10 +14,12 @@ class SettingsTeacherWidget extends ConsumerStatefulWidget {
 class _SettingsTeacherWidgetState extends ConsumerState<SettingsTeacherWidget> {
   // Lokální stavy pro přepínače
   bool _isEmailNotificationsEnabled = false;
-  bool _isDarkModeEnabled = false;
 
   @override
   Widget build(BuildContext context) {
+    final currentTheme = ref.watch(themeProvider);
+    final isDark = currentTheme == ThemeMode.dark;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -61,7 +64,7 @@ class _SettingsTeacherWidgetState extends ConsumerState<SettingsTeacherWidget> {
                     title: 'E-mailová oznámení',
                     trailing: Switch(
                       value: _isEmailNotificationsEnabled,
-                      activeThumbColor: const Color(0xFF3D5AF1),
+                      activeThumbColor: Theme.of(context).colorScheme.primary,
                       onChanged: (val) => setState(() => _isEmailNotificationsEnabled = val),
                     ),
                   ),
@@ -70,9 +73,11 @@ class _SettingsTeacherWidgetState extends ConsumerState<SettingsTeacherWidget> {
                     icon: Icons.dark_mode_outlined,
                     title: 'Tmavý režim',
                     trailing: Switch(
-                      value: _isDarkModeEnabled,
-                      activeThumbColor: const Color(0xFF3D5AF1),
-                      onChanged: (val) => setState(() => _isDarkModeEnabled = val),
+                      value: isDark,
+                      activeThumbColor: Theme.of(context).colorScheme.primary,
+                      onChanged: (val) {
+                        ref.read(themeProvider.notifier).toggleTheme();
+                      },
                     ),
                   ),
                 ]),
@@ -93,8 +98,8 @@ class _SettingsTeacherWidgetState extends ConsumerState<SettingsTeacherWidget> {
                   _buildSettingsItem(
                     icon: Icons.logout,
                     title: 'Odhlásit se',
-                    titleColor: Colors.red,
-                    iconColor: Colors.red,
+                    titleColor: Theme.of(context).colorScheme.error,
+                    iconColor: Theme.of(context).colorScheme.error,
                     showArrow: false,
                     onTap: () async {
                       await ref.read(authProvider.notifier).logout();
@@ -116,8 +121,8 @@ class _SettingsTeacherWidgetState extends ConsumerState<SettingsTeacherWidget> {
       padding: const EdgeInsets.only(left: 4.0),
       child: Text(
         title,
-        style: const TextStyle(
-          color: Colors.grey,
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.secondary,
           fontWeight: FontWeight.bold,
           letterSpacing: 1.2,
           fontSize: 12,
@@ -126,24 +131,23 @@ class _SettingsTeacherWidgetState extends ConsumerState<SettingsTeacherWidget> {
     );
   }
 
-  // Pomocný widget pro bílý zaoblený box kolem skupiny nastavení
   Widget _buildSettingsBox(List<Widget> children) {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(14.0),
+        border: Border.all(color: Theme.of(context).colorScheme.outline, width: 1.0),
       ),
       child: Column(children: children),
     );
   }
 
-  // Pomocný widget pro jeden řádek nastavení
   Widget _buildSettingsItem({
     required IconData icon,
     required String title,
-    Color titleColor = Colors.black87,
-    Color iconColor = const Color(0xFF3D5AF1),
+    Color? titleColor,
+    Color? iconColor,
     VoidCallback? onTap,
     Widget? trailing,
     String? trailingText,
@@ -160,10 +164,10 @@ class _SettingsTeacherWidgetState extends ConsumerState<SettingsTeacherWidget> {
               width: 36.0,
               height: 36.0,
               decoration: BoxDecoration(
-                color: iconColor.withOpacity(0.1),
+                color: (iconColor ?? Theme.of(context).colorScheme.primary).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10.0),
               ),
-              child: Icon(icon, color: iconColor, size: 20.0),
+              child: Icon(icon, color: iconColor ?? Theme.of(context).colorScheme.primary, size: 20.0),
             ),
             const SizedBox(width: 14.0),
             Expanded(
@@ -172,18 +176,18 @@ class _SettingsTeacherWidgetState extends ConsumerState<SettingsTeacherWidget> {
                 style: TextStyle(
                   fontSize: 15.0,
                   fontWeight: FontWeight.w500,
-                  color: titleColor,
+                  color: titleColor ?? Theme.of(context).colorScheme.onSurface,
                 ),
               ),
             ),
             if (trailingText != null)
               Text(
                 trailingText,
-                style: const TextStyle(color: Colors.grey, fontSize: 14.0),
+                style: TextStyle(color: Theme.of(context).colorScheme.secondary, fontSize: 14.0),
               ),
             if (trailing != null) trailing,
             if (onTap != null && showArrow && trailing == null)
-              const Icon(Icons.arrow_forward_ios, color: Colors.grey, size: 14.0),
+              Icon(Icons.arrow_forward_ios, color: Theme.of(context).colorScheme.secondary, size: 14.0),
           ],
         ),
       ),

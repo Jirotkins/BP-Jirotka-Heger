@@ -12,12 +12,12 @@ class RoleToggleWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const Color primaryColor = Color(0xFF0056D2); // Vaše modrá barva
+    final Color primaryColor = Theme.of(context).colorScheme.primary;
 
     return Container(
       height: 52.0,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(26.0),
         border: Border.all(color: primaryColor, width: 1.5),
       ),
@@ -42,7 +42,7 @@ class RoleToggleWidget extends StatelessWidget {
                   child: Text(
                     'Student',
                     style: TextStyle(
-                      color: initialIsStudent ? Colors.white : primaryColor,
+                      color: initialIsStudent ? Theme.of(context).colorScheme.onPrimary : primaryColor,
                       fontWeight: FontWeight.bold,
                       fontSize: 16.0,
                     ),
@@ -65,7 +65,7 @@ class RoleToggleWidget extends StatelessWidget {
                   child: Text(
                     'Učitel',
                     style: TextStyle(
-                      color: !initialIsStudent ? Colors.white : primaryColor,
+                      color: !initialIsStudent ? Theme.of(context).colorScheme.onPrimary : primaryColor,
                       fontWeight: FontWeight.bold,
                       fontSize: 16.0,
                     ),

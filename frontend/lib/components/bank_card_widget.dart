@@ -20,9 +20,9 @@ class BankCardWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         border: Border.all(
-          color: const Color(0xFFE5E7EB),
+          color: Theme.of(context).colorScheme.outline,
           width: 1.0,
         ),
         boxShadow: [
@@ -46,7 +46,7 @@ class BankCardWidget extends StatelessWidget {
                 width: 42.0,
                 height: 42.0,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF0056D2),
+                  color: Theme.of(context).colorScheme.primaryContainer,
                   borderRadius: BorderRadius.circular(12.0),
                 ),
                 alignment: Alignment.center,
@@ -61,14 +61,14 @@ class BankCardWidget extends StatelessWidget {
                       title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.inter(color: const Color(0xFF111827), fontSize: 16.0, fontWeight: FontWeight.w700, height: 1.2),
+                      style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurface, fontSize: 16.0, fontWeight: FontWeight.w700, height: 1.2),
                     ),
                     const SizedBox(height: 4.0),
                     Text(
                       subject,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.inter(color: const Color(0xFF6B7280), fontSize: 13.0, fontWeight: FontWeight.w500),
+                      style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontSize: 13.0, fontWeight: FontWeight.w500),
                     ),
                   ],
                 ),
@@ -81,7 +81,7 @@ class BankCardWidget extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
-              _buildStatColumn('Otázky', questionCount.toString(), const Color(0xFF111827)),
+              _buildStatColumn(context, 'Otázky', questionCount.toString(), Theme.of(context).colorScheme.onSurface),
             ],
           ),
 
@@ -101,8 +101,8 @@ class BankCardWidget extends StatelessWidget {
                 ); 
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFEFF6FF),
-                foregroundColor: const Color(0xFF0056D2),
+                backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                foregroundColor: Theme.of(context).colorScheme.primary,
                 elevation: 0,
                 minimumSize: const Size(0, 38.0),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0)),
@@ -115,11 +115,11 @@ class BankCardWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildStatColumn(String label, String value, Color valueColor) {
+  Widget _buildStatColumn(BuildContext context, String label, String value, Color valueColor) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center, 
       children: [
-        Text(label, style: GoogleFonts.inter(color: const Color(0xFF6B7280), fontSize: 11.0, fontWeight: FontWeight.w500)),
+        Text(label, style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontSize: 11.0, fontWeight: FontWeight.w500)),
         const SizedBox(height: 4.0),
         Text(value, style: GoogleFonts.inter(color: valueColor, fontSize: 18.0, fontWeight: FontWeight.w800)),
       ],

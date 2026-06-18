@@ -85,7 +85,7 @@ class _TestEditorWidgetState extends State<TestEditorWidget> {
                   icon: Icons.folder_open_rounded,
                   children: _mockBanks.map((bank) => BankSelectRowWidget(
                     bank: bank['name'],
-                    icon: Icon(bank['icon'], color: Colors.white),
+                    icon: Icon(bank['icon'], color: Theme.of(context).colorScheme.primary, size: 28),
                     questions: bank['count'],
                   )).toList(),
                 ),
@@ -121,8 +121,8 @@ class _TestEditorWidgetState extends State<TestEditorWidget> {
                       style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold)
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF0056D2),
-                      foregroundColor: Colors.white,
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      foregroundColor: Theme.of(context).colorScheme.surface,
                       minimumSize: const Size(240, 56), // Velké, dominantní tlačítko
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
                       elevation: 0,
@@ -142,13 +142,13 @@ class _TestEditorWidgetState extends State<TestEditorWidget> {
   Widget _buildTestNameInput() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16.0),
-        border: Border.all(color: const Color(0xFFE5E7EB), width: 1.0),
+        border: Border.all(color: Theme.of(context).colorScheme.outline, width: 1.0),
         boxShadow: [
           BoxShadow(
             blurRadius: 10.0,
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             offset: const Offset(0, 4),
           )
         ],
@@ -156,10 +156,10 @@ class _TestEditorWidgetState extends State<TestEditorWidget> {
       child: TextFormField(
         controller: _testNameController,
         focusNode: _testNameFocusNode,
-        style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w600, color: const Color(0xFF111827)),
+        style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface),
         decoration: InputDecoration(
           hintText: 'Zadejte název testu...',
-          hintStyle: GoogleFonts.inter(color: const Color(0xFF9CA3AF), fontWeight: FontWeight.w400),
+          hintStyle: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontWeight: FontWeight.w400),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
         ),
@@ -171,29 +171,29 @@ class _TestEditorWidgetState extends State<TestEditorWidget> {
   Widget _buildExpandableSection({required String title, required String subtitle, required IconData icon, required List<Widget> children}) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16.0),
-        border: Border.all(color: const Color(0xFFE5E7EB), width: 1.0),
+        border: Border.all(color: Theme.of(context).colorScheme.outline, width: 1.0),
         boxShadow: [
           BoxShadow(
             blurRadius: 10.0,
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             offset: const Offset(0, 4),
           )
         ],
       ),
       child: Theme(
-        data: ThemeData().copyWith(dividerColor: Colors.transparent), // Skryje základní čáru
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent), // Skryje základní čáru
         child: ExpansionTile(
           tilePadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          leading: Icon(icon, color: const Color(0xFF6B7280)),
+          leading: Icon(icon, color: Theme.of(context).colorScheme.secondary),
           title: Text(
             title, 
-            style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: const Color(0xFF6B7280), letterSpacing: 1.1)
+            style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.secondary, letterSpacing: 1.1)
           ),
           subtitle: Padding(
             padding: const EdgeInsets.only(top: 4.0),
-            child: Text(subtitle, style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF9CA3AF))),
+            child: Text(subtitle, style: GoogleFonts.inter(fontSize: 12, color: Theme.of(context).colorScheme.secondary)),
           ),
           childrenPadding: const EdgeInsets.all(16),
           expandedCrossAxisAlignment: CrossAxisAlignment.stretch,

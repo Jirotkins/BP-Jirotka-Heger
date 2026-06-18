@@ -80,8 +80,8 @@ class _ClassOverviewWidgetState extends ConsumerState<ClassOverviewWidget> {
                 style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF0056D2),
-                foregroundColor: Colors.white,
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.surface,
                 minimumSize: const Size(0, 40),
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 0),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -94,19 +94,19 @@ class _ClassOverviewWidgetState extends ConsumerState<ClassOverviewWidget> {
         // --- SEKCE S KARTAMI ---
         Expanded(
           child: _isLoading
-              ? const Center(child: CircularProgressIndicator(color: Color(0xFF0056D2)))
+              ? Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary))
               : _errorMessage != null
                   ? Center(
                       child: Text(
                         _errorMessage!,
-                        style: const TextStyle(color: Colors.red),
+                        style: TextStyle(color: Theme.of(context).colorScheme.error),
                       ),
                     )
                   : _groups.isEmpty
                       ? Center(
                           child: Text(
                             'Zatím nemáte žádné třídy.',
-                            style: GoogleFonts.inter(color: Colors.grey, fontSize: 16),
+                            style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontSize: 16),
                           ),
                         )
                       : SingleChildScrollView(
@@ -165,7 +165,7 @@ class _ClassOverviewWidgetState extends ConsumerState<ClassOverviewWidget> {
                                       studentCount: group['student_count'] as int,
                                       activeTestCount: group['active_assignment_count'] as int,
                                       testsToControl: group['pending_grade_count'] as int,
-                                      icon: Icon(parsedIcon, color: Colors.white),
+                                      icon: Icon(parsedIcon, color: Theme.of(context).colorScheme.primary, size: 28),
                                     ),
                                   );
                                 }),

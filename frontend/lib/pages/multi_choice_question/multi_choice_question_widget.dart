@@ -63,10 +63,10 @@ class _MultiChoiceQuestionWidgetState extends State<MultiChoiceQuestionWidget> {
         _options.removeAt(index);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Otázka s výběrem z možností musí mít alespoň 2 varianty.'),
-            backgroundColor: Color(0xFF0056D2),
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: const Text('Otázka s výběrem z možností musí mít alespoň 2 varianty.'),
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -204,12 +204,12 @@ class _MultiChoiceQuestionWidgetState extends State<MultiChoiceQuestionWidget> {
         width: 48.0,
         height: 48.0, 
         decoration: BoxDecoration(
-          color: const Color(0xFFF9FAFB),
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(10.0),
-          border: Border.all(color: const Color(0xFFE5E7EB), width: 1.0),
+          border: Border.all(color: Theme.of(context).colorScheme.outline, width: 1.0),
         ),
         alignment: Alignment.center,
-        child: const Icon(Icons.add_photo_alternate_outlined, color: Color(0xFF9CA3AF), size: 24.0),
+        child: Icon(Icons.add_photo_alternate_outlined, color: Theme.of(context).colorScheme.secondary, size: 24.0),
       ),
     );
   }
@@ -232,11 +232,11 @@ class _MultiChoiceQuestionWidgetState extends State<MultiChoiceQuestionWidget> {
               icon: const Icon(Icons.visibility_outlined, size: 18),
               label: Text('Pohled studenta', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14)),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: const Color(0xFF0056D2),
+                backgroundColor: Theme.of(context).colorScheme.surface,
+                foregroundColor: Theme.of(context).colorScheme.primary,
                 minimumSize: const Size(0, 40),
                 padding: const EdgeInsets.symmetric(horizontal: 20),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: const BorderSide(color: Color(0xFF0056D2), width: 1.5)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5)),
                 elevation: 0,
               ),
             ),
@@ -250,8 +250,8 @@ class _MultiChoiceQuestionWidgetState extends State<MultiChoiceQuestionWidget> {
               icon: const Icon(Icons.save_outlined, size: 18),
               label: Text('Uložit', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14)),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF0056D2),
-                foregroundColor: Colors.white,
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.surface,
                 minimumSize: const Size(0, 40),
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -270,21 +270,21 @@ class _MultiChoiceQuestionWidgetState extends State<MultiChoiceQuestionWidget> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   
-                  Text('TYP OTÁZKY', style: GoogleFonts.inter(color: const Color(0xFF6B7280), letterSpacing: 1.2, fontSize: 12, fontWeight: FontWeight.bold)),
+                  Text('TYP OTÁZKY', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, letterSpacing: 1.2, fontSize: 12, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8.0),
                   Container(
                     decoration: BoxDecoration(
-                      color: const Color(0xFFEEF2FF), // Světle modré pozadí
+                      color: Theme.of(context).colorScheme.primaryContainer, // Světle modré pozadí
                       borderRadius: BorderRadius.circular(20.0),
-                      border: Border.all(color: const Color(0xFF93C5FD), width: 1.0),
+                      border: Border.all(color: Theme.of(context).colorScheme.outline, width: 1.0),
                     ),
                     padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 6.0),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.check_box_outlined, color: Color(0xFF0056D2), size: 16),
+                        Icon(Icons.check_box_outlined, color: Theme.of(context).colorScheme.primary, size: 16),
                         const SizedBox(width: 8),
-                        Text('Výběr z možností', style: GoogleFonts.inter(color: const Color(0xFF0056D2), fontWeight: FontWeight.w600, fontSize: 13)),
+                        Text('Výběr z možností', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w600, fontSize: 13)),
                       ],
                     ),
                   ),
@@ -292,23 +292,23 @@ class _MultiChoiceQuestionWidgetState extends State<MultiChoiceQuestionWidget> {
                   const SizedBox(height: 32.0),
 
                   // POLE PRO ZNĚNÍ OTÁZKY
-                  Text('ZNĚNÍ OTÁZKY', style: GoogleFonts.inter(color: const Color(0xFF6B7280), letterSpacing: 1.2, fontSize: 12, fontWeight: FontWeight.bold)),
+                  Text('ZNĚNÍ OTÁZKY', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, letterSpacing: 1.2, fontSize: 12, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8.0),
                   TextFormField(
                     controller: _questionTextController,
                     focusNode: _questionFocusNode,
                     maxLines: 4,
                     minLines: 3,
-                    style: GoogleFonts.inter(fontSize: 16, color: const Color(0xFF111827)),
+                    style: GoogleFonts.inter(fontSize: 16, color: Theme.of(context).colorScheme.onSurface),
                     decoration: InputDecoration(
                       hintText: 'Napište zde znění otázky...',
-                      hintStyle: GoogleFonts.inter(color: const Color(0xFF9CA3AF)),
+                      hintStyle: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary),
                       filled: true,
-                      fillColor: Colors.white,
+                      fillColor: Theme.of(context).colorScheme.surface,
                       contentPadding: const EdgeInsets.all(20.0),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0), borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
-                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0), borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
-                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0), borderSide: const BorderSide(color: Color(0xFF0056D2), width: 1.5)),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0), borderSide: BorderSide(color: Theme.of(context).colorScheme.outline)),
+                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0), borderSide: BorderSide(color: Theme.of(context).colorScheme.outline)),
+                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0), borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5)),
                     ),
                   ),
                   
@@ -318,29 +318,29 @@ class _MultiChoiceQuestionWidgetState extends State<MultiChoiceQuestionWidget> {
                   Container(
                     height: 120.0,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF9FAFB),
+                      color: Theme.of(context).colorScheme.surface,
                       borderRadius: BorderRadius.circular(12.0),
-                      border: Border.all(color: const Color(0xFFE5E7EB), width: 1.5),
+                      border: Border.all(color: Theme.of(context).colorScheme.outline, width: 1.5),
                     ),
                     alignment: Alignment.center,
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.cloud_upload_outlined, color: Color(0xFF9CA3AF), size: 36.0),
+                        Icon(Icons.cloud_upload_outlined, color: Theme.of(context).colorScheme.secondary, size: 36.0),
                         const SizedBox(height: 8.0),
-                        Text('Přetáhněte obrázek nebo schéma (volitelné)', style: GoogleFonts.inter(color: const Color(0xFF6B7280), fontSize: 14.0)),
+                        Text('Přetáhněte obrázek nebo schéma (volitelné)', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontSize: 14.0)),
                       ],
                     ),
                   ),
                   
                   const SizedBox(height: 48.0),
-                  const Divider(color: Color(0xFFE5E7EB), height: 1),
+                  Divider(color: Theme.of(context).colorScheme.outline, height: 1),
                   const SizedBox(height: 32.0),
 
                   // DYNAMICKÁ SEKCE PRO MOŽNOSTI
-                  Text('VARIANTY ODPOVĚDÍ', style: GoogleFonts.inter(color: const Color(0xFF6B7280), letterSpacing: 1.2, fontSize: 12, fontWeight: FontWeight.bold)),
+                  Text('VARIANTY ODPOVĚDÍ', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, letterSpacing: 1.2, fontSize: 12, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 4.0),
-                  Text('Zadejte možné odpovědi a zaškrtněte tu správnou (nebo více správných). Ke každé možnosti lze přidat obrázek.', style: GoogleFonts.inter(color: const Color(0xFF9CA3AF), fontSize: 12)),
+                  Text('Zadejte možné odpovědi a zaškrtněte tu správnou (nebo více správných). Ke každé možnosti lze přidat obrázek.', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontSize: 12)),
                   const SizedBox(height: 24.0),
 
                   // Generování řádků s možnostmi
@@ -366,9 +366,9 @@ class _MultiChoiceQuestionWidgetState extends State<MultiChoiceQuestionWidget> {
                                   width: 36,
                                   height: 36,
                                   decoration: BoxDecoration(
-                                    color: isCorrect ? const Color(0xFF16A34A) : const Color(0xFFF9FAFB),
+                                    color: isCorrect ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.surface,
                                     borderRadius: BorderRadius.circular(8.0),
-                                    border: Border.all(color: isCorrect ? const Color(0xFF16A34A) : const Color(0xFFD1D5DB)),
+                                    border: Border.all(color: isCorrect ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.outline),
                                   ),
                                   child: isCorrect 
                                       ? const Icon(Icons.check, color: Colors.white, size: 24)
@@ -386,16 +386,16 @@ class _MultiChoiceQuestionWidgetState extends State<MultiChoiceQuestionWidget> {
                             Expanded(
                               child: TextFormField(
                                 controller: optCtrl,
-                                style: GoogleFonts.inter(fontWeight: FontWeight.w500, color: const Color(0xFF111827)),
+                                style: GoogleFonts.inter(fontWeight: FontWeight.w500, color: Theme.of(context).colorScheme.onSurface),
                                 decoration: InputDecoration(
                                   hintText: 'Možnost ${String.fromCharCode(65 + index)}', // Generuje A, B, C, D...
-                                  hintStyle: GoogleFonts.inter(color: const Color(0xFF9CA3AF), fontWeight: FontWeight.normal),
+                                  hintStyle: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontWeight: FontWeight.normal),
                                   filled: true,
-                                  fillColor: isCorrect ? const Color(0xFFF0FDF4) : Colors.white, // Lehce zazelená textové pole, pokud je správně
+                                  fillColor: isCorrect ? Theme.of(context).colorScheme.primaryContainer : Theme.of(context).colorScheme.surface, // Lehce zazelená textové pole, pokud je správně
                                   contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10.0), borderSide: BorderSide(color: isCorrect ? const Color(0xFF86EFAC) : const Color(0xFFE5E7EB))),
-                                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10.0), borderSide: BorderSide(color: isCorrect ? const Color(0xFF86EFAC) : const Color(0xFFE5E7EB))),
-                                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10.0), borderSide: BorderSide(color: isCorrect ? const Color(0xFF16A34A) : const Color(0xFF0056D2))),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10.0), borderSide: BorderSide(color: isCorrect ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.outline)),
+                                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10.0), borderSide: BorderSide(color: isCorrect ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.outline)),
+                                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10.0), borderSide: BorderSide(color: Theme.of(context).colorScheme.primary)),
                                 ),
                               ),
                             ),
@@ -408,7 +408,7 @@ class _MultiChoiceQuestionWidgetState extends State<MultiChoiceQuestionWidget> {
                               alignment: Alignment.center,
                               child: IconButton(
                                 onPressed: () => _removeOption(index),
-                                icon: const Icon(Icons.delete_outline, color: Color(0xFFDC2626)),
+                                icon: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error),
                                 tooltip: 'Odebrat možnost',
                                 splashRadius: 24.0,
                               ),
@@ -423,8 +423,8 @@ class _MultiChoiceQuestionWidgetState extends State<MultiChoiceQuestionWidget> {
                   
                   TextButton.icon(
                     onPressed: _addOption,
-                    icon: const Icon(Icons.add_circle_outline, size: 18.0, color: Color(0xFF0056D2)), 
-                    label: Text('Přidat další možnost odpovědi', style: GoogleFonts.inter(color: const Color(0xFF0056D2), fontWeight: FontWeight.w600)),
+                    icon: Icon(Icons.add_circle_outline, size: 18.0, color: Theme.of(context).colorScheme.primary), 
+                    label: Text('Přidat další možnost odpovědi', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w600)),
                     style: TextButton.styleFrom(
                       padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 12.0),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),

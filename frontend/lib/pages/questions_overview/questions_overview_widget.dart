@@ -97,8 +97,8 @@ class _QuestionsOverviewWidgetState extends ConsumerState<QuestionsOverviewWidge
                 style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF0056D2),
-                foregroundColor: Colors.white,
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.surface,
                 minimumSize: const Size(0, 40),
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 0),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -114,35 +114,35 @@ class _QuestionsOverviewWidgetState extends ConsumerState<QuestionsOverviewWidge
             padding: const EdgeInsets.all(32.0),
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(16.0),
-                border: Border.all(color: const Color(0xFFE5E7EB), width: 1.0),
+                border: Border.all(color: Theme.of(context).colorScheme.outline, width: 1.0),
                 boxShadow: [
                   BoxShadow(
                     blurRadius: 10.0,
-                    color: Colors.black.withOpacity(0.02),
+                    color: Colors.black.withValues(alpha: 0.02),
                     offset: const Offset(0, 4),
                   )
                 ],
               ),
               child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
+                  ? Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary))
                   : _errorMessage != null
-                      ? Center(child: Text(_errorMessage!, style: const TextStyle(color: Colors.red)))
+                      ? Center(child: Text(_errorMessage!, style: TextStyle(color: Theme.of(context).colorScheme.error)))
                       : _questionsData.isEmpty
                           ? Center(
                               child: Text(
                                 'Zatím nemáte v této bance žádné otázky.',
-                                style: GoogleFonts.inter(color: Colors.grey, fontSize: 16),
+                                style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontSize: 16),
                               ),
                             )
                           : ListView.separated(
                               padding: const EdgeInsets.all(24.0),
                               itemCount: _questionsData.length,
-                              separatorBuilder: (context, index) => const Divider(
+                              separatorBuilder: (context, index) => Divider(
                                 height: 32.0, // Mezera kolem čáry
                                 thickness: 1.0,
-                                color: Color(0xFFF3F4F6), 
+                                color: Theme.of(context).colorScheme.outline, 
                               ),
                               itemBuilder: (context, index) {
                                 final questionData = _questionsData[index];

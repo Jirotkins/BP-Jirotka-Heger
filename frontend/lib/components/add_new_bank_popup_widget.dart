@@ -100,7 +100,7 @@ class _AddNewBankPopupWidgetState extends ConsumerState<AddNewBankPopupWidget> {
     return Container(
       width: 400.0,
       decoration: BoxDecoration(
-        color: Colors.white, 
+        color: Theme.of(context).colorScheme.surface, 
         borderRadius: BorderRadius.circular(16.0),
       ),
       padding: const EdgeInsets.all(24.0),
@@ -108,18 +108,18 @@ class _AddNewBankPopupWidgetState extends ConsumerState<AddNewBankPopupWidget> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text(
+          Text(
             'Přidat novou banku otázek',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 20.0, fontWeight: FontWeight.w800, color: Colors.black87),
+            style: TextStyle(fontSize: 20.0, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.onSurface),
           ),
           const SizedBox(height: 24.0),
 
           if (_errorMessage != null) ...[
             Container(
               padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: Colors.red.shade50, borderRadius: BorderRadius.circular(8)),
-              child: Text(_errorMessage!, style: const TextStyle(color: Colors.red, fontSize: 13)),
+              decoration: BoxDecoration(color: Theme.of(context).colorScheme.errorContainer, borderRadius: BorderRadius.circular(8)),
+              child: Text(_errorMessage!, style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer, fontSize: 13)),
             ),
             const SizedBox(height: 16.0),
           ],
@@ -127,7 +127,7 @@ class _AddNewBankPopupWidgetState extends ConsumerState<AddNewBankPopupWidget> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Název', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w600, fontSize: 14.0)),
+              Text('Název', style: TextStyle(color: Theme.of(context).colorScheme.secondary, fontWeight: FontWeight.w600, fontSize: 14.0)),
               const SizedBox(height: 6.0),
               TextFormField(
                 controller: _nameController,
@@ -136,13 +136,13 @@ class _AddNewBankPopupWidgetState extends ConsumerState<AddNewBankPopupWidget> {
                 enabled: !_isSaving,
                 decoration: InputDecoration(
                   hintText: 'Zadejte název',
-                  hintStyle: const TextStyle(color: Colors.grey),
+                  hintStyle: TextStyle(color: Theme.of(context).colorScheme.secondary),
                   filled: true,
-                  fillColor: Colors.grey.shade50,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 14.0),
-                  border: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey.shade300), borderRadius: BorderRadius.circular(8.0)),
-                  enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey.shade300), borderRadius: BorderRadius.circular(8.0)),
-                  focusedBorder: OutlineInputBorder(borderSide: const BorderSide(color: Color(0xFF3D5AF1)), borderRadius: BorderRadius.circular(8.0)),
+                  fillColor: Theme.of(context).scaffoldBackgroundColor,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
+                  border: OutlineInputBorder(borderSide: BorderSide(color: Theme.of(context).colorScheme.outline), borderRadius: BorderRadius.circular(8.0)),
+                  enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Theme.of(context).colorScheme.outline), borderRadius: BorderRadius.circular(8.0)),
+                  focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Theme.of(context).colorScheme.primary), borderRadius: BorderRadius.circular(8.0)),
                 ),
               ),
             ],
@@ -152,7 +152,7 @@ class _AddNewBankPopupWidgetState extends ConsumerState<AddNewBankPopupWidget> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Popis', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w600, fontSize: 14.0)),
+              Text('Popis', style: TextStyle(color: Theme.of(context).colorScheme.secondary, fontWeight: FontWeight.w600, fontSize: 14.0)),
               const SizedBox(height: 6.0),
               TextFormField(
                 controller: _subjectController,
@@ -160,14 +160,14 @@ class _AddNewBankPopupWidgetState extends ConsumerState<AddNewBankPopupWidget> {
                 textInputAction: TextInputAction.done,
                 enabled: !_isSaving,
                 decoration: InputDecoration(
-                  hintText: 'Zadejte popis',
-                  hintStyle: const TextStyle(color: Colors.grey),
+                  hintText: 'Zadejte popis banky',
+                  hintStyle: TextStyle(color: Theme.of(context).colorScheme.secondary),
                   filled: true,
-                  fillColor: Colors.grey.shade50,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 14.0),
-                  border: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey.shade300), borderRadius: BorderRadius.circular(8.0)),
-                  enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey.shade300), borderRadius: BorderRadius.circular(8.0)),
-                  focusedBorder: OutlineInputBorder(borderSide: const BorderSide(color: Color(0xFF3D5AF1)), borderRadius: BorderRadius.circular(8.0)),
+                  fillColor: Theme.of(context).scaffoldBackgroundColor,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
+                  border: OutlineInputBorder(borderSide: BorderSide(color: Theme.of(context).colorScheme.outline), borderRadius: BorderRadius.circular(8.0)),
+                  enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Theme.of(context).colorScheme.outline), borderRadius: BorderRadius.circular(8.0)),
+                  focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Theme.of(context).colorScheme.primary), borderRadius: BorderRadius.circular(8.0)),
                 ),
               ),
             ],
@@ -177,7 +177,7 @@ class _AddNewBankPopupWidgetState extends ConsumerState<AddNewBankPopupWidget> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Vyberte ikonu', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w600, fontSize: 14.0)),
+              Text('Vyberte ikonu', style: TextStyle(color: Theme.of(context).colorScheme.secondary, fontWeight: FontWeight.w600, fontSize: 14.0)),
               const SizedBox(height: 10.0),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -190,12 +190,12 @@ class _AddNewBankPopupWidgetState extends ConsumerState<AddNewBankPopupWidget> {
                       width: 52.0,
                       height: 52.0,
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade50,
-                        borderRadius: BorderRadius.circular(12.0),
-                        border: Border.all(color: isSelected ? const Color(0xFF0056D2) : Colors.grey.shade300, width: 2.0),
+                        color: Theme.of(context).scaffoldBackgroundColor,
+                        borderRadius: BorderRadius.circular(10.0),
+                        border: Border.all(color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.outline, width: 2.0),
                       ),
                       alignment: Alignment.center,
-                      child: Icon(_availableIcons[index], color: isSelected ? const Color(0xFF0056D2) : Colors.grey, size: 26.0),
+                      child: Icon(_availableIcons[index], color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.secondary, size: 26.0),
                     ),
                   );
                 }),
@@ -211,10 +211,10 @@ class _AddNewBankPopupWidgetState extends ConsumerState<AddNewBankPopupWidget> {
                   onPressed: _isSaving ? null : () => Navigator.of(context).pop(),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16.0),
-                    side: BorderSide(color: Colors.grey.shade300),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22.0)),
+                    side: BorderSide(color: Theme.of(context).colorScheme.outline),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
-                  child: const Text('Zrušit', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+                  child: Text('Zrušit', style: TextStyle(color: Theme.of(context).colorScheme.secondary, fontWeight: FontWeight.bold)),
                 ),
               ),
               const SizedBox(width: 12.0),
@@ -222,14 +222,14 @@ class _AddNewBankPopupWidgetState extends ConsumerState<AddNewBankPopupWidget> {
                 child: ElevatedButton(
                   onPressed: _isSaving ? null : _saveBank,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0056D2),
-                    elevation: 0,
+                    backgroundColor: Theme.of(context).colorScheme.primary,
                     padding: const EdgeInsets.symmetric(vertical: 16.0),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22.0)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    elevation: 0,
                   ),
-                  child: _isSaving
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                      : const Text('Uložit', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  child: _isSaving 
+                      ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Theme.of(context).colorScheme.surface, strokeWidth: 2))
+                      : Text('Uložit', style: TextStyle(color: Theme.of(context).colorScheme.surface, fontWeight: FontWeight.bold)),
                 ),
               ),
             ],

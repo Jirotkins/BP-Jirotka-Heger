@@ -113,7 +113,7 @@ class _AddNewStudentsPopupWidgetState extends ConsumerState<AddNewStudentsPopupW
           width: 500.0,
           constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.8),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(16.0),
           ),
           padding: const EdgeInsets.all(24.0),
@@ -121,22 +121,22 @@ class _AddNewStudentsPopupWidgetState extends ConsumerState<AddNewStudentsPopupW
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
+              Text(
                 'Studenti úspěšně přidáni',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 20.0, fontWeight: FontWeight.w800, color: Colors.black87),
+                style: TextStyle(fontSize: 20.0, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.onSurface),
               ),
               const SizedBox(height: 8.0),
-              const Text(
+              Text(
                 'Pečlivě si uložte tyto údaje. Hesla se znovu nikde nezobrazí!',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 14.0, color: Colors.red, fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: 14.0, color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 24.0),
               Flexible(
                 child: Container(
                   decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey.shade200),
+                    border: Border.all(color: Theme.of(context).colorScheme.outline),
                     borderRadius: BorderRadius.circular(8.0),
                   ),
                   child: ListView.separated(
@@ -164,9 +164,9 @@ class _AddNewStudentsPopupWidgetState extends ConsumerState<AddNewStudentsPopupW
                       label: const Text('Stáhnout .csv', style: TextStyle(fontWeight: FontWeight.bold)),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16.0),
-                        side: BorderSide(color: Colors.grey.shade300),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22.0)),
-                        foregroundColor: Colors.black87,
+                        side: BorderSide(color: Theme.of(context).colorScheme.outline),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
+                        foregroundColor: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                   ),
@@ -179,12 +179,12 @@ class _AddNewStudentsPopupWidgetState extends ConsumerState<AddNewStudentsPopupW
                         widget.onSuccess?.call(); 
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF0056D2),
+                        backgroundColor: Theme.of(context).colorScheme.primary,
                         elevation: 0,
                         padding: const EdgeInsets.symmetric(vertical: 16.0),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22.0)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
                       ),
-                      child: const Text('Zavřít', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      child: Text('Zavřít', style: TextStyle(color: Theme.of(context).colorScheme.surface, fontWeight: FontWeight.bold)),
                     ),
                   ),
                 ],
@@ -201,7 +201,7 @@ class _AddNewStudentsPopupWidgetState extends ConsumerState<AddNewStudentsPopupW
     return Container(
       width: 400.0,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16.0),
       ),
       padding: const EdgeInsets.all(24.0),
@@ -209,25 +209,25 @@ class _AddNewStudentsPopupWidgetState extends ConsumerState<AddNewStudentsPopupW
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text(
+          Text(
             'Přidat studenty',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 20.0, fontWeight: FontWeight.w800, color: Colors.black87),
+            style: TextStyle(fontSize: 20.0, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.onSurface),
           ),
           const SizedBox(height: 8.0),
           
-          const Text(
+          Text(
             'Zadejte předponu a kolik nových studentů chcete přidat. Následně se vám zobrazí jejich přihlašovací údaje.',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 14.0, color: Colors.grey),
+            style: TextStyle(fontSize: 14.0, color: Theme.of(context).colorScheme.secondary),
           ),
           const SizedBox(height: 24.0),
 
           if (_errorMessage != null) ...[
             Container(
               padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: Colors.red.shade50, borderRadius: BorderRadius.circular(8)),
-              child: Text(_errorMessage!, style: const TextStyle(color: Colors.red, fontSize: 13)),
+              decoration: BoxDecoration(color: Theme.of(context).colorScheme.errorContainer, borderRadius: BorderRadius.circular(8)),
+              child: Text(_errorMessage!, style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer, fontSize: 13)),
             ),
             const SizedBox(height: 16.0),
           ],
@@ -239,13 +239,13 @@ class _AddNewStudentsPopupWidgetState extends ConsumerState<AddNewStudentsPopupW
             enabled: !_isSaving,
             decoration: InputDecoration(
               labelText: 'Předpona (např. matika8)',
-              labelStyle: const TextStyle(color: Colors.grey),
+              labelStyle: TextStyle(color: Theme.of(context).colorScheme.secondary),
               filled: true,
-              fillColor: const Color(0xFFF5F7FA),
+              fillColor: Theme.of(context).scaffoldBackgroundColor,
               contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8.0), borderSide: BorderSide(color: Colors.grey.shade300)),
-              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8.0), borderSide: BorderSide(color: Colors.grey.shade300)),
-              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8.0), borderSide: const BorderSide(color: Color(0xFF0056D2), width: 2.0)),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8.0), borderSide: BorderSide(color: Theme.of(context).colorScheme.outline)),
+              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8.0), borderSide: BorderSide(color: Theme.of(context).colorScheme.outline)),
+              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8.0), borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2.0)),
             ),
           ),
           const SizedBox(height: 16.0),
@@ -258,13 +258,13 @@ class _AddNewStudentsPopupWidgetState extends ConsumerState<AddNewStudentsPopupW
             enabled: !_isSaving,
             decoration: InputDecoration(
               labelText: 'Zadejte počet (max 100)',
-              labelStyle: const TextStyle(color: Colors.grey),
+              labelStyle: TextStyle(color: Theme.of(context).colorScheme.secondary),
               filled: true,
-              fillColor: const Color(0xFFF5F7FA),
+              fillColor: Theme.of(context).scaffoldBackgroundColor,
               contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8.0), borderSide: BorderSide(color: Colors.grey.shade300)),
-              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8.0), borderSide: BorderSide(color: Colors.grey.shade300)),
-              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8.0), borderSide: const BorderSide(color: Color(0xFF0056D2), width: 2.0)),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8.0), borderSide: BorderSide(color: Theme.of(context).colorScheme.outline)),
+              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8.0), borderSide: BorderSide(color: Theme.of(context).colorScheme.outline)),
+              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8.0), borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2.0)),
             ),
           ),
           const SizedBox(height: 24.0),
@@ -276,10 +276,10 @@ class _AddNewStudentsPopupWidgetState extends ConsumerState<AddNewStudentsPopupW
                   onPressed: _isSaving ? null : () => Navigator.of(context).pop(),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16.0),
-                    side: BorderSide(color: Colors.grey.shade300),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22.0)),
+                    side: BorderSide(color: Theme.of(context).colorScheme.outline),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
                   ),
-                  child: const Text('Zrušit', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+                  child: Text('Zrušit', style: TextStyle(color: Theme.of(context).colorScheme.secondary, fontWeight: FontWeight.bold)),
                 ),
               ),
               const SizedBox(width: 12.0),
@@ -287,14 +287,14 @@ class _AddNewStudentsPopupWidgetState extends ConsumerState<AddNewStudentsPopupW
                 child: ElevatedButton(
                   onPressed: _isSaving ? null : _addStudents,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0056D2),
+                    backgroundColor: Theme.of(context).colorScheme.primary,
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(vertical: 16.0),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22.0)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
                   ),
                   child: _isSaving
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                      : const Text('Uložit', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Theme.of(context).colorScheme.surface, strokeWidth: 2))
+                      : Text('Uložit', style: TextStyle(color: Theme.of(context).colorScheme.surface, fontWeight: FontWeight.bold)),
                 ),
               ),
             ],

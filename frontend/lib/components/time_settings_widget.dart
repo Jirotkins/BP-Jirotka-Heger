@@ -82,10 +82,10 @@ class _TimeSettingsWidgetState extends State<TimeSettingsWidget> {
           if (pickedMinutes <= startMinutes) {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Čas "do" musí být později než čas "od" ve stejný den.'),
-                  backgroundColor: Color(0xFFDC2626),
-                  duration: Duration(seconds: 3),
+                SnackBar(
+                  content: const Text('Čas "do" musí být později než čas "od" ve stejný den.'),
+                  backgroundColor: Theme.of(context).colorScheme.error,
+                  duration: const Duration(seconds: 3),
                 ),
               );
             }
@@ -130,32 +130,32 @@ class _TimeSettingsWidgetState extends State<TimeSettingsWidget> {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16.0),
-        border: Border.all(color: const Color(0xFFE5E7EB), width: 1.0),
+        border: Border.all(color: Theme.of(context).colorScheme.outline, width: 1.0),
         boxShadow: [
           BoxShadow(
             blurRadius: 10.0,
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             offset: const Offset(0, 4),
           )
         ],
       ),
       child: Theme(
-        data: ThemeData().copyWith(dividerColor: Colors.transparent),
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
           initiallyExpanded: true, 
           tilePadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          leading: const Icon(Icons.schedule_rounded, color: Color(0xFF6B7280)),
+          leading: Icon(Icons.schedule_rounded, color: Theme.of(context).colorScheme.secondary),
           title: Text(
             'DOSTUPNOST TESTU', 
-            style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: const Color(0xFF6B7280), letterSpacing: 1.1)
+            style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.secondary, letterSpacing: 1.1)
           ),
           childrenPadding: const EdgeInsets.all(20),
           expandedCrossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             
-            Text('Typ spuštění', style: GoogleFonts.inter(fontSize: 15.0, fontWeight: FontWeight.w600, color: const Color(0xFF111827))),
+            Text('Typ spuštění', style: GoogleFonts.inter(fontSize: 15.0, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface)),
             const SizedBox(height: 12),
             Row(
               children: [
@@ -181,7 +181,7 @@ class _TimeSettingsWidgetState extends State<TimeSettingsWidget> {
 
             if (!_isInstant) ...[
               const SizedBox(height: 24),
-              Text('Datum a čas dostupnosti testu', style: GoogleFonts.inter(fontSize: 15.0, fontWeight: FontWeight.w600, color: const Color(0xFF111827))),
+              Text('Datum a čas dostupnosti testu', style: GoogleFonts.inter(fontSize: 15.0, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface)),
               const SizedBox(height: 12),
               
               Row(
@@ -203,24 +203,24 @@ class _TimeSettingsWidgetState extends State<TimeSettingsWidget> {
             ],
 
             const SizedBox(height: 24),
-            const Divider(thickness: 1, color: Color(0xFFF3F4F6)),
+            Divider(thickness: 1, color: Theme.of(context).colorScheme.outline),
             const SizedBox(height: 20),
 
             // DÉLKA TESTU 
             Row(
               children: [
-                const Icon(Icons.timer_outlined, color: Color(0xFF6B7280)),
+                Icon(Icons.timer_outlined, color: Theme.of(context).colorScheme.secondary),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     'Časový limit (min):', 
-                    style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: const Color(0xFF111827))
+                    style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface)
                   ),
                 ),
                 
                 IconButton(
                   onPressed: () => setState(() => _durationMinutes = (_durationMinutes > 5) ? _durationMinutes - 5 : 5),
-                  icon: const Icon(Icons.remove_circle_outline, color: Color(0xFF0056D2)),
+                  icon: Icon(Icons.remove_circle_outline, color: Theme.of(context).colorScheme.primary),
                   splashRadius: 24,
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
@@ -229,12 +229,12 @@ class _TimeSettingsWidgetState extends State<TimeSettingsWidget> {
                 Container(
                   width: 36,
                   alignment: Alignment.center,
-                  child: Text('$_durationMinutes', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFF111827))),
+                  child: Text('$_durationMinutes', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface)),
                 ),
                 const SizedBox(width: 8),
                 IconButton(
                   onPressed: () => setState(() => _durationMinutes += 5),
-                  icon: const Icon(Icons.add_circle_outline, color: Color(0xFF0056D2)),
+                  icon: Icon(Icons.add_circle_outline, color: Theme.of(context).colorScheme.primary),
                   splashRadius: 24,
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
@@ -256,10 +256,10 @@ class _TimeSettingsWidgetState extends State<TimeSettingsWidget> {
         duration: const Duration(milliseconds: 200),
         height: 48.0,
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFEFF6FF) : Colors.white,
+          color: isSelected ? Theme.of(context).colorScheme.primaryContainer : Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(12.0),
           border: Border.all(
-            color: isSelected ? const Color(0xFF0056D2) : const Color(0xFFE5E7EB),
+            color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.outline,
             width: isSelected ? 1.5 : 1.0,
           ),
         ),
@@ -267,7 +267,7 @@ class _TimeSettingsWidgetState extends State<TimeSettingsWidget> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: isSelected ? const Color(0xFF0056D2) : const Color(0xFF6B7280), size: 18),
+            Icon(icon, color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.secondary, size: 18),
             const SizedBox(width: 6),
             Flexible(
               child: Text(
@@ -275,7 +275,7 @@ class _TimeSettingsWidgetState extends State<TimeSettingsWidget> {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.inter(
-                  color: isSelected ? const Color(0xFF0056D2) : const Color(0xFF6B7280),
+                  color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.secondary,
                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                   fontSize: 13,
                 ),
@@ -292,7 +292,7 @@ class _TimeSettingsWidgetState extends State<TimeSettingsWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF6B7280))),
+        Text(label, style: GoogleFonts.inter(fontSize: 12, color: Theme.of(context).colorScheme.secondary)),
         const SizedBox(height: 6),
         InkWell(
           onTap: onTap,
@@ -300,9 +300,9 @@ class _TimeSettingsWidgetState extends State<TimeSettingsWidget> {
           child: Container(
             height: 46.0,
             decoration: BoxDecoration(
-              color: hasValue ? Colors.white : const Color(0xFFF9FAFB),
+              color: hasValue ? Theme.of(context).colorScheme.surface : Theme.of(context).scaffoldBackgroundColor,
               borderRadius: BorderRadius.circular(12.0),
-              border: Border.all(color: hasValue ? const Color(0xFF0056D2).withOpacity(0.3) : const Color(0xFFE5E7EB)),
+              border: Border.all(color: hasValue ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.3) : Theme.of(context).colorScheme.outline),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 12.0),
             child: Row(
@@ -314,13 +314,13 @@ class _TimeSettingsWidgetState extends State<TimeSettingsWidget> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.inter(
-                      color: hasValue ? const Color(0xFF111827) : const Color(0xFF9CA3AF),
+                      color: hasValue ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.secondary,
                       fontWeight: hasValue ? FontWeight.w600 : FontWeight.w400,
                     )
                   ),
                 ),
                 const SizedBox(width: 4),
-                Icon(icon, color: hasValue ? const Color(0xFF0056D2) : const Color(0xFF9CA3AF), size: 18),
+                Icon(icon, color: hasValue ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.secondary, size: 18),
               ],
             ),
           ),

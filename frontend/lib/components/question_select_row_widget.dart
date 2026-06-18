@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/app_themes.dart';
 
 class QuestionSelectRowWidget extends StatefulWidget {
   final String question;
@@ -19,27 +20,29 @@ class _QuestionSelectRowWidgetState extends State<QuestionSelectRowWidget> {
   bool _isSelected = false;
 
   // Pomocná metoda pro barvy štítků podle typu otázky
-  Map<String, Color> _getTypeColors(String questionType) {
+  Map<String, Color> _getTypeColors(BuildContext context, String questionType) {
+    final customColors = Theme.of(context).extension<CustomColors>();
+    
     switch (questionType) {
       case 'Výběr':
-        return {'bg': const Color(0xFFEEF2FF), 'text': const Color(0xFF3D5AF1)};
+        return {'bg': Theme.of(context).colorScheme.primaryContainer, 'text': Theme.of(context).colorScheme.primary};
       case 'Seřazení':
-        return {'bg': const Color(0xFFFFF3E0), 'text': const Color(0xFFFFB300)};
+        return {'bg': customColors?.orangeBg ?? Theme.of(context).colorScheme.primaryContainer, 'text': customColors?.orangeText ?? Theme.of(context).colorScheme.primary};
       case 'Párování':
-        return {'bg': const Color(0xFFDED1F1), 'text': const Color(0xFF9100FF)};
+        return {'bg': customColors?.purpleBg ?? Theme.of(context).colorScheme.primaryContainer, 'text': customColors?.purpleText ?? Theme.of(context).colorScheme.primary};
       case 'Otevřená':
-        return {'bg': const Color(0xFFE8F5E9), 'text': const Color(0xFF43A047)};
+        return {'bg': customColors?.greenBg ?? Theme.of(context).colorScheme.primaryContainer, 'text': customColors?.greenText ?? Theme.of(context).colorScheme.primary};
       case 'Krátká':
-        return {'bg': const Color(0xFFF8DADA), 'text': const Color(0xFFF85353)};
+        return {'bg': Theme.of(context).colorScheme.errorContainer, 'text': Theme.of(context).colorScheme.error};
       default:
-        return {'bg': Colors.grey.shade100, 'text': Colors.black87};
+        return {'bg': Theme.of(context).colorScheme.surface, 'text': Theme.of(context).colorScheme.onSurface};
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    const Color primaryBlue = const Color(0xFF3D5AF1);
-    final typeColors = _getTypeColors(widget.type);
+    final Color primaryBlue = Theme.of(context).colorScheme.primary;
+    final typeColors = _getTypeColors(context, widget.type);
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
@@ -53,11 +56,11 @@ class _QuestionSelectRowWidgetState extends State<QuestionSelectRowWidget> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           decoration: BoxDecoration(
-            color: _isSelected ? const Color(0xFFF0F4FA) : Colors.white,
-            borderRadius: BorderRadius.circular(16.0),
+            color: _isSelected ? Theme.of(context).colorScheme.primaryContainer : Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(12.0),
             border: Border.all(
-              color: _isSelected ? primaryBlue : Colors.grey.shade200,
-              width: 1.5,
+              color: _isSelected ? primaryBlue : Theme.of(context).colorScheme.outline,
+              width: _isSelected ? 2.0 : 1.0,
             ),
           ),
           padding: const EdgeInsets.all(12.0),
@@ -68,14 +71,14 @@ class _QuestionSelectRowWidgetState extends State<QuestionSelectRowWidget> {
                 width: 85.0,
                 padding: const EdgeInsets.symmetric(vertical: 6.0),
                 decoration: BoxDecoration(
-                  color: typeColors['bg'],
+                  color: typeColors['bg']!,
                   borderRadius: BorderRadius.circular(22.0),
                 ),
                 alignment: Alignment.center,
                 child: Text(
                   widget.type,
                   style: TextStyle(
-                    color: typeColors['text'],
+                    color: typeColors['text']!,
                     fontWeight: FontWeight.w600,
                     fontSize: 11.0,
                   ),
@@ -90,7 +93,7 @@ class _QuestionSelectRowWidgetState extends State<QuestionSelectRowWidget> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: Colors.black87,
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontWeight: _isSelected ? FontWeight.bold : FontWeight.w500,
                     fontSize: 14.0,
                   ),
@@ -101,7 +104,7 @@ class _QuestionSelectRowWidgetState extends State<QuestionSelectRowWidget> {
               const SizedBox(width: 8.0),
               Icon(
                 _isSelected ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
-                color: _isSelected ? primaryBlue : Colors.grey.shade300,
+                color: _isSelected ? primaryBlue : Theme.of(context).colorScheme.outline,
                 size: 24.0,
               ),
             ],

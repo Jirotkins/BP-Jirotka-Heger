@@ -102,8 +102,8 @@ class _ClassManagerWidgetState extends ConsumerState<ClassManagerWidget> {
               icon: const Icon(Icons.add_circle_outline, size: 18),
               label: Text('Přidat studenty', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14)),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF0056D2),
-                foregroundColor: Colors.white,
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.surface,
                 minimumSize: const Size(0, 40),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                 elevation: 0,
@@ -117,8 +117,8 @@ class _ClassManagerWidgetState extends ConsumerState<ClassManagerWidget> {
               icon: const Icon(Icons.post_add, size: 18),
               label: Text('Vytvořit test', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14)),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF0056D2),
-                foregroundColor: Colors.white,
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.surface,
                 minimumSize: const Size(0, 40),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                 elevation: 0,
@@ -129,9 +129,9 @@ class _ClassManagerWidgetState extends ConsumerState<ClassManagerWidget> {
         
         Expanded(
           child: _isLoading 
-              ? const Center(child: CircularProgressIndicator())
+              ? Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary))
               : _errorMessage != null
-                  ? Center(child: Text(_errorMessage!, style: const TextStyle(color: Colors.red)))
+                  ? Center(child: Text(_errorMessage!, style: TextStyle(color: Theme.of(context).colorScheme.error)))
                   : _buildContent(),
         ),
       ],
@@ -160,11 +160,11 @@ class _ClassManagerWidgetState extends ConsumerState<ClassManagerWidget> {
           // ROZBALOVACÍ PANEL STUDENTŮ
           Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(12.0),
-              border: Border.all(color: const Color(0xFFE5E7EB), width: 1.0), 
+              border: Border.all(color: Theme.of(context).colorScheme.outline, width: 1.0), 
               boxShadow: [
-                BoxShadow(blurRadius: 10.0, color: Colors.black.withOpacity(0.02), offset: const Offset(0, 4))
+                BoxShadow(blurRadius: 10.0, color: Colors.black.withValues(alpha: 0.02), offset: const Offset(0, 4))
               ],
             ),
             child: Theme(
@@ -173,27 +173,27 @@ class _ClassManagerWidgetState extends ConsumerState<ClassManagerWidget> {
                 tilePadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                 title: Row(
                   children: [
-                    const Icon(Icons.people_outline, color: Color(0xFF6B7280), size: 20),
+                    Icon(Icons.people_outline, color: Theme.of(context).colorScheme.secondary, size: 20),
                     const SizedBox(width: 12),
-                    Text('STUDENTI', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: const Color(0xFF6B7280), letterSpacing: 1.1)),
+                    Text('STUDENTI', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.secondary, letterSpacing: 1.1)),
                     const SizedBox(width: 12),
                     Container(
                       width: 24, height: 24,
-                      decoration: const BoxDecoration(color: Color(0xFF0056D2), shape: BoxShape.circle),
+                      decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary, shape: BoxShape.circle),
                       alignment: Alignment.center,
-                      child: Text(_studentsData.length.toString(), style: GoogleFonts.inter(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                      child: Text(_studentsData.length.toString(), style: GoogleFonts.inter(color: Theme.of(context).colorScheme.surface, fontSize: 12, fontWeight: FontWeight.bold)),
                     ),
                   ],
                 ),
                 subtitle: Padding(
                   padding: const EdgeInsets.only(top: 6.0, left: 32.0),
-                  child: Text('Rozklikněte pro rozbalení seznamu studentů', style: GoogleFonts.inter(color: const Color(0xFF9CA3AF), fontSize: 12)),
+                  child: Text('Rozklikněte pro rozbalení seznamu studentů', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontSize: 12)),
                 ),
                 children: [
                   if (_studentsData.isEmpty)
                     Padding(
                       padding: const EdgeInsets.all(16.0),
-                      child: Text('Zatím nejsou přidáni žádní studenti.', style: GoogleFonts.inter(color: Colors.grey)),
+                      child: Text('Zatím nejsou přidáni žádní studenti.', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary)),
                     )
                   else
                     Column(
@@ -210,7 +210,7 @@ class _ClassManagerWidgetState extends ConsumerState<ClassManagerWidget> {
                               ),
                             ),
                             if (index < _studentsData.length - 1)
-                              const Divider(height: 1, color: Color(0xFFF3F4F6), indent: 20, endIndent: 20),
+                              Divider(height: 1, color: Theme.of(context).colorScheme.outline, indent: 20, endIndent: 20),
                           ],
                         );
                       }).toList(),
@@ -222,7 +222,7 @@ class _ClassManagerWidgetState extends ConsumerState<ClassManagerWidget> {
 
           if (activeTests.isNotEmpty) ...[
             const SizedBox(height: 48.0),
-            _buildSectionHeader('Aktivní testy', const Color(0xFFDC2626), activeTests.length.toString()), 
+            _buildSectionHeader(context, 'Aktivní testy', Theme.of(context).colorScheme.error, activeTests.length.toString()), 
             const SizedBox(height: 16.0),
             ...activeTests.map((test) {
               return Padding(
@@ -240,7 +240,7 @@ class _ClassManagerWidgetState extends ConsumerState<ClassManagerWidget> {
 
           if (finishedTests.isNotEmpty) ...[
             const SizedBox(height: 48.0),
-            _buildSectionHeader('Testy ke kontrole', const Color(0xFF0056D2), finishedTests.length.toString()), 
+            _buildSectionHeader(context, 'Testy ke kontrole', Theme.of(context).colorScheme.primary, finishedTests.length.toString()), 
             const SizedBox(height: 16.0),
             ...finishedTests.map((test) {
               return Padding(
@@ -260,19 +260,19 @@ class _ClassManagerWidgetState extends ConsumerState<ClassManagerWidget> {
     );
   }
 
-  Widget _buildSectionHeader(String title, Color badgeColor, String count) {
+  Widget _buildSectionHeader(BuildContext context, String title, Color badgeColor, String count) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Container(width: 4, height: 20, decoration: BoxDecoration(color: const Color(0xFF0056D2), borderRadius: BorderRadius.circular(2))),
+        Container(width: 4, height: 20, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary, borderRadius: BorderRadius.circular(2))),
         const SizedBox(width: 12),
-        Text(title, style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: const Color(0xFF111827))),
+        Text(title, style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.onSurface)),
         const Spacer(),
         Container(
           width: 28, height: 28,
           decoration: BoxDecoration(color: badgeColor, shape: BoxShape.circle),
           alignment: Alignment.center,
-          child: Text(count, style: GoogleFonts.inter(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+          child: Text(count, style: GoogleFonts.inter(color: Theme.of(context).colorScheme.surface, fontSize: 13, fontWeight: FontWeight.bold)),
         ),
       ],
     );

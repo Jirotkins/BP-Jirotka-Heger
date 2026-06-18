@@ -9,6 +9,7 @@ import 'providers/auth_provider.dart';
 // IMPORT VŠECH POUŽÍVANÝCH STRÁNEK A ROUTERU
 import 'pages/pages.dart';
 import 'router/app_router.dart';
+import 'theme/app_themes.dart';
 
 // IMPORT LAYOUTŮ (SPA RÁMCŮ)
 import 'layouts/teacher_main_layout.dart';
@@ -36,11 +37,8 @@ class BakalarkaApp extends ConsumerWidget {
       title: 'Quizzes',
       debugShowCheckedModeBanner: false,
       themeMode: currentThemeMode,
-      darkTheme: ThemeData.dark().copyWith(
-        primaryColor: const Color(0xFF0056D2),
-        scaffoldBackgroundColor: const Color(0xFF121212),
-        useMaterial3: true,
-      ),
+      theme: AppThemes.lightTheme,
+      darkTheme: AppThemes.darkTheme,
 
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
@@ -50,13 +48,6 @@ class BakalarkaApp extends ConsumerWidget {
       supportedLocales: const [
         Locale('cs', 'CZ'), // Nastavení češtiny jako hlavního jazyka
       ],
-      
-      // Nastavení globálního grafického tématu
-      theme: ThemeData(
-        primaryColor: const Color(0xFF0056D2), // Hlavní modrá
-        scaffoldBackgroundColor: const Color(0xFFF5F7FA), // Výchozí světlé pozadí
-        useMaterial3: true,
-      ),
 
       // Reaktivní hlavní obrazovka podle stavu přihlášení
       routerConfig: router,

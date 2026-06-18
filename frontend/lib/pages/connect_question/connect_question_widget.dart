@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../components/page_header_widget.dart';
 import '../../components/next_question_button_widget.dart';
+import '../../theme/app_themes.dart';
 
 class ConnectQuestionWidget extends StatefulWidget {
   const ConnectQuestionWidget({super.key});
@@ -63,10 +64,10 @@ class _ConnectQuestionWidgetState extends State<ConnectQuestionWidget> {
         _pairControllers.removeAt(index);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Pro otázku typu Párování jsou potřeba alespoň 2 dvojice.'),
-            backgroundColor: Color(0xFF7C3AED), // Fialová barva
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: const Text('Pro otázku typu Párování jsou potřeba alespoň 2 dvojice.'),
+            backgroundColor: Theme.of(context).colorScheme.primary, // Fialová barva
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -196,12 +197,12 @@ class _ConnectQuestionWidgetState extends State<ConnectQuestionWidget> {
         width: 48.0,
         height: 48.0, // Stejná výška jako TextFormField
         decoration: BoxDecoration(
-          color: const Color(0xFFF9FAFB),
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(10.0),
-          border: Border.all(color: const Color(0xFFE5E7EB), width: 1.0),
+          border: Border.all(color: Theme.of(context).colorScheme.outline, width: 1.0),
         ),
         alignment: Alignment.center,
-        child: const Icon(Icons.add_photo_alternate_outlined, color: Color(0xFF9CA3AF), size: 24.0),
+        child: Icon(Icons.add_photo_alternate_outlined, color: Theme.of(context).colorScheme.secondary, size: 24.0),
       ),
     );
   }
@@ -224,11 +225,11 @@ class _ConnectQuestionWidgetState extends State<ConnectQuestionWidget> {
               icon: const Icon(Icons.visibility_outlined, size: 18),
               label: Text('Pohled studenta', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14)),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: const Color(0xFF0056D2),
+                backgroundColor: Theme.of(context).colorScheme.surface,
+                foregroundColor: Theme.of(context).colorScheme.primary,
                 minimumSize: const Size(0, 40),
                 padding: const EdgeInsets.symmetric(horizontal: 20),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: const BorderSide(color: Color(0xFF0056D2), width: 1.5)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5)),
                 elevation: 0,
               ),
             ),
@@ -242,8 +243,8 @@ class _ConnectQuestionWidgetState extends State<ConnectQuestionWidget> {
               icon: const Icon(Icons.save_outlined, size: 18),
               label: Text('Uložit', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14)),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF0056D2),
-                foregroundColor: Colors.white,
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.surface,
                 minimumSize: const Size(0, 40),
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -262,21 +263,21 @@ class _ConnectQuestionWidgetState extends State<ConnectQuestionWidget> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   
-                  Text('TYP OTÁZKY', style: GoogleFonts.inter(color: const Color(0xFF6B7280), letterSpacing: 1.2, fontSize: 12, fontWeight: FontWeight.bold)),
+                  Text('TYP OTÁZKY', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, letterSpacing: 1.2, fontSize: 12, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8.0),
                   Container(
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF5F3FF), // Fialové pozadí
+                      color: Theme.of(context).extension<CustomColors>()?.purpleBg ?? Theme.of(context).colorScheme.primaryContainer, 
                       borderRadius: BorderRadius.circular(20.0),
-                      border: Border.all(color: const Color(0xFFC4B5FD), width: 1.0),
+                      border: Border.all(color: Theme.of(context).colorScheme.outline, width: 1.0),
                     ),
                     padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 6.0),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.compare_arrows_rounded, color: Color(0xFF7C3AED), size: 16),
+                        Icon(Icons.compare_arrows_rounded, color: Theme.of(context).extension<CustomColors>()?.purpleText ?? Theme.of(context).colorScheme.primary, size: 16),
                         const SizedBox(width: 8),
-                        Text('Párování', style: GoogleFonts.inter(color: const Color(0xFF7C3AED), fontWeight: FontWeight.w600, fontSize: 13)),
+                        Text('Párování', style: GoogleFonts.inter(color: Theme.of(context).extension<CustomColors>()?.purpleText ?? Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w600, fontSize: 13)),
                       ],
                     ),
                   ),
@@ -284,23 +285,23 @@ class _ConnectQuestionWidgetState extends State<ConnectQuestionWidget> {
                   const SizedBox(height: 32.0),
 
                   // POLE PRO ZNĚNÍ OTÁZKY
-                  Text('ZNĚNÍ OTÁZKY', style: GoogleFonts.inter(color: const Color(0xFF6B7280), letterSpacing: 1.2, fontSize: 12, fontWeight: FontWeight.bold)),
+                  Text('ZNĚNÍ OTÁZKY', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, letterSpacing: 1.2, fontSize: 12, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8.0),
                   TextFormField(
                     controller: _questionTextController,
                     focusNode: _questionFocusNode,
                     maxLines: 4,
                     minLines: 3,
-                    style: GoogleFonts.inter(fontSize: 16, color: const Color(0xFF111827)),
+                    style: GoogleFonts.inter(fontSize: 16, color: Theme.of(context).colorScheme.onSurface),
                     decoration: InputDecoration(
                       hintText: 'Např. Spojte správně fyzikální veličiny s jejich jednotkami...',
-                      hintStyle: GoogleFonts.inter(color: const Color(0xFF9CA3AF)),
+                      hintStyle: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary),
                       filled: true,
-                      fillColor: Colors.white,
+                      fillColor: Theme.of(context).colorScheme.surface,
                       contentPadding: const EdgeInsets.all(20.0),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0), borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
-                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0), borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
-                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0), borderSide: const BorderSide(color: Color(0xFF0056D2), width: 1.5)),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0), borderSide: BorderSide(color: Theme.of(context).colorScheme.outline)),
+                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0), borderSide: BorderSide(color: Theme.of(context).colorScheme.outline)),
+                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0), borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5)),
                     ),
                   ),
                   
@@ -310,38 +311,38 @@ class _ConnectQuestionWidgetState extends State<ConnectQuestionWidget> {
                   Container(
                     height: 120.0,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF9FAFB),
+                      color: Theme.of(context).colorScheme.surface,
                       borderRadius: BorderRadius.circular(12.0),
-                      border: Border.all(color: const Color(0xFFE5E7EB), width: 1.5),
+                      border: Border.all(color: Theme.of(context).colorScheme.outline, width: 1.5),
                     ),
                     alignment: Alignment.center,
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.cloud_upload_outlined, color: Color(0xFF9CA3AF), size: 36.0),
+                        Icon(Icons.cloud_upload_outlined, color: Theme.of(context).colorScheme.secondary, size: 36.0),
                         const SizedBox(height: 8.0),
-                        Text('Přetáhněte obrázek nebo schéma (volitelné)', style: GoogleFonts.inter(color: const Color(0xFF6B7280), fontSize: 14.0)),
+                        Text('Přetáhněte obrázek nebo schéma (volitelné)', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontSize: 14.0)),
                       ],
                     ),
                   ),
                   
                   const SizedBox(height: 48.0),
-                  const Divider(color: Color(0xFFE5E7EB), height: 1),
+                  Divider(color: Theme.of(context).colorScheme.outline, height: 1),
                   const SizedBox(height: 32.0),
 
                   // DYNAMICKÁ SEKCE PRO PÁROVÁNÍ
-                  Text('SPRÁVNÉ DVOJICE K PROPOJENÍ', style: GoogleFonts.inter(color: const Color(0xFF6B7280), letterSpacing: 1.2, fontSize: 12, fontWeight: FontWeight.bold)),
+                  Text('SPRÁVNÉ DVOJICE K PROPOJENÍ', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, letterSpacing: 1.2, fontSize: 12, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 4.0),
-                  Text('Zadejte hodnoty, které k sobě patří. K libovolné položce můžete připojit i obrázek. Studentům se sloupce automaticky zamíchají.', style: GoogleFonts.inter(color: const Color(0xFF9CA3AF), fontSize: 12)),
+                  Text('Zadejte hodnoty, které k sobě patří. K libovolné položce můžete připojit i obrázek. Studentům se sloupce automaticky zamíchají.', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontSize: 12)),
                   const SizedBox(height: 24.0),
                   
                   // Záhlaví sloupců
                   Row(
                     children: [
                       const SizedBox(width: 48), // Odsazení pro číslo
-                      Expanded(child: Text('Levá strana (Pojem)', style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: const Color(0xFF374151), fontSize: 13))),
+                      Expanded(child: Text('Levá strana (Pojem)', style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface, fontSize: 13))),
                       const SizedBox(width: 32), // Místo pro šipky
-                      Expanded(child: Text('Pravá strana (Definice / Hodnota)', style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: const Color(0xFF374151), fontSize: 13))),
+                      Expanded(child: Text('Pravá strana (Definice / Hodnota)', style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface, fontSize: 13))),
                       const SizedBox(width: 48), // Odsazení pro ikonu smazání
                     ],
                   ),
@@ -364,9 +365,9 @@ class _ConnectQuestionWidgetState extends State<ConnectQuestionWidget> {
                               width: 32,
                               height: 32,
                               margin: const EdgeInsets.only(top: 8),
-                              decoration: const BoxDecoration(color: Color(0xFFF5F3FF), shape: BoxShape.circle),
+                              decoration: BoxDecoration(color: Theme.of(context).colorScheme.primaryContainer, shape: BoxShape.circle),
                               alignment: Alignment.center,
-                              child: Text('${index + 1}', style: GoogleFonts.inter(color: const Color(0xFF7C3AED), fontWeight: FontWeight.bold)),
+                              child: Text('${index + 1}', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold)),
                             ),
                             const SizedBox(width: 16.0),
                             
@@ -379,16 +380,16 @@ class _ConnectQuestionWidgetState extends State<ConnectQuestionWidget> {
                                   Expanded(
                                     child: TextFormField(
                                       controller: leftCtrl,
-                                      style: GoogleFonts.inter(fontWeight: FontWeight.w500, color: const Color(0xFF111827)),
+                                      style: GoogleFonts.inter(fontWeight: FontWeight.w500, color: Theme.of(context).colorScheme.onSurface),
                                       decoration: InputDecoration(
                                         hintText: 'Např. Rychlost',
-                                        hintStyle: GoogleFonts.inter(color: const Color(0xFF9CA3AF), fontWeight: FontWeight.normal),
+                                        hintStyle: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontWeight: FontWeight.normal),
                                         filled: true,
-                                        fillColor: Colors.white,
+                                        fillColor: Theme.of(context).colorScheme.surface,
                                         contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
-                                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10.0), borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
-                                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10.0), borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
-                                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10.0), borderSide: const BorderSide(color: Color(0xFF7C3AED))),
+                                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10.0), borderSide: BorderSide(color: Theme.of(context).colorScheme.outline)),
+                                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10.0), borderSide: BorderSide(color: Theme.of(context).colorScheme.outline)),
+                                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10.0), borderSide: BorderSide(color: Theme.of(context).colorScheme.primary)),
                                       ),
                                     ),
                                   ),
@@ -401,7 +402,7 @@ class _ConnectQuestionWidgetState extends State<ConnectQuestionWidget> {
                               padding: const EdgeInsets.symmetric(horizontal: 16.0),
                               height: 48.0,
                               alignment: Alignment.center,
-                              child: const Icon(Icons.sync_alt_rounded, color: Color(0xFFD1D5DB)),
+                              child: Icon(Icons.sync_alt_rounded, color: Theme.of(context).colorScheme.outline),
                             ),
 
                             // Pravá strana (Nyní s obrázkem)
@@ -413,16 +414,16 @@ class _ConnectQuestionWidgetState extends State<ConnectQuestionWidget> {
                                   Expanded(
                                     child: TextFormField(
                                       controller: rightCtrl,
-                                      style: GoogleFonts.inter(fontWeight: FontWeight.w500, color: const Color(0xFF111827)),
+                                      style: GoogleFonts.inter(fontWeight: FontWeight.w500, color: Theme.of(context).colorScheme.onSurface),
                                       decoration: InputDecoration(
                                         hintText: 'Např. v',
-                                        hintStyle: GoogleFonts.inter(color: const Color(0xFF9CA3AF), fontWeight: FontWeight.normal),
+                                        hintStyle: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontWeight: FontWeight.normal),
                                         filled: true,
-                                        fillColor: Colors.white,
+                                        fillColor: Theme.of(context).colorScheme.surface,
                                         contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
-                                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10.0), borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
-                                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10.0), borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
-                                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10.0), borderSide: const BorderSide(color: Color(0xFF7C3AED))),
+                                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10.0), borderSide: BorderSide(color: Theme.of(context).colorScheme.outline)),
+                                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10.0), borderSide: BorderSide(color: Theme.of(context).colorScheme.outline)),
+                                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10.0), borderSide: BorderSide(color: Theme.of(context).colorScheme.primary)),
                                       ),
                                     ),
                                   ),
@@ -438,7 +439,7 @@ class _ConnectQuestionWidgetState extends State<ConnectQuestionWidget> {
                               alignment: Alignment.center,
                               child: IconButton(
                                 onPressed: () => _removePair(index),
-                                icon: const Icon(Icons.delete_outline, color: Color(0xFFDC2626)),
+                                icon: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error),
                                 tooltip: 'Odebrat dvojici',
                                 splashRadius: 24.0,
                               ),
@@ -453,8 +454,8 @@ class _ConnectQuestionWidgetState extends State<ConnectQuestionWidget> {
                   
                   TextButton.icon(
                     onPressed: _addPair,
-                    icon: const Icon(Icons.add_circle_outline, size: 18.0, color: Color(0xFF7C3AED)), // Tlačítko v barvě kategorie
-                    label: Text('Přidat další dvojici', style: GoogleFonts.inter(color: const Color(0xFF7C3AED), fontWeight: FontWeight.w600)),
+                    icon: Icon(Icons.add_circle_outline, size: 18.0, color: Theme.of(context).colorScheme.primary), // Tlačítko v barvě kategorie
+                    label: Text('Přidat další dvojici', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w600)),
                     style: TextButton.styleFrom(
                       padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 12.0),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),

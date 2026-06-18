@@ -22,25 +22,25 @@ class _TestSettingsWidgetState extends State<TestSettingsWidget> {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16.0),
-        border: Border.all(color: const Color(0xFFE5E7EB), width: 1.0),
+        border: Border.all(color: Theme.of(context).colorScheme.outline, width: 1.0),
         boxShadow: [
           BoxShadow(
             blurRadius: 10.0,
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             offset: const Offset(0, 4),
           )
         ],
       ),
       child: Theme(
-        data: ThemeData().copyWith(dividerColor: Colors.transparent), 
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent), 
         child: ExpansionTile(
           tilePadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          leading: const Icon(Icons.settings_suggest_rounded, color: Color(0xFF6B7280)),
+          leading: Icon(Icons.settings_suggest_rounded, color: Theme.of(context).colorScheme.secondary),
           title: Text(
             'NASTAVENÍ TESTU', 
-            style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: const Color(0xFF6B7280), letterSpacing: 1.1)
+            style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.secondary, letterSpacing: 1.1)
           ),
           childrenPadding: const EdgeInsets.all(20),
           expandedCrossAxisAlignment: CrossAxisAlignment.stretch,
@@ -54,9 +54,9 @@ class _TestSettingsWidgetState extends State<TestSettingsWidget> {
                 width: 140,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF9FAFB),
+                  color: Theme.of(context).scaffoldBackgroundColor,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFE5E7EB)),
+                  border: Border.all(color: Theme.of(context).colorScheme.outline),
                 ),
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<String>(
@@ -64,19 +64,19 @@ class _TestSettingsWidgetState extends State<TestSettingsWidget> {
                     items: _attemptOptions.map((String val) {
                       return DropdownMenuItem<String>(
                         value: val,
-                        child: Text(val, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: const Color(0xFF111827))),
+                        child: Text(val, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface)),
                       );
                     }).toList(),
                     onChanged: (val) => setState(() => _selectedAttempts = val),
-                    icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF6B7280)),
+                    icon: Icon(Icons.keyboard_arrow_down_rounded, color: Theme.of(context).colorScheme.secondary),
                     isExpanded: true,
-                    dropdownColor: Colors.white,
+                    dropdownColor: Theme.of(context).colorScheme.surface,
                   ),
                 ),
               ),
             ),
 
-            const Divider(height: 32, color: Color(0xFFF3F4F6)),
+            Divider(height: 32, color: Theme.of(context).colorScheme.outline),
 
             // NÁHODNÉ POŘADÍ OTÁZEK
             _buildSwitchRow(
@@ -86,7 +86,7 @@ class _TestSettingsWidgetState extends State<TestSettingsWidget> {
               onChanged: (val) => setState(() => _randomOrder = val),
             ),
 
-            const Divider(height: 32, color: Color(0xFFF3F4F6)),
+            Divider(height: 32, color: Theme.of(context).colorScheme.outline),
 
             // OKAMŽITÁ ZPĚTNÁ VAZBA
             _buildSwitchRow(
@@ -96,7 +96,7 @@ class _TestSettingsWidgetState extends State<TestSettingsWidget> {
               onChanged: (val) => setState(() => _immediateFeedback = val),
             ),
 
-            const Divider(height: 32, color: Color(0xFFF3F4F6)),
+            Divider(height: 32, color: Theme.of(context).colorScheme.outline),
 
             // MOŽNOST VRACET SE
             _buildSwitchRow(
@@ -106,7 +106,7 @@ class _TestSettingsWidgetState extends State<TestSettingsWidget> {
               onChanged: (val) => setState(() => _canGoBack = val),
             ),
 
-            const Divider(height: 32, color: Color(0xFFF3F4F6)),
+            Divider(height: 32, color: Theme.of(context).colorScheme.outline),
 
             // ZOBRAZIT VÝSLEDKY
             _buildSwitchRow(
@@ -130,9 +130,9 @@ class _TestSettingsWidgetState extends State<TestSettingsWidget> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: const Color(0xFF111827))),
+              Text(title, style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface)),
               const SizedBox(height: 4),
-              Text(subtitle, style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF6B7280))),
+              Text(subtitle, style: GoogleFonts.inter(fontSize: 12, color: Theme.of(context).colorScheme.secondary)),
             ],
           ),
         ),
@@ -151,16 +151,16 @@ class _TestSettingsWidgetState extends State<TestSettingsWidget> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: const Color(0xFF111827))),
+              Text(title, style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface)),
               const SizedBox(height: 4),
-              Text(subtitle, style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF6B7280))),
+              Text(subtitle, style: GoogleFonts.inter(fontSize: 12, color: Theme.of(context).colorScheme.secondary)),
             ],
           ),
         ),
         const SizedBox(width: 16),
         Switch(
           value: value,
-          activeColor: const Color(0xFF0056D2),
+          activeColor: Theme.of(context).colorScheme.primary,
           onChanged: onChanged,
         ),
       ],

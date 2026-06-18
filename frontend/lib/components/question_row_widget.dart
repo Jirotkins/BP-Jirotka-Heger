@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/app_themes.dart';
 
 class QuestionRowWidget extends StatelessWidget {
   final int id;
@@ -12,35 +13,34 @@ class QuestionRowWidget extends StatelessWidget {
     required this.type,
   });
 
-  // Pomocná metoda pro čisté určení barev štítku na základě typu otázky
-  // Vrací Mapu s barvou pozadí (bg) a barvou textu (text)
-  Map<String, Color> _getTypeColors(String questionType) {
+  Map<String, Color> _getTypeColors(BuildContext context, String questionType) {
+    final customColors = Theme.of(context).extension<CustomColors>();
     switch (questionType) {
       case 'Výběr z možností':
-        return {'bg': const Color(0xFFEEF2FF), 'text': const Color(0xFF3D5AF1)};
+        return {'bg': customColors?.blueBg ?? Theme.of(context).colorScheme.primaryContainer, 'text': customColors?.blueText ?? Theme.of(context).colorScheme.primary};
       case 'Seřazení':
-        return {'bg': const Color(0xFFFFF3E0), 'text': const Color(0xFFFFB300)};
+        return {'bg': customColors?.orangeBg ?? Theme.of(context).colorScheme.primaryContainer, 'text': customColors?.orangeText ?? Theme.of(context).colorScheme.primary};
       case 'Párování':
-        return {'bg': const Color(0xFFDED1F1), 'text': const Color(0xFF9100FF)};
+        return {'bg': customColors?.purpleBg ?? Theme.of(context).colorScheme.primaryContainer, 'text': customColors?.purpleText ?? Theme.of(context).colorScheme.primary};
       case 'Otevřená':
-        return {'bg': const Color(0xFFE8F5E9), 'text': const Color(0xFF43A047)};
+        return {'bg': customColors?.greenBg ?? Theme.of(context).colorScheme.primaryContainer, 'text': customColors?.greenText ?? Theme.of(context).colorScheme.primary};
       case 'Krátká odpověď':
-        return {'bg': const Color(0xFFF8DADA), 'text': const Color(0xFFF85353)};
+        return {'bg': customColors?.redBg ?? Theme.of(context).colorScheme.primaryContainer, 'text': customColors?.redText ?? Theme.of(context).colorScheme.primary};
       default:
-        return {'bg': Colors.grey.shade100, 'text': Colors.black87};
+        return {'bg': Theme.of(context).colorScheme.surfaceContainerHighest, 'text': Theme.of(context).colorScheme.onSurface};
     }
   }
 
   @override
   Widget build(BuildContext context) {
     // Získáme barvy pro aktuální typ otázky
-    final typeColors = _getTypeColors(type);
+    final typeColors = _getTypeColors(context, type);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white, // Původně primaryBackground
+          color: Theme.of(context).colorScheme.surface, // Původně primaryBackground
           borderRadius: BorderRadius.circular(12.0), // Zmenšeno z 22 na 12 pro hezčí řádek
         ),
         padding: const EdgeInsets.all(12.0),
@@ -52,8 +52,8 @@ class QuestionRowWidget extends StatelessWidget {
               width: 40.0,
               child: Text(
                 id.toString(),
-                style: const TextStyle(
-                  color: Colors.grey,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.secondary,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -66,10 +66,10 @@ class QuestionRowWidget extends StatelessWidget {
                 question,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.w500,
                   fontSize: 14.0,
-                  color: Colors.black87,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
             ),
@@ -104,11 +104,11 @@ class QuestionRowWidget extends StatelessWidget {
                   width: 36.0,
                   height: 36.0,
                   decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey.shade300),
+                    border: Border.all(color: Theme.of(context).colorScheme.outline),
                     borderRadius: BorderRadius.circular(22.0),
                   ),
                   child: IconButton(
-                    icon: const Icon(Icons.edit_outlined, color: Color(0xFF3D5AF1), size: 18.0),
+                    icon: Icon(Icons.edit_outlined, color: Theme.of(context).colorScheme.primary, size: 18.0),
                     onPressed: () {
                       print('Editovat otázku $id');
                     },
@@ -122,11 +122,11 @@ class QuestionRowWidget extends StatelessWidget {
                   width: 36.0,
                   height: 36.0,
                   decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey.shade300),
+                    border: Border.all(color: Theme.of(context).colorScheme.outline),
                     borderRadius: BorderRadius.circular(22.0),
                   ),
                   child: IconButton(
-                    icon: const Icon(Icons.delete_outline, color: Colors.red, size: 18.0),
+                    icon: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error, size: 18.0),
                     onPressed: () {
                       print('Smazat otázku $id');
                     },

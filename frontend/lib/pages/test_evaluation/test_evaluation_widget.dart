@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/services.dart';
+import '../../theme/app_themes.dart';
 
 // Obrazovka pro kontrolu a hodnocení odevzdaného testu učitelem.
 // Přijímá (zatím z mock dat, později přes API) detaily o testu a odpovědích studenta.
@@ -166,10 +167,10 @@ class _TestEvaluationWidgetState extends State<TestEvaluationWidget> {
 
     // Potvrzení uložení a návrat zpět
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Hodnocení bylo úspěšně uloženo.'),
-        backgroundColor: Color(0xFF16A34A),
-        duration: Duration(seconds: 2),
+      SnackBar(
+        content: const Text('Hodnocení bylo úspěšně uloženo.'),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        duration: const Duration(seconds: 2),
       ),
     );
     Future.delayed(const Duration(milliseconds: 300), () {
@@ -191,12 +192,12 @@ class _TestEvaluationWidgetState extends State<TestEvaluationWidget> {
         Container(
           margin: const EdgeInsets.all(32.0).copyWith(bottom: 16.0),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(16.0),
-            border: Border.all(color: const Color(0xFFE5E7EB)),
+            border: Border.all(color: Theme.of(context).colorScheme.outline),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.02),
+                color: Colors.black.withValues(alpha: 0.02),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -214,7 +215,7 @@ class _TestEvaluationWidgetState extends State<TestEvaluationWidget> {
                     style: GoogleFonts.inter(
                       fontSize: 26.0,
                       fontWeight: FontWeight.w800,
-                      color: const Color(0xFF111827),
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -222,7 +223,7 @@ class _TestEvaluationWidgetState extends State<TestEvaluationWidget> {
                     '${_testData['subject']} • Odevzdáno: ${_testData['submittedAt']}',
                     style: GoogleFonts.inter(
                       fontSize: 14.0,
-                      color: const Color(0xFF6B7280),
+                      color: Theme.of(context).colorScheme.secondary,
                     ),
                   ),
                 ],
@@ -237,7 +238,7 @@ class _TestEvaluationWidgetState extends State<TestEvaluationWidget> {
                         style: GoogleFonts.inter(
                           fontSize: 16.0,
                           fontWeight: FontWeight.bold,
-                          color: const Color(0xFF374151),
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -246,7 +247,7 @@ class _TestEvaluationWidgetState extends State<TestEvaluationWidget> {
                         style: GoogleFonts.inter(
                           fontSize: 14.0,
                           fontWeight: FontWeight.w600,
-                          color: const Color(0xFF0056D2),
+                          color: Theme.of(context).colorScheme.primary,
                         ),
                       ),
                     ],
@@ -260,8 +261,8 @@ class _TestEvaluationWidgetState extends State<TestEvaluationWidget> {
                       style: GoogleFonts.inter(fontWeight: FontWeight.bold),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF0056D2),
-                      foregroundColor: Colors.white,
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 24.0,
                         vertical: 16.0,
@@ -300,24 +301,25 @@ class _TestEvaluationWidgetState extends State<TestEvaluationWidget> {
   }
 
   // Helper pro vizuální podbarvení celého bloku otázky (zelená = plný počet, červená = 0, oranžová = částečné)
-  Map<String, Color> _getFeedbackColors(double awarded, double max) {
+  Map<String, Color> _getFeedbackColors(BuildContext context, double awarded, double max) {
+    final customColors = Theme.of(context).extension<CustomColors>();
     if (awarded == max) {
       return {
-        'bg': const Color(0xFFF0FDF4),
-        'border': const Color(0xFF86EFAC),
-        'icon': const Color(0xFF16A34A),
+        'bg': customColors?.greenBg ?? const Color(0xFFF0FDF4),
+        'border': customColors?.greenText?.withValues(alpha: 0.3) ?? const Color(0xFF86EFAC),
+        'icon': customColors?.greenText ?? const Color(0xFF16A34A),
       };
     } else if (awarded <= 0) {
       return {
-        'bg': const Color(0xFFFEF2F2),
-        'border': const Color(0xFFFCA5A5),
-        'icon': const Color(0xFFDC2626),
+        'bg': Theme.of(context).colorScheme.errorContainer,
+        'border': Theme.of(context).colorScheme.error.withValues(alpha: 0.3),
+        'icon': Theme.of(context).colorScheme.error,
       };
     } else {
       return {
-        'bg': const Color(0xFFFFFBEB),
-        'border': const Color(0xFFFCD34D),
-        'icon': const Color(0xFFD97706),
+        'bg': customColors?.orangeBg ?? const Color(0xFFFFFBEB),
+        'border': customColors?.orangeText?.withValues(alpha: 0.3) ?? const Color(0xFFFCD34D),
+        'icon': customColors?.orangeText ?? const Color(0xFFD97706),
       };
     }
   }
@@ -327,6 +329,7 @@ class _TestEvaluationWidgetState extends State<TestEvaluationWidget> {
     // BEZPEČNOSTNÍ POJISTKY PROTI PÁDU APLIKACE (Fallback hodnoty v případě chybějících dat)
     bool isExpanded = question['isExpanded'] ?? false;
     bool isAutoGraded = question['isAutoGraded'] ?? false;
+    final customColors = Theme.of(context).extension<CustomColors>();
 
     String typeLabel = "";
     switch (question['type']) {
@@ -364,12 +367,12 @@ class _TestEvaluationWidgetState extends State<TestEvaluationWidget> {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16.0),
         border: Border.all(
           color: isAutoGraded
-              ? const Color(0xFFE5E7EB)
-              : const Color(0xFFBFDBFE),
+              ? Theme.of(context).colorScheme.outline
+              : Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
           width: isAutoGraded ? 1.0 : 2.0,
         ),
       ),
@@ -391,7 +394,7 @@ class _TestEvaluationWidgetState extends State<TestEvaluationWidget> {
                         style: GoogleFonts.inter(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
-                          color: const Color(0xFF111827),
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -402,8 +405,8 @@ class _TestEvaluationWidgetState extends State<TestEvaluationWidget> {
                         ),
                         decoration: BoxDecoration(
                           color: isAutoGraded
-                              ? const Color(0xFFF3F4F6)
-                              : const Color(0xFFFEF3C7),
+                              ? Theme.of(context).scaffoldBackgroundColor
+                              : customColors?.orangeBg ?? Theme.of(context).colorScheme.secondaryContainer,
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
@@ -414,8 +417,8 @@ class _TestEvaluationWidgetState extends State<TestEvaluationWidget> {
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                             color: isAutoGraded
-                                ? const Color(0xFF4B5563)
-                                : const Color(0xFFD97706),
+                                ? Theme.of(context).colorScheme.onSurfaceVariant
+                                : customColors?.orangeText ?? Theme.of(context).colorScheme.onSecondaryContainer,
                           ),
                         ),
                       ),
@@ -429,14 +432,14 @@ class _TestEvaluationWidgetState extends State<TestEvaluationWidget> {
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
                           color: isAutoGraded
-                              ? const Color(0xFF374151)
-                              : const Color(0xFF0056D2),
+                              ? Theme.of(context).colorScheme.onSurface
+                              : Theme.of(context).colorScheme.primary,
                         ),
                       ),
                       const SizedBox(width: 16),
                       Icon(
                         isExpanded ? Icons.expand_less : Icons.expand_more,
-                        color: const Color(0xFF9CA3AF),
+                        color: Theme.of(context).colorScheme.secondary,
                       ),
                     ],
                   ),
@@ -446,7 +449,7 @@ class _TestEvaluationWidgetState extends State<TestEvaluationWidget> {
           ),
 
           if (isExpanded) ...[
-            const Divider(height: 1, color: Color(0xFFE5E7EB)),
+            Divider(height: 1, color: Theme.of(context).colorScheme.outline),
             Padding(
               padding: const EdgeInsets.all(24.0),
               child: Column(
@@ -456,7 +459,7 @@ class _TestEvaluationWidgetState extends State<TestEvaluationWidget> {
                     question['text'] ?? '',
                     style: GoogleFonts.inter(
                       fontSize: 16,
-                      color: const Color(0xFF111827),
+                      color: Theme.of(context).colorScheme.onSurface,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -484,14 +487,15 @@ class _TestEvaluationWidgetState extends State<TestEvaluationWidget> {
   // Obyčejný Single/Multi Choice a Krátká odpověď
   Widget _buildAutoGradedAnswerView(Map<String, dynamic> question) {
     bool isCorrect = question['isCorrect'] ?? false;
+    final customColors = Theme.of(context).extension<CustomColors>();
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isCorrect ? const Color(0xFFF0FDF4) : const Color(0xFFFEF2F2),
+        color: isCorrect ? customColors?.greenBg : Theme.of(context).colorScheme.errorContainer,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isCorrect ? const Color(0xFF86EFAC) : const Color(0xFFFCA5A5),
+          color: isCorrect ? customColors?.greenText?.withValues(alpha: 0.3) ?? Colors.transparent : Theme.of(context).colorScheme.error.withValues(alpha: 0.3),
         ),
       ),
       child: Row(
@@ -504,7 +508,7 @@ class _TestEvaluationWidgetState extends State<TestEvaluationWidget> {
                   'Odpověď studenta:',
                   style: GoogleFonts.inter(
                     fontSize: 12,
-                    color: const Color(0xFF6B7280),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -512,7 +516,7 @@ class _TestEvaluationWidgetState extends State<TestEvaluationWidget> {
                   question['studentAnswer'] ?? '',
                   style: GoogleFonts.inter(
                     fontWeight: FontWeight.w600,
-                    color: const Color(0xFF111827),
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
               ],
@@ -521,8 +525,8 @@ class _TestEvaluationWidgetState extends State<TestEvaluationWidget> {
           Icon(
             isCorrect ? Icons.check_circle_rounded : Icons.cancel_rounded,
             color: isCorrect
-                ? const Color(0xFF16A34A)
-                : const Color(0xFFDC2626),
+                ? customColors?.greenText ?? Colors.green
+                : Theme.of(context).colorScheme.error,
             size: 28,
           ),
         ],
@@ -534,7 +538,8 @@ class _TestEvaluationWidgetState extends State<TestEvaluationWidget> {
   Widget _buildOrderAnswerView(Map<String, dynamic> question) {
     double awarded = (question['awardedPoints'] ?? 0).toDouble();
     double max = (question['maxPoints'] ?? 1).toDouble();
-    var colors = _getFeedbackColors(awarded, max);
+    var colors = _getFeedbackColors(context, awarded, max);
+    final customColors = Theme.of(context).extension<CustomColors>();
 
     List<String> items = List<String>.from(question['studentAnswer'] ?? []);
     List<String> correctItems = List<String>.from(
@@ -558,7 +563,7 @@ class _TestEvaluationWidgetState extends State<TestEvaluationWidget> {
                 'Odpověď studenta (seřazeno):',
                 style: GoogleFonts.inter(
                   fontSize: 12,
-                  color: const Color(0xFF6B7280),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
               Icon(
@@ -590,8 +595,8 @@ class _TestEvaluationWidgetState extends State<TestEvaluationWidget> {
                     height: 28,
                     decoration: BoxDecoration(
                       color: isItemCorrect
-                          ? const Color(0xFFDCFCE7)
-                          : const Color(0xFFFEE2E2),
+                          ? customColors?.greenBg ?? Theme.of(context).colorScheme.primaryContainer
+                          : Theme.of(context).colorScheme.errorContainer,
                       shape: BoxShape.circle,
                     ),
                     alignment: Alignment.center,
@@ -599,8 +604,8 @@ class _TestEvaluationWidgetState extends State<TestEvaluationWidget> {
                       '${index + 1}.',
                       style: GoogleFonts.inter(
                         color: isItemCorrect
-                            ? const Color(0xFF16A34A)
-                            : const Color(0xFFDC2626),
+                            ? customColors?.greenText ?? Theme.of(context).colorScheme.primary
+                            : Theme.of(context).colorScheme.error,
                         fontWeight: FontWeight.bold,
                         fontSize: 13,
                       ),
@@ -615,7 +620,7 @@ class _TestEvaluationWidgetState extends State<TestEvaluationWidget> {
                           text,
                           style: GoogleFonts.inter(
                             fontWeight: FontWeight.w500,
-                            color: const Color(0xFF111827),
+                            color: Theme.of(context).colorScheme.onSurface,
                             decoration: isItemCorrect
                                 ? TextDecoration.none
                                 : TextDecoration.lineThrough,
@@ -626,7 +631,7 @@ class _TestEvaluationWidgetState extends State<TestEvaluationWidget> {
                             'Správně: ${correctItems[index]}',
                             style: GoogleFonts.inter(
                               fontSize: 12,
-                              color: const Color(0xFF16A34A),
+                              color: customColors?.greenText ?? Colors.green,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -646,7 +651,8 @@ class _TestEvaluationWidgetState extends State<TestEvaluationWidget> {
   Widget _buildMatchAnswerView(Map<String, dynamic> question) {
     double awarded = (question['awardedPoints'] ?? 0).toDouble();
     double max = (question['maxPoints'] ?? 1).toDouble();
-    var colors = _getFeedbackColors(awarded, max);
+    var colors = _getFeedbackColors(context, awarded, max);
+    final customColors = Theme.of(context).extension<CustomColors>();
 
     List<Map<String, dynamic>> pairs = List<Map<String, dynamic>>.from(
       question['studentPairs'] ?? [],
@@ -669,7 +675,7 @@ class _TestEvaluationWidgetState extends State<TestEvaluationWidget> {
                 'Odpověď studenta (vytvořené páry):',
                 style: GoogleFonts.inter(
                   fontSize: 12,
-                  color: const Color(0xFF6B7280),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
               Icon(
@@ -699,13 +705,13 @@ class _TestEvaluationWidgetState extends State<TestEvaluationWidget> {
                         vertical: 12,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.surface,
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: const Color(0xFFE5E7EB)),
+                        border: Border.all(color: Theme.of(context).colorScheme.outline),
                       ),
                       child: Text(
                         pair['left'] ?? '',
-                        style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+                        style: GoogleFonts.inter(fontWeight: FontWeight.w500, color: Theme.of(context).colorScheme.onSurface),
                       ),
                     ),
                   ),
@@ -714,8 +720,8 @@ class _TestEvaluationWidgetState extends State<TestEvaluationWidget> {
                     child: Icon(
                       isPairCorrect ? Icons.check_rounded : Icons.close_rounded,
                       color: isPairCorrect
-                          ? const Color(0xFF16A34A)
-                          : const Color(0xFFDC2626),
+                          ? customColors?.greenText ?? Colors.green
+                          : Theme.of(context).colorScheme.error,
                       size: 20,
                     ),
                   ),
@@ -731,13 +737,13 @@ class _TestEvaluationWidgetState extends State<TestEvaluationWidget> {
                           ),
                           decoration: BoxDecoration(
                             color: isPairCorrect
-                                ? Colors.white
-                                : const Color(0xFFFEF2F2),
+                                ? Theme.of(context).colorScheme.surface
+                                : Theme.of(context).colorScheme.errorContainer,
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
                               color: isPairCorrect
-                                  ? const Color(0xFFE5E7EB)
-                                  : const Color(0xFFFCA5A5),
+                                  ? Theme.of(context).colorScheme.outline
+                                  : Theme.of(context).colorScheme.error.withValues(alpha: 0.3),
                             ),
                           ),
                           child: Text(
@@ -745,8 +751,8 @@ class _TestEvaluationWidgetState extends State<TestEvaluationWidget> {
                             style: GoogleFonts.inter(
                               fontWeight: FontWeight.w500,
                               color: isPairCorrect
-                                  ? const Color(0xFF111827)
-                                  : const Color(0xFFDC2626),
+                                  ? Theme.of(context).colorScheme.onSurface
+                                  : Theme.of(context).colorScheme.error,
                               decoration: isPairCorrect
                                   ? TextDecoration.none
                                   : TextDecoration.lineThrough,
@@ -760,7 +766,7 @@ class _TestEvaluationWidgetState extends State<TestEvaluationWidget> {
                               'Správně: ${pair['correctRight']}',
                               style: GoogleFonts.inter(
                                 fontSize: 12,
-                                color: const Color(0xFF16A34A),
+                                color: customColors?.greenText ?? Colors.green,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -787,9 +793,9 @@ class _TestEvaluationWidgetState extends State<TestEvaluationWidget> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: const Color(0xFFF9FAFB),
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFE5E7EB)),
+            border: Border.all(color: Theme.of(context).colorScheme.outline),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -798,7 +804,7 @@ class _TestEvaluationWidgetState extends State<TestEvaluationWidget> {
                 'Odpověď studenta:',
                 style: GoogleFonts.inter(
                   fontSize: 12,
-                  color: const Color(0xFF6B7280),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
               const SizedBox(height: 8),
@@ -806,7 +812,7 @@ class _TestEvaluationWidgetState extends State<TestEvaluationWidget> {
                 question['studentAnswer'] ?? '',
                 style: GoogleFonts.inter(
                   fontStyle: FontStyle.italic,
-                  color: const Color(0xFF374151),
+                  color: Theme.of(context).colorScheme.onSurface,
                   height: 1.5,
                 ),
               ),
@@ -824,23 +830,23 @@ class _TestEvaluationWidgetState extends State<TestEvaluationWidget> {
               child: TextFormField(
                 controller: _feedbackControllers[qId],
                 maxLines: 3,
-                style: GoogleFonts.inter(fontSize: 14),
+                style: GoogleFonts.inter(fontSize: 14, color: Theme.of(context).colorScheme.onSurface),
                 decoration: InputDecoration(
                   labelText: 'Slovní hodnocení (formativní)',
                   hintText: 'Napište zpětnou vazbu...',
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: Theme.of(context).colorScheme.surface,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                    borderSide: BorderSide(color: Theme.of(context).colorScheme.outline),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                    borderSide: BorderSide(color: Theme.of(context).colorScheme.outline),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Color(0xFF0056D2)),
+                    borderSide: BorderSide(color: Theme.of(context).colorScheme.primary),
                   ),
                 ),
               ),
@@ -866,23 +872,24 @@ class _TestEvaluationWidgetState extends State<TestEvaluationWidget> {
                 style: GoogleFonts.inter(
                   fontWeight: FontWeight.bold,
                   fontSize: 18,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
                 decoration: InputDecoration(
                   labelText: 'Udělené body',
                   hintText: '0',
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: Theme.of(context).colorScheme.surface,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                    borderSide: BorderSide(color: Theme.of(context).colorScheme.outline),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                    borderSide: BorderSide(color: Theme.of(context).colorScheme.outline),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Color(0xFF0056D2)),
+                    borderSide: BorderSide(color: Theme.of(context).colorScheme.primary),
                   ),
                 ),
                 onChanged: (val) {

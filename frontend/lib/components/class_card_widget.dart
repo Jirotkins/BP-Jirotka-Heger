@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../theme/app_themes.dart';
 
 class ClassCardWidget extends StatelessWidget {
   final int groupId;
@@ -26,9 +27,9 @@ class ClassCardWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         border: Border.all(
-          color: const Color(0xFFE5E7EB),
+          color: Theme.of(context).colorScheme.outline,
           width: 1.0,
         ),
         boxShadow: [
@@ -54,7 +55,7 @@ class ClassCardWidget extends StatelessWidget {
                 width: 42.0,
                 height: 42.0,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF0056D2),
+                  color: Theme.of(context).colorScheme.primaryContainer,
                   borderRadius: BorderRadius.circular(12.0),
                 ),
                 alignment: Alignment.center,
@@ -70,7 +71,7 @@ class ClassCardWidget extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.inter(
-                        color: const Color(0xFF111827),
+                        color: Theme.of(context).colorScheme.onSurface,
                         fontSize: 16.0,
                         fontWeight: FontWeight.w700,
                         height: 1.2,
@@ -82,7 +83,7 @@ class ClassCardWidget extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.inter(
-                        color: const Color(0xFF6B7280),
+                        color: Theme.of(context).colorScheme.secondary,
                         fontSize: 13.0,
                         fontWeight: FontWeight.w500,
                       ),
@@ -99,9 +100,9 @@ class ClassCardWidget extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildStatColumn('Studenti', studentCount.toString(), const Color(0xFF111827)),
-              _buildStatColumn('Aktivní testy', activeTestCount.toString(), const Color(0xFF0056D2)),
-              _buildStatColumn('Ke kontrole', testsToControl.toString(), const Color(0xFFE85D04)),
+              _buildStatColumn(context, 'Studenti', studentCount.toString(), Theme.of(context).colorScheme.onSurface),
+              _buildStatColumn(context, 'Aktivní testy', activeTestCount.toString(), Theme.of(context).colorScheme.primary),
+              _buildStatColumn(context, 'Ke kontrole', testsToControl.toString(), Theme.of(context).extension<CustomColors>()?.orangeText ?? Colors.orange),
             ],
           ),
 
@@ -119,8 +120,8 @@ class ClassCardWidget extends StatelessWidget {
                   },); 
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFEFF6FF),
-                foregroundColor: const Color(0xFF0056D2),
+                backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                foregroundColor: Theme.of(context).colorScheme.primary,
                 elevation: 0,
                 minimumSize: const Size(0, 38.0),
                 shape: RoundedRectangleBorder(
@@ -141,14 +142,14 @@ class ClassCardWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildStatColumn(String label, String value, Color valueColor) {
+  Widget _buildStatColumn(BuildContext context, String label, String value, Color valueColor) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center, 
       children: [
         Text(
           label,
           style: GoogleFonts.inter(
-            color: const Color(0xFF6B7280),
+            color: Theme.of(context).colorScheme.secondary,
             fontSize: 11.0,
             fontWeight: FontWeight.w500,
           ),

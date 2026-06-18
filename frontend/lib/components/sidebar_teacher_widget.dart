@@ -30,9 +30,9 @@ class _SidebarTeacherWidgetState extends State<SidebarTeacherWidget> {
         duration: const Duration(milliseconds: 200),
         width: _isHovered ? 250.0 : 85.0,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           border: Border(
-            right: BorderSide(color: Colors.grey.shade300, width: 1.0),
+            right: BorderSide(color: Theme.of(context).colorScheme.outline, width: 1.0),
           ),
         ),
         // LayoutBuilder pro získání dostupné výšky obrazovky
@@ -51,9 +51,9 @@ class _SidebarTeacherWidgetState extends State<SidebarTeacherWidget> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         // LOGO (Horní část)
-                        const Padding(
-                          padding: EdgeInsets.only(bottom: 32.0),
-                          child: Icon(Icons.quiz_outlined, color: Color(0xFF3D5AF1), size: 48.0),
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 32.0),
+                          child: Icon(Icons.quiz_outlined, color: Theme.of(context).colorScheme.primary, size: 48.0),
                         ),
 
                         const Spacer(),
@@ -100,14 +100,14 @@ class _SidebarTeacherWidgetState extends State<SidebarTeacherWidget> {
                         Container(
                           width: 48.0,
                           height: 48.0,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFF3D5AF1),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.primary,
                             shape: BoxShape.circle,
                           ),
                           alignment: Alignment.center,
-                          child: const Text(
+                          child: Text(
                             'PN',
-                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                            style: TextStyle(color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.bold, fontSize: 16),
                           ),
                         ),
                         const SizedBox(height: 8.0),
@@ -145,7 +145,7 @@ class _SidebarTeacherWidgetState extends State<SidebarTeacherWidget> {
       borderRadius: BorderRadius.circular(12.0),
       child: Container(
         decoration: BoxDecoration(
-          color: isActive ? const Color(0xFFE3F2FD) : Colors.transparent,
+          color: isActive ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.1) : Colors.transparent,
           borderRadius: BorderRadius.circular(12.0),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 16.0),
@@ -153,7 +153,7 @@ class _SidebarTeacherWidgetState extends State<SidebarTeacherWidget> {
           children: [
             Icon(
               icon,
-              color: isActive ? const Color(0xFF3D5AF1) : Colors.black87,
+              color: isActive ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurface,
               size: 20.0,
             ),
             if (_isHovered) ...[
@@ -163,7 +163,7 @@ class _SidebarTeacherWidgetState extends State<SidebarTeacherWidget> {
                   title,
                   maxLines: 1, // Pojistka proti zalomení na 2 řádky
                   style: TextStyle(
-                    color: isActive ? const Color(0xFF3D5AF1) : Colors.black87,
+                    color: isActive ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurface,
                     fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
                     fontSize: 14.0,
                   ),

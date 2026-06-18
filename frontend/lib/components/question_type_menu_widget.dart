@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../theme/app_themes.dart';
 
 class QuestionTypeMenuWidget extends StatelessWidget {
   const QuestionTypeMenuWidget({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final customColors = Theme.of(context).extension<CustomColors>();
     // ZÍSKÁNÍ DAT Z PŘEDCHOZÍ STRÁNKY (Z AddNewQuestionWidget)
     final args = GoRouterState.of(context).extra as Map<String, dynamic>?;
     final String targetName = args?['targetName'] ?? 'Neznámá banka';
@@ -24,9 +26,9 @@ class QuestionTypeMenuWidget extends StatelessWidget {
       child: Container(
         width: 560.0,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(16.0),
-          border: Border.all(color: const Color(0xFFE5E7EB), width: 1.0),
+          border: Border.all(color: Theme.of(context).colorScheme.outline, width: 1.0),
           boxShadow: [
             BoxShadow(
               blurRadius: 24.0,
@@ -46,7 +48,7 @@ class QuestionTypeMenuWidget extends StatelessWidget {
                 style: GoogleFonts.inter(
                   fontSize: 20.0,
                   fontWeight: FontWeight.w700,
-                  color: const Color(0xFF111827),
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               const SizedBox(height: 8.0),
@@ -55,7 +57,7 @@ class QuestionTypeMenuWidget extends StatelessWidget {
                 'Zvolte formát otázky, kterou chcete vytvořit do banky: $targetName.',
                 style: GoogleFonts.inter(
                   fontSize: 14.0,
-                  color: const Color(0xFF6B7280),
+                  color: Theme.of(context).colorScheme.secondary,
                 ),
               ),
               const SizedBox(height: 24.0), // Větší mezera před seznamem
@@ -64,8 +66,8 @@ class QuestionTypeMenuWidget extends StatelessWidget {
               _buildMenuOption(
                 context: context,
                 icon: Icons.check_box_outlined,
-                iconColor: const Color(0xFF0056D2), // Modrá
-                iconBgColor: const Color(0xFFEFF6FF),
+                iconColor: customColors?.blueText ?? Theme.of(context).colorScheme.primary,
+                iconBgColor: customColors?.blueBg ?? Theme.of(context).colorScheme.primaryContainer,
                 title: 'Výběr z možností',
                 description: 'Student vybírá jednu nebo více správných odpovědí.',
                 onTap: () => navigateToEditor('/multiChoiceQuestion'), 
@@ -76,8 +78,8 @@ class QuestionTypeMenuWidget extends StatelessWidget {
               _buildMenuOption(
                 context: context,
                 icon: Icons.edit_outlined,
-                iconColor: const Color(0xFFDC2626), // Červená
-                iconBgColor: const Color(0xFFFEF2F2),
+                iconColor: customColors?.redText ?? Theme.of(context).colorScheme.primary,
+                iconBgColor: customColors?.redBg ?? Theme.of(context).colorScheme.primaryContainer,
                 title: 'Krátká odpověď',
                 description: 'Student odpovídá jedním slovem do textového pole.',
                 onTap: () => navigateToEditor('/shortAnswerQuestion'),
@@ -88,8 +90,8 @@ class QuestionTypeMenuWidget extends StatelessWidget {
               _buildMenuOption(
                 context: context,
                 icon: Icons.drag_indicator_rounded,
-                iconColor: const Color(0xFFD97706), // Oranžová
-                iconBgColor: const Color(0xFFFFFBEB),
+                iconColor: customColors?.orangeText ?? Theme.of(context).colorScheme.primary,
+                iconBgColor: customColors?.orangeBg ?? Theme.of(context).colorScheme.primaryContainer,
                 title: 'Seřazení',
                 description: 'Student seřazuje prvky podle určeného pořadí.',
                 onTap: () => navigateToEditor('/orderQuestion'),
@@ -100,8 +102,8 @@ class QuestionTypeMenuWidget extends StatelessWidget {
               _buildMenuOption(
                 context: context,
                 icon: Icons.compare_arrows_rounded,
-                iconColor: const Color(0xFF7C3AED), // Fialová
-                iconBgColor: const Color(0xFFF5F3FF),
+                iconColor: customColors?.purpleText ?? Theme.of(context).colorScheme.primary,
+                iconBgColor: customColors?.purpleBg ?? Theme.of(context).colorScheme.primaryContainer,
                 title: 'Párování',
                 description: 'Student spojuje dvojice pojmů nebo obrázků.',
                 onTap: () => navigateToEditor('/connectQuestion'),
@@ -112,8 +114,8 @@ class QuestionTypeMenuWidget extends StatelessWidget {
               _buildMenuOption(
                 context: context,
                 icon: Icons.notes_rounded, 
-                iconColor: const Color(0xFF16A34A), // Zelená
-                iconBgColor: const Color(0xFFF0FDF4),
+                iconColor: customColors?.greenText ?? Theme.of(context).colorScheme.primary,
+                iconBgColor: customColors?.greenBg ?? Theme.of(context).colorScheme.primaryContainer,
                 title: 'Otevřená otázka',
                 description: 'Student odpovídá vlastními slovy do textového pole.',
                 onTap: () => navigateToEditor('/openQuestion'),
@@ -127,9 +129,9 @@ class QuestionTypeMenuWidget extends StatelessWidget {
                   onPressed: () => Navigator.pop(context), 
                   style: OutlinedButton.styleFrom(
                     minimumSize: const Size(160.0, 44.0),
-                    side: const BorderSide(color: Color(0xFFE5E7EB), width: 1.5),
+                    side: BorderSide(color: Theme.of(context).colorScheme.outline, width: 1.5),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22.0)),
-                    foregroundColor: const Color(0xFF6B7280),
+                    foregroundColor: Theme.of(context).colorScheme.secondary,
                   ),
                   child: Text(
                     'Zrušit',
@@ -160,9 +162,9 @@ class QuestionTypeMenuWidget extends StatelessWidget {
       child: Container(
         width: double.infinity,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(16.0),
-          border: Border.all(color: const Color(0xFFE5E7EB), width: 1.0),
+          border: Border.all(color: Theme.of(context).colorScheme.outline, width: 1.0),
         ),
         padding: const EdgeInsets.all(16.0),
         child: Row(
@@ -183,18 +185,18 @@ class QuestionTypeMenuWidget extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 15.0, color: const Color(0xFF111827)),
+                    style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 15.0, color: Theme.of(context).colorScheme.onSurface),
                   ),
                   const SizedBox(height: 2.0),
                   Text(
                     description,
-                    style: GoogleFonts.inter(fontSize: 13.0, color: const Color(0xFF6B7280)),
+                    style: GoogleFonts.inter(fontSize: 13.0, color: Theme.of(context).colorScheme.secondary),
                   ),
                 ],
               ),
             ),
             const SizedBox(width: 16.0),
-            const Icon(Icons.chevron_right_rounded, color: Color(0xFF9CA3AF), size: 24.0),
+            Icon(Icons.chevron_right_rounded, color: Theme.of(context).colorScheme.secondary, size: 24.0),
           ],
         ),
       ),

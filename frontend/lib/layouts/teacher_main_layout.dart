@@ -16,7 +16,7 @@ class TeacherMainLayout extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA), // Globální světlé pozadí aplikace
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor, // Globální pozadí aplikace
       body: SafeArea(
         child: Stack(
           children: [

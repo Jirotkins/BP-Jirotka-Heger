@@ -25,9 +25,9 @@ class ActiveTestCard extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         decoration: BoxDecoration(
-          color: Colors.white, 
+          color: Theme.of(context).colorScheme.surface, 
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFE5E7EB), width: 1.0),
+          border: Border.all(color: Theme.of(context).colorScheme.outline, width: 1.0),
         ),
         child: Row(
           children: [
@@ -37,15 +37,15 @@ class ActiveTestCard extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Container(width: 6, height: 6, decoration: const BoxDecoration(color: Color(0xFFDC2626), shape: BoxShape.circle)),
+                      Container(width: 6, height: 6, decoration: BoxDecoration(color: Theme.of(context).colorScheme.error, shape: BoxShape.circle)),
                       const SizedBox(width: 8),
-                      Text('Probíhá', style: GoogleFonts.inter(color: const Color(0xFFDC2626), fontSize: 12, fontWeight: FontWeight.w600)),
+                      Text('Probíhá', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.error, fontSize: 12, fontWeight: FontWeight.w600)),
                     ],
                   ),
                   const SizedBox(height: 6),
-                  Text(title, style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 16, color: const Color(0xFF111827))),
+                  Text(title, style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 16, color: Theme.of(context).colorScheme.onSurface)),
                   const SizedBox(height: 2),
-                  Text(subtitle, style: GoogleFonts.inter(color: const Color(0xFF6B7280), fontSize: 13)),
+                  Text(subtitle, style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontSize: 13)),
                 ],
               ),
             ),
@@ -54,9 +54,9 @@ class ActiveTestCard extends StatelessWidget {
               children: [
                 Text(
                   '$submittedCount/$totalStudents', 
-                  style: GoogleFonts.inter(color: const Color(0xFF0056D2), fontSize: 22, fontWeight: FontWeight.w800)
+                  style: GoogleFonts.inter(color: Theme.of(context).colorScheme.primary, fontSize: 22, fontWeight: FontWeight.w800)
                 ),
-                Text('odevzdalo', style: GoogleFonts.inter(color: const Color(0xFF6B7280), fontSize: 12)),
+                Text('odevzdalo', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontSize: 12)),
               ],
             ),
           ],

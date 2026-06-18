@@ -71,7 +71,7 @@ class _LoginPageWidgetState extends ConsumerState<LoginPageWidget> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(e.toString()), 
-          backgroundColor: Colors.red.shade700,
+          backgroundColor: Theme.of(context).colorScheme.error,
         )
       );
     } finally {
@@ -83,7 +83,7 @@ class _LoginPageWidgetState extends ConsumerState<LoginPageWidget> {
   OutlineInputBorder _inputBorder() {
     return OutlineInputBorder(
       borderRadius: BorderRadius.circular(16.0),
-      borderSide: const BorderSide(color: Color(0xFF0056D2), width: 1.5),
+      borderSide: BorderSide(color: Theme.of(context).colorScheme.outline, width: 1.5),
     );
   }
 
@@ -91,7 +91,7 @@ class _LoginPageWidgetState extends ConsumerState<LoginPageWidget> {
   Widget build(BuildContext context) {
     return Scaffold(
       key: scaffoldKey,
-      backgroundColor: const Color(0xFFF5F7FA), // Světlé pozadí mimo okno
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor, // Pozadí mimo okno
       body: SafeArea(
         // Pokud je klávesnice schovaná, je to uprostřed. Pokud vyjede, začne se to scrollovat.
         child: Center(
@@ -100,9 +100,9 @@ class _LoginPageWidgetState extends ConsumerState<LoginPageWidget> {
             child: Container(
               width: 400.0,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(16.0),
-                boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 20.0, offset: Offset(0, 4))],
+                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 20.0, offset: const Offset(0, 4))],
               ),
               padding: const EdgeInsets.symmetric(horizontal: 40.0, vertical: 48.0),
               child: Column(
@@ -112,12 +112,12 @@ class _LoginPageWidgetState extends ConsumerState<LoginPageWidget> {
                   // HLAVIČKA A IKONA
                   Column(
                     children: [
-                      const Icon(Icons.school_rounded, color: Color(0xFF0056D2), size: 48.0),
+                      Icon(Icons.school_rounded, color: Theme.of(context).colorScheme.primary, size: 48.0),
                       const SizedBox(height: 16.0),
-                      const Text(
+                      Text(
                         'Přihlášení', 
                         textAlign: TextAlign.center, 
-                        style: TextStyle(fontSize: 28.0, fontWeight: FontWeight.w800, color: Colors.black87)
+                        style: TextStyle(fontSize: 28.0, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.onSurface)
                       ),
                     ],
                   ),
@@ -145,16 +145,16 @@ class _LoginPageWidgetState extends ConsumerState<LoginPageWidget> {
                         focusNode: _emailFocusNode,
                         keyboardType: _isStudent ? TextInputType.text : TextInputType.emailAddress,
                         textInputAction: TextInputAction.next,
-                        style: const TextStyle(fontSize: 16.0, fontWeight: FontWeight.w500),
+                        style: TextStyle(fontSize: 16.0, fontWeight: FontWeight.w500, color: Theme.of(context).colorScheme.onSurface),
                         decoration: InputDecoration(
                           hintText: _isStudent ? 'Přihlašovací kód' : 'Email',
-                          hintStyle: const TextStyle(color: Colors.grey, fontSize: 16.0),
+                          hintStyle: TextStyle(color: Theme.of(context).colorScheme.secondary, fontSize: 16.0),
                           filled: true,
-                          fillColor: const Color(0xFFFAFAFA), // Šedé pozadí pole
+                          fillColor: Theme.of(context).colorScheme.surfaceContainerHighest, // Šedé pozadí pole
                           contentPadding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 18.0),
                           border: _inputBorder(),
                           enabledBorder: _inputBorder(),
-                          focusedBorder: _inputBorder().copyWith(borderSide: const BorderSide(color: Color(0xFF0056D2), width: 2.5)),
+                          focusedBorder: _inputBorder().copyWith(borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2.5)),
                         ),
                       ),
                       const SizedBox(height: 20.0),
@@ -166,20 +166,20 @@ class _LoginPageWidgetState extends ConsumerState<LoginPageWidget> {
                         obscureText: _isPasswordObscured,
                         textInputAction: TextInputAction.done,
                         onFieldSubmitted: (_) => _handleLogin(),
-                        style: const TextStyle(fontSize: 16.0, fontWeight: FontWeight.w500),
+                        style: TextStyle(fontSize: 16.0, fontWeight: FontWeight.w500, color: Theme.of(context).colorScheme.onSurface),
                         decoration: InputDecoration(
                           hintText: 'Heslo',
-                          hintStyle: const TextStyle(color: Colors.grey, fontSize: 16.0),
+                          hintStyle: TextStyle(color: Theme.of(context).colorScheme.secondary, fontSize: 16.0),
                           filled: true,
-                          fillColor: const Color(0xFFFAFAFA),
+                          fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                           contentPadding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 18.0),
                           border: _inputBorder(),
                           enabledBorder: _inputBorder(),
-                          focusedBorder: _inputBorder().copyWith(borderSide: const BorderSide(color: Color(0xFF0056D2), width: 2.5)),
+                          focusedBorder: _inputBorder().copyWith(borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2.5)),
                           suffixIcon: Padding(
                             padding: const EdgeInsets.only(right: 8.0),
                             child: IconButton(
-                              icon: Icon(_isPasswordObscured ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: Colors.grey),
+                              icon: Icon(_isPasswordObscured ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: Theme.of(context).colorScheme.secondary),
                               onPressed: () => setState(() => _isPasswordObscured = !_isPasswordObscured),
                             ),
                           ),
@@ -193,15 +193,15 @@ class _LoginPageWidgetState extends ConsumerState<LoginPageWidget> {
                   ElevatedButton(
                     onPressed: _isLoading ? null : _handleLogin,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF0056D2),
-                      disabledBackgroundColor: const Color(0xFF0056D2).withOpacity(0.6),
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      disabledBackgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.6),
                       minimumSize: const Size(double.infinity, 56.0),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28.0)),
                       elevation: 0,
                     ),
                     child: _isLoading 
-                      ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                      : const Text('Přihlásit se', style: TextStyle(color: Colors.white, fontSize: 18.0, fontWeight: FontWeight.bold)),
+                      ? SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Theme.of(context).colorScheme.onPrimary, strokeWidth: 2))
+                      : Text('Přihlásit se', style: TextStyle(color: Theme.of(context).colorScheme.onPrimary, fontSize: 18.0, fontWeight: FontWeight.bold)),
                   ),
                 ],
               ),

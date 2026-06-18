@@ -114,8 +114,8 @@ class _BankOverviewWidgetState extends ConsumerState<BankOverviewWidget> {
                 style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF0056D2),
-                foregroundColor: Colors.white,
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.surface,
                 minimumSize: const Size(0, 40),
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 0),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -128,14 +128,14 @@ class _BankOverviewWidgetState extends ConsumerState<BankOverviewWidget> {
         // --- SEKCE S KARTAMI ---
         Expanded(
           child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary))
               : _errorMessage != null
                   ? Center(child: Text(_errorMessage!, style: const TextStyle(color: Colors.red)))
                   : _banksData.isEmpty
                       ? Center(
                           child: Text(
                             'Zatím nemáte vytvořené žádné banky otázek.',
-                            style: GoogleFonts.inter(color: Colors.grey, fontSize: 16),
+                            style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontSize: 16),
                           ),
                         )
                       : SingleChildScrollView(
@@ -173,7 +173,7 @@ class _BankOverviewWidgetState extends ConsumerState<BankOverviewWidget> {
                                         title: bankData['title'] as String,
                                         subject: bankData['subject'] as String,
                                         questionCount: bankData['questionCount'] as int,
-                                        icon: Icon(bankData['icon'] as IconData, color: Colors.white),
+                                        icon: Icon(bankData['icon'] as IconData, color: Theme.of(context).colorScheme.primary, size: 28),
                                       ),
                                     ),
                                   );
