@@ -196,22 +196,24 @@ class _ClassManagerWidgetState extends ConsumerState<ClassManagerWidget> {
                       child: Text('Zatím nejsou přidáni žádní studenti.', style: GoogleFonts.inter(color: Colors.grey)),
                     )
                   else
-                    ListView.separated(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: _studentsData.length,
-                      separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFFF3F4F6), indent: 20, endIndent: 20),
-                      itemBuilder: (context, index) {
-                        final student = _studentsData[index];
-                        // Backend vrací např. email, user_id
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                          child: StudentRowWidget(
-                            id: student['student_id'] ?? 0,
-                            studentName: student['email'] ?? 'Neznámý student',
-                          ),
+                    Column(
+                      children: _studentsData.asMap().entries.map((entry) {
+                        final index = entry.key;
+                        final student = entry.value;
+                        return Column(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                              child: StudentRowWidget(
+                                id: student['student_id'] ?? 0,
+                                studentName: student['email'] ?? 'Neznámý student',
+                              ),
+                            ),
+                            if (index < _studentsData.length - 1)
+                              const Divider(height: 1, color: Color(0xFFF3F4F6), indent: 20, endIndent: 20),
+                          ],
                         );
-                      },
+                      }).toList(),
                     ),
                 ],
               ),

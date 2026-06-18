@@ -23,7 +23,7 @@ class ApiClient {
 
   Map<String, String> get _headers {
     final headers = {
-      'Content-Type': 'application/json',
+      'Content-Type': 'application/json; charset=utf-8',
       'Accept': 'application/json',
     };
     // Pokud máme k dispozici token, přidáme ho do hlavičky (Bearer)

@@ -99,7 +99,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           // Určení aktivní záložky v menu podle URL
           String activePage = 'classes';
           if (state.uri.path.contains('bank') ||
-              state.uri.path.contains('Question')) {
+              state.uri.path.toLowerCase().contains('question')) {
             activePage = 'banks';
           } else if (state.uri.path.contains('settingsTeacher')) {
             activePage = 'settings';
@@ -134,7 +134,13 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/questionsOverview',
-            builder: (context, state) => const QuestionsOverviewWidget(),
+            builder: (context, state) {
+              final extra = state.extra as Map<String, dynamic>? ?? {};
+              return QuestionsOverviewWidget(
+                bankId: extra['bankId'] as int? ?? 0,
+                bankName: extra['bankName'] as String? ?? 'Neznámá banka',
+              );
+            },
           ),
           GoRoute(
             path: '/addNewQuestion',

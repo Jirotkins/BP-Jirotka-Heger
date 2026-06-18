@@ -1,49 +1,95 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../components/page_header_widget.dart';
 import '../../components/question_row_widget.dart';
+import '../../services/api_client.dart';
 
-class QuestionsOverviewWidget extends StatefulWidget {
-  const QuestionsOverviewWidget({super.key});
+class QuestionsOverviewWidget extends ConsumerStatefulWidget {
+  final int bankId;
+  final String bankName;
+
+  const QuestionsOverviewWidget({
+    super.key,
+    this.bankId = 0,
+    this.bankName = 'Neznámá banka',
+  });
 
   @override
-  State<QuestionsOverviewWidget> createState() => _QuestionsOverviewWidgetState();
+  ConsumerState<QuestionsOverviewWidget> createState() => _QuestionsOverviewWidgetState();
 }
 
-class _QuestionsOverviewWidgetState extends State<QuestionsOverviewWidget> {
-  // Ukázková data
-  final List<Map<String, dynamic>> _mockQuestions = [
-    {'id': 1, 'question': 'Jaká je přibližná hodnota gravitačního zrychlení na povrchu Země?', 'type': 'Výběr z možností'},
-    {'id': 2, 'question': 'Vysvětlete princip gravitačního zákona Isaaca Newtona.', 'type': 'Otevřená'},
-    {'id': 3, 'question': 'Vypočítejte gravitační sílu mezi dvěma tělesy o hmotnostech 10 kg a 20 kg...', 'type': 'Krátká odpověď'},
-    {'id': 4, 'question': 'Seřaďte planety sluneční soustavy podle velikosti gravitačního zrychlení.', 'type': 'Seřazení'},
-    {'id': 5, 'question': 'Přiřaďte správné hodnoty gravitačního zrychlení k jednotlivým planetám.', 'type': 'Párování'},
-    {'id': 6, 'question': 'Vyberte všechny faktory, které ovlivňují velikost gravitační síly.', 'type': 'Výběr z možností'},
-    {'id': 7, 'question': 'Co se stane s gravitační silou, pokud se vzdálenost mezi tělesy zdvojnásobí?', 'type': 'Krátká odpověď'},
-  ];
+class _QuestionsOverviewWidgetState extends ConsumerState<QuestionsOverviewWidget> {
+  List<Map<String, dynamic>> _questionsData = [];
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchQuestions();
+  }
+
+  Future<void> _fetchQuestions() async {
+    if (widget.bankId == 0) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      final data = await apiClient.get('/banks/${widget.bankId}/questions');
+      
+      if (mounted) {
+        final questions = data['questions'] as List? ?? [];
+        setState(() {
+          _questionsData = questions.map((q) {
+            return {
+              'id': q['question_id'],
+              'question': q['text'] ?? 'Prázdná otázka',
+              'type': q['type'] ?? 'Neznámý typ',
+            };
+          }).toList();
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Chyba při načítání otázek: $e';
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    // ZÍSKÁNÍ PARAMETRŮ Z NAVIGACE (Přebírá z BankCardWidget)
-    final args = GoRouterState.of(context).extra as Map<String, dynamic>?;
-    final String bankName = args?['bankName'] ?? 'Neznámá banka';
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        
         // --- DYNAMICKÁ HLAVIČKA ---
         PageHeaderWidget(
-          title: bankName, 
+          title: widget.bankName, 
           actions: [
             // TLAČÍTKO: Přidat novou otázku 
             ElevatedButton.icon(
               onPressed: () {
                 // Přesměrování na tvorbu otázky s předáním názvu banky
                 context.push('/addNewQuestion', extra: {
-                    'targetName': bankName, 
-                  },);
+                  'targetName': widget.bankName, 
+                  'bankId': widget.bankId,
+                });
               },
               icon: const Icon(Icons.add_circle_outline, size: 18),
               label: Text(
@@ -79,24 +125,34 @@ class _QuestionsOverviewWidgetState extends State<QuestionsOverviewWidget> {
                   )
                 ],
               ),
-              // Vnitřní padding kontejneru
-              child: ListView.separated(
-                padding: const EdgeInsets.all(24.0),
-                itemCount: _mockQuestions.length,
-                separatorBuilder: (context, index) => const Divider(
-                  height: 32.0, // Mezera kolem čáry
-                  thickness: 1.0,
-                  color: Color(0xFFF3F4F6), 
-                ),
-                itemBuilder: (context, index) {
-                  final questionData = _mockQuestions[index];
-                  return QuestionRowWidget(
-                    id: questionData['id'],
-                    question: questionData['question'],
-                    type: questionData['type'],
-                  );
-                },
-              ),
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _errorMessage != null
+                      ? Center(child: Text(_errorMessage!, style: const TextStyle(color: Colors.red)))
+                      : _questionsData.isEmpty
+                          ? Center(
+                              child: Text(
+                                'Zatím nemáte v této bance žádné otázky.',
+                                style: GoogleFonts.inter(color: Colors.grey, fontSize: 16),
+                              ),
+                            )
+                          : ListView.separated(
+                              padding: const EdgeInsets.all(24.0),
+                              itemCount: _questionsData.length,
+                              separatorBuilder: (context, index) => const Divider(
+                                height: 32.0, // Mezera kolem čáry
+                                thickness: 1.0,
+                                color: Color(0xFFF3F4F6), 
+                              ),
+                              itemBuilder: (context, index) {
+                                final questionData = _questionsData[index];
+                                return QuestionRowWidget(
+                                  id: questionData['id'],
+                                  question: questionData['question'],
+                                  type: questionData['type'],
+                                );
+                              },
+                            ),
             ),
           ),
         ),
