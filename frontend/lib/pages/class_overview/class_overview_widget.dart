@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -131,16 +132,40 @@ class _ClassOverviewWidgetState extends ConsumerState<ClassOverviewWidget> {
                                 runSpacing: 24.0, // Vertikální mezera
                                 children: List.generate(_groups.length, (index) {
                                   final group = _groups[index];
+                                  
+                                  // Parsování JSON popisku
+                                  String parsedSubject = 'Předmět neuveden';
+                                  IconData parsedIcon = Icons.school_outlined;
+                                  
+                                  try {
+                                    final descStr = group['description']?.toString() ?? '';
+                                    if (descStr.startsWith('{')) {
+                                      final descMap = jsonDecode(descStr) as Map<String, dynamic>;
+                                      parsedSubject = descMap['subject'] ?? 'Předmět neuveden';
+                                      if (descMap['icon'] != null) {
+                                        parsedIcon = IconData(int.parse(descMap['icon']), fontFamily: 'MaterialIcons');
+                                      }
+                                    } else if (descStr.isNotEmpty) {
+                                      parsedSubject = descStr;
+                                    }
+                                  } catch (_) {
+                                    // Pokud to není JSON, použije se výchozí nastavení nebo původní string (který je už ošetřen výše)
+                                    final descStr = group['description']?.toString() ?? '';
+                                    if (descStr.isNotEmpty && !descStr.startsWith('{')) {
+                                      parsedSubject = descStr;
+                                    }
+                                  }
+
                                   return SizedBox(
                                     width: cardWidth,
                                     child: ClassCardWidget(
                                       groupId: group['group_id'] as int,
                                       title: group['name'] as String,
-                                      subject: group['description']?.toString() ?? 'Předmět neuveden',
+                                      subject: parsedSubject,
                                       studentCount: group['student_count'] as int,
                                       activeTestCount: group['active_assignment_count'] as int,
                                       testsToControl: group['pending_grade_count'] as int,
-                                      icon: const Icon(Icons.school_outlined, color: Colors.white),
+                                      icon: Icon(parsedIcon, color: Colors.white),
                                     ),
                                   );
                                 }),

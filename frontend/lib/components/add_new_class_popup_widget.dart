@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../services/api_client.dart';
@@ -61,12 +62,17 @@ class _AddNewClassPopupWidgetState extends ConsumerState<AddNewClassPopupWidget>
     try {
       final apiClient = ref.read(apiClientProvider);
       
+      final descriptionData = {
+        "subject": _subjectController.text.trim().isEmpty 
+            ? 'Předmět neuveden' 
+            : _subjectController.text.trim(),
+        "icon": _availableIcons[_selectedIconIndex].codePoint.toString(),
+      };
+
       // Voláme API POST /groups
       await apiClient.post('/groups', {
         'name': _nameController.text.trim(),
-        'description': _subjectController.text.trim().isEmpty 
-            ? 'Předmět neuveden' 
-            : _subjectController.text.trim(),
+        'description': jsonEncode(descriptionData),
       });
       
       if (mounted) {
