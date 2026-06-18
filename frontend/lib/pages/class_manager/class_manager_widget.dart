@@ -58,7 +58,7 @@ class _ClassManagerWidgetState extends ConsumerState<ClassManagerWidget> {
         
         setState(() {
           _overviewData = results[0];
-          _studentsData = results[1] as List<dynamic>? ?? [];
+          _studentsData = (results[1] as Map<String, dynamic>)['students'] as List<dynamic>? ?? [];
           _isLoading = false;
         });
       } catch (e) {
@@ -207,7 +207,7 @@ class _ClassManagerWidgetState extends ConsumerState<ClassManagerWidget> {
                         return Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 4.0),
                           child: StudentRowWidget(
-                            id: student['user_id'] ?? 0,
+                            id: student['student_id'] ?? 0,
                             studentName: student['email'] ?? 'Neznámý student',
                           ),
                         );
