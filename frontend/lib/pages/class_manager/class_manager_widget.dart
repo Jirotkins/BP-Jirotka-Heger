@@ -111,8 +111,11 @@ class _ClassManagerWidgetState extends ConsumerState<ClassManagerWidget> {
             ),
             const SizedBox(width: 12.0),
             ElevatedButton.icon(
-              onPressed: () {
-                context.push('/testEditor', extra: {'targetName': className});
+              onPressed: () async {
+                await context.push('/testEditor', extra: {'targetName': className, 'groupId': _lastGroupId});
+                if (_lastGroupId != null) {
+                  _fetchData(_lastGroupId!);
+                }
               },
               icon: const Icon(Icons.post_add, size: 18),
               label: Text('Vytvořit test', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14)),
@@ -148,8 +151,47 @@ class _ClassManagerWidgetState extends ConsumerState<ClassManagerWidget> {
     }
   }
 
+  void _showActivateDialog(int assignmentId) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Spustit test?', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+        content: Text('Přejete si tento test ručně zpřístupnit studentům ihned?', style: GoogleFonts.inter()),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Zrušit', style: TextStyle(color: Theme.of(context).colorScheme.secondary)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Theme.of(context).colorScheme.surface,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            ),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              setState(() => _isLoading = true);
+              try {
+                await ref.read(apiClientProvider).post('/exam-assignments/$assignmentId/activate', {});
+                if (_lastGroupId != null) _fetchData(_lastGroupId!);
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Chyba: $e'), backgroundColor: Colors.red));
+                }
+                setState(() => _isLoading = false);
+              }
+            },
+            child: const Text('Spustit nyní'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildContent() {
     final activeTests = (_overviewData?['active'] as List?) ?? [];
+    final upcomingTests = (_overviewData?['upcoming'] as List?) ?? [];
     final finishedTests = (_overviewData?['finished'] as List?) ?? [];
 
     return SingleChildScrollView(
@@ -233,6 +275,24 @@ class _ClassManagerWidgetState extends ConsumerState<ClassManagerWidget> {
                   submittedCount: test['submitted_count'] ?? 0,
                   totalStudents: test['total_students'] ?? 0,
                   onTap: () => print('Otevřít aktivní test'),
+                ),
+              );
+            }).toList(),
+          ],
+
+          if (upcomingTests.isNotEmpty) ...[
+            const SizedBox(height: 48.0),
+            _buildSectionHeader(context, 'Připravené a naplánované testy', Theme.of(context).colorScheme.tertiary ?? Colors.orange, upcomingTests.length.toString()), 
+            const SizedBox(height: 16.0),
+            ...upcomingTests.map((test) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 16.0),
+                child: ActiveTestCard( // Můžeme zatím použít ActiveTestCard nebo vytvořit novou
+                  title: test['template_name'] ?? 'Neznámý test',
+                  subtitle: test['activate_from'] != null ? 'Naplánováno na: ${_formatDate(test['activate_from'] as String?)}' : 'Čeká na manuální spuštění',
+                  submittedCount: test['submitted_count'] ?? 0,
+                  totalStudents: test['total_students'] ?? 0,
+                  onTap: () => _showActivateDialog(test['assignment_id']),
                 ),
               );
             }).toList(),

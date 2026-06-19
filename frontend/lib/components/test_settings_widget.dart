@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class TestSettingsWidget extends StatefulWidget {
-  const TestSettingsWidget({super.key});
+  final Function(Map<String, dynamic>)? onChanged;
+
+  const TestSettingsWidget({super.key, this.onChanged});
 
   @override
   State<TestSettingsWidget> createState() => _TestSettingsWidgetState();
@@ -17,6 +19,27 @@ class _TestSettingsWidgetState extends State<TestSettingsWidget> {
   bool _showResults = true;
 
   final List<String> _attemptOptions = ['1', '2', '3', '5', '10', 'Nekonečno'];
+
+  @override
+  void initState() {
+    super.initState();
+    // Počáteční odeslání výchozích hodnot
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _notifyChanges();
+    });
+  }
+
+  void _notifyChanges() {
+    if (widget.onChanged != null) {
+      widget.onChanged!({
+        'attempts': _selectedAttempts,
+        'shuffle': _randomOrder,
+        'immediate_feedback': _immediateFeedback,
+        'can_go_back': _canGoBack,
+        'show_results_after_submit': _showResults,
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -67,7 +90,10 @@ class _TestSettingsWidgetState extends State<TestSettingsWidget> {
                         child: Text(val, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface)),
                       );
                     }).toList(),
-                    onChanged: (val) => setState(() => _selectedAttempts = val),
+                    onChanged: (val) {
+                      setState(() => _selectedAttempts = val);
+                      _notifyChanges();
+                    },
                     icon: Icon(Icons.keyboard_arrow_down_rounded, color: Theme.of(context).colorScheme.secondary),
                     isExpanded: true,
                     dropdownColor: Theme.of(context).colorScheme.surface,
@@ -83,7 +109,10 @@ class _TestSettingsWidgetState extends State<TestSettingsWidget> {
               title: 'Náhodné pořadí otázek',
               subtitle: 'Každý student uvidí otázky v jiném pořadí',
               value: _randomOrder,
-              onChanged: (val) => setState(() => _randomOrder = val),
+              onChanged: (val) {
+                setState(() => _randomOrder = val);
+                _notifyChanges();
+              },
             ),
 
             Divider(height: 32, color: Theme.of(context).colorScheme.outline),
@@ -93,7 +122,10 @@ class _TestSettingsWidgetState extends State<TestSettingsWidget> {
               title: 'Okamžitá zpětná vazba',
               subtitle: 'Student vidí výsledek ihned po odpovědi',
               value: _immediateFeedback,
-              onChanged: (val) => setState(() => _immediateFeedback = val),
+              onChanged: (val) {
+                setState(() => _immediateFeedback = val);
+                _notifyChanges();
+              },
             ),
 
             Divider(height: 32, color: Theme.of(context).colorScheme.outline),
@@ -103,7 +135,10 @@ class _TestSettingsWidgetState extends State<TestSettingsWidget> {
               title: 'Možnost vracet se v otázkách',
               subtitle: 'Student se může vrátit k předešlým otázkám',
               value: _canGoBack,
-              onChanged: (val) => setState(() => _canGoBack = val),
+              onChanged: (val) {
+                setState(() => _canGoBack = val);
+                _notifyChanges();
+              },
             ),
 
             Divider(height: 32, color: Theme.of(context).colorScheme.outline),
@@ -113,7 +148,10 @@ class _TestSettingsWidgetState extends State<TestSettingsWidget> {
               title: 'Zobrazit výsledky po testu',
               subtitle: 'Student uvidí správné odpovědi na konci',
               value: _showResults,
-              onChanged: (val) => setState(() => _showResults = val),
+              onChanged: (val) {
+                setState(() => _showResults = val);
+                _notifyChanges();
+              },
             ),
           ],
         ),

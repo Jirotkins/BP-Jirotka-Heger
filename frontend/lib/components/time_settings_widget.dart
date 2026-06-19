@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class TimeSettingsWidget extends StatefulWidget {
-  const TimeSettingsWidget({super.key});
+  final Function(Map<String, dynamic>)? onChanged;
+
+  const TimeSettingsWidget({super.key, this.onChanged});
 
   @override
   State<TimeSettingsWidget> createState() => _TimeSettingsWidgetState();
@@ -20,6 +22,27 @@ class _TimeSettingsWidgetState extends State<TimeSettingsWidget> {
   
   // Délka testu
   int _durationMinutes = 45;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _notifyChanges();
+    });
+  }
+
+  void _notifyChanges() {
+    if (widget.onChanged != null) {
+      widget.onChanged!({
+        'isInstant': _isInstant,
+        'startDate': _startDate?.toIso8601String(),
+        'startTime': _startTime != null ? '${_startTime!.hour}:${_startTime!.minute}' : null,
+        'endDate': _endDate?.toIso8601String(),
+        'endTime': _endTime != null ? '${_endTime!.hour}:${_endTime!.minute}' : null,
+        'durationMinutes': _durationMinutes,
+      });
+    }
+  }
 
   // Funkce pro výběr data
   Future<void> _pickDate(BuildContext context, bool isStart) async {
@@ -50,6 +73,7 @@ class _TimeSettingsWidgetState extends State<TimeSettingsWidget> {
           _endDate = picked;
         }
       });
+      _notifyChanges();
     }
   }
 
@@ -113,6 +137,7 @@ class _TimeSettingsWidgetState extends State<TimeSettingsWidget> {
           _endTime = picked;
         }
       });
+      _notifyChanges();
     }
   }
 
@@ -164,7 +189,10 @@ class _TimeSettingsWidgetState extends State<TimeSettingsWidget> {
                     label: 'Okamžité', // Mírně zkráceno pro lepší responzivitu
                     icon: Icons.bolt_rounded,
                     isSelected: _isInstant,
-                    onTap: () => setState(() => _isInstant = true),
+                    onTap: () {
+                      setState(() => _isInstant = true);
+                      _notifyChanges();
+                    },
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -173,7 +201,10 @@ class _TimeSettingsWidgetState extends State<TimeSettingsWidget> {
                     label: 'Naplánované',
                     icon: Icons.edit_calendar_rounded,
                     isSelected: !_isInstant,
-                    onTap: () => setState(() => _isInstant = false),
+                    onTap: () {
+                      setState(() => _isInstant = false);
+                      _notifyChanges();
+                    },
                   ),
                 ),
               ],
@@ -219,7 +250,10 @@ class _TimeSettingsWidgetState extends State<TimeSettingsWidget> {
                 ),
                 
                 IconButton(
-                  onPressed: () => setState(() => _durationMinutes = (_durationMinutes > 5) ? _durationMinutes - 5 : 5),
+                  onPressed: () {
+                    setState(() => _durationMinutes = (_durationMinutes > 5) ? _durationMinutes - 5 : 5);
+                    _notifyChanges();
+                  },
                   icon: Icon(Icons.remove_circle_outline, color: Theme.of(context).colorScheme.primary),
                   splashRadius: 24,
                   padding: EdgeInsets.zero,
@@ -233,7 +267,10 @@ class _TimeSettingsWidgetState extends State<TimeSettingsWidget> {
                 ),
                 const SizedBox(width: 8),
                 IconButton(
-                  onPressed: () => setState(() => _durationMinutes += 5),
+                  onPressed: () {
+                    setState(() => _durationMinutes += 5);
+                    _notifyChanges();
+                  },
                   icon: Icon(Icons.add_circle_outline, color: Theme.of(context).colorScheme.primary),
                   splashRadius: 24,
                   padding: EdgeInsets.zero,

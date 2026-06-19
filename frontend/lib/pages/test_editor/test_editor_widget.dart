@@ -1,46 +1,46 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../services/api_client.dart';
 import '../../components/page_header_widget.dart';
-import '../../components/bank_select_row_widget.dart';
 import '../../components/question_select_row_widget.dart';
 import '../../components/test_settings_widget.dart';
 import '../../components/time_settings_widget.dart';
 
-class TestEditorWidget extends StatefulWidget {
+class TestEditorWidget extends ConsumerStatefulWidget {
   const TestEditorWidget({super.key});
 
   @override
-  State<TestEditorWidget> createState() => _TestEditorWidgetState();
+  ConsumerState<TestEditorWidget> createState() => _TestEditorWidgetState();
 }
 
-class _TestEditorWidgetState extends State<TestEditorWidget> {
+class _TestEditorWidgetState extends ConsumerState<TestEditorWidget> {
   late TextEditingController _testNameController;
   late FocusNode _testNameFocusNode;
 
-  // Ukázková data pro banky
-  final List<Map<String, dynamic>> _mockBanks = [
-    {'name': 'Fyzika - Gravitační pole', 'icon': Icons.menu_book_outlined, 'count': 8},
-    {'name': 'Fyzika - Kinematika hmotného bodu', 'icon': Icons.menu_book_outlined, 'count': 7},
-    {'name': 'Fyzika - Veličiny a jednotky', 'icon': Icons.menu_book_outlined, 'count': 20},
-    {'name': 'Matematika - Kvadratické rovnice', 'icon': Icons.calculate_outlined, 'count': 15},
-    {'name': 'Biologie - Buňka', 'icon': Icons.science_outlined, 'count': 18},
-  ];
+  bool _isLoadingBanks = true;
+  String? _errorMessage;
+  List<Map<String, dynamic>> _banks = [];
+  
+  // Cache for questions: bank_id -> list of questions
+  final Map<int, List<Map<String, dynamic>>> _bankQuestionsCache = {};
+  final Map<int, bool> _bankQuestionsLoading = {};
 
-  // Ukázková data pro otázky
-  final List<Map<String, dynamic>> _mockQuestions = [
-    {'text': 'Jaká je přibližná hodnota gravitačního zrychlení...', 'type': 'Výběr'},
-    {'text': 'Vysvětlete princip gravitačního zákona...', 'type': 'Otevřená'},
-    {'text': 'Vypočítejte gravitační sílu mezi dvěma tělesy...', 'type': 'Krátká'},
-    {'text': 'Seřaďte planety sluneční soustavy...', 'type': 'Seřazení'},
-    {'text': 'Přiřaďte správné hodnoty gravitačního zrychlení...', 'type': 'Párování'},
-  ];
+  final Set<int> _selectedQuestionIds = {};
+
+  Map<String, dynamic> _testSettings = {};
+  Map<String, dynamic> _timeSettings = {};
+
+  bool _isSubmitting = false;
 
   @override
   void initState() {
     super.initState();
     _testNameController = TextEditingController();
     _testNameFocusNode = FocusNode();
+    _fetchBanks();
   }
 
   @override
@@ -50,108 +50,299 @@ class _TestEditorWidgetState extends State<TestEditorWidget> {
     super.dispose();
   }
 
+  Future<void> _fetchBanks() async {
+    setState(() {
+      _isLoadingBanks = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      final data = await apiClient.get('/banks');
+      
+      if (mounted) {
+        final banksList = data['banks'] as List? ?? [];
+        setState(() {
+          _banks = banksList.map((b) => {
+            'id': b['bank_id'],
+            'name': b['name'] ?? 'Neznámá banka',
+          }).toList();
+          _isLoadingBanks = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Chyba při načítání bank: $e';
+          _isLoadingBanks = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _fetchQuestionsForBank(int bankId) async {
+    if (_bankQuestionsCache.containsKey(bankId) || _bankQuestionsLoading[bankId] == true) return;
+
+    setState(() {
+      _bankQuestionsLoading[bankId] = true;
+    });
+
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      final data = await apiClient.get('/banks/$bankId/questions');
+      
+      if (mounted) {
+        final questionsList = data['questions'] as List? ?? [];
+        setState(() {
+          _bankQuestionsCache[bankId] = questionsList.map((q) => {
+            'id': q['question_id'],
+            'question': q['text'] ?? 'Prázdná otázka',
+            'type': q['type'] ?? 'Neznámý typ',
+          }).toList();
+          _bankQuestionsLoading[bankId] = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _bankQuestionsLoading[bankId] = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _submitTest(int groupId) async {
+    if (_testNameController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Zadejte název testu.')));
+      return;
+    }
+    if (_selectedQuestionIds.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vyberte alespoň jednu otázku do testu.')));
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      
+      List<Map<String, dynamic>> questionsPayload = [];
+      int pos = 1;
+      for (int qId in _selectedQuestionIds) {
+        questionsPayload.add({
+          "question_id": qId,
+          "position": pos++,
+          "points_custom": null 
+        });
+      }
+
+      final templateData = {
+        "name": _testNameController.text.trim(),
+        "description": "",
+        "difficulty": "MEDIUM",
+        "estimated_duration_minutes": _timeSettings['durationMinutes'] ?? 45,
+        "is_active": true,
+        "settings": _testSettings,
+        "questions": questionsPayload
+      };
+
+      final templateResponse = await apiClient.post('/test-templates', templateData);
+      final templateId = templateResponse['template_id'];
+
+      String? activateFromStr;
+      String? activateToStr;
+
+      if (_timeSettings['isInstant'] == true) {
+        final now = DateTime.now().toUtc();
+        activateFromStr = "${now.toIso8601String().split('.')[0]}Z";
+        
+        final durationMinutes = _timeSettings['durationMinutes'] as int? ?? 45;
+        final end = now.add(Duration(minutes: durationMinutes));
+        activateToStr = "${end.toIso8601String().split('.')[0]}Z";
+      } else {
+         if (_timeSettings['startDate'] != null && _timeSettings['startTime'] != null) {
+             final d = DateTime.parse(_timeSettings['startDate']);
+             final parts = (_timeSettings['startTime'] as String).split(':');
+             final h = int.parse(parts[0]);
+             final m = int.parse(parts[1]);
+             final combined = DateTime(d.year, d.month, d.day, h, m).toUtc();
+             activateFromStr = "${combined.toIso8601String().split('.')[0]}Z";
+         }
+         if (_timeSettings['endDate'] != null && _timeSettings['endTime'] != null) {
+             final d = DateTime.parse(_timeSettings['endDate']);
+             final parts = (_timeSettings['endTime'] as String).split(':');
+             final h = int.parse(parts[0]);
+             final m = int.parse(parts[1]);
+             final combined = DateTime(d.year, d.month, d.day, h, m).toUtc();
+             activateToStr = "${combined.toIso8601String().split('.')[0]}Z";
+         }
+      }
+
+      final assignData = {
+        "template_id": templateId,
+        "activate_from": activateFromStr,
+        "activate_to": activateToStr,
+        "time_limit_minutes": _timeSettings['durationMinutes'] ?? 45,
+        "access_password": null
+      };
+
+      await apiClient.post('/groups/$groupId/exam-assignments', assignData);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Test byl úspěšně zadán!'), backgroundColor: Colors.green));
+        context.pop(true);
+      }
+
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Chyba při zadávání testu: $e'), backgroundColor: Colors.red));
+      }
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    // ZÍSKÁNÍ DAT Z NAVIGACE (z ClassManagerWidget)
     final args = GoRouterState.of(context).extra as Map<String, dynamic>?;
     final String targetClass = args?['targetName'] ?? 'Neznámá třída';
+    final int groupId = args?['groupId'] ?? 0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        
-        // --- DYNAMICKÁ HLAVIČKA ---
         PageHeaderWidget(
           title: 'Nový test — $targetClass',
-          actions: const [],
+          actions: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                'Vybráno: ${_selectedQuestionIds.length}',
+                style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold),
+              ),
+            )
+          ],
         ),
-
-        // --- SCROLLOVACÍ ČÁST EDITORU ---
         Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(32.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                
-                // VSTUP PRO NÁZEV TESTU
-                _buildTestNameInput(),
-                const SizedBox(height: 24.0),
+          child: _isLoadingBanks 
+            ? Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary))
+            : _errorMessage != null
+              ? Center(child: Text(_errorMessage!, style: const TextStyle(color: Colors.red)))
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.all(32.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _buildTestNameInput(),
+                      const SizedBox(height: 24.0),
 
-                // ROZBALOVACÍ SEKCE: VÝBĚR BANEK
-                _buildExpandableSection(
-                  title: 'BANKY OTÁZEK',
-                  subtitle: 'Rozklikněte a vyberte konkrétní banku otázek',
-                  icon: Icons.folder_open_rounded,
-                  children: _mockBanks.map((bank) => BankSelectRowWidget(
-                    bank: bank['name'],
-                    icon: Icon(bank['icon'], color: Theme.of(context).colorScheme.primary, size: 28),
-                    questions: bank['count'],
-                  )).toList(),
-                ),
-                const SizedBox(height: 24.0),
+                      Text('VÝBĚR OTÁZEK Z BANEK', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.secondary, letterSpacing: 1.1)),
+                      const SizedBox(height: 8.0),
+                      ..._banks.map((bank) => _buildBankExpansionTile(bank)).toList(),
+                      if (_banks.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 16.0),
+                          child: Text('Zatím nemáte vytvořené žádné banky.', style: TextStyle(color: Theme.of(context).colorScheme.secondary)),
+                        ),
 
-                // ROZBALOVACÍ SEKCE: VÝBĚR OTÁZEK
-                _buildExpandableSection(
-                  title: 'VÝBĚR OTÁZEK',
-                  subtitle: 'Rozklikněte a vyberte konkrétní otázky z vybraných bank',
-                  icon: Icons.list_alt_rounded,
-                  children: _mockQuestions.map((q) => QuestionSelectRowWidget(
-                    question: q['text'],
-                    type: q['type'],
-                  )).toList(),
-                ),
-                const SizedBox(height: 24.0),
+                      const SizedBox(height: 24.0),
+                      TestSettingsWidget(onChanged: (settings) => _testSettings = settings),
+                      const SizedBox(height: 24.0),
+                      TimeSettingsWidget(onChanged: (settings) => _timeSettings = settings),
+                      const SizedBox(height: 48.0),
 
-                // KOMPONENTY NASTAVENÍ
-                const TestSettingsWidget(),
-                const SizedBox(height: 24.0),
-                const TimeSettingsWidget(),
-                const SizedBox(height: 48.0),
-
-                // HLAVNÍ TLAČÍTKO PRO ODESLÁNÍ
-                Center(
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      print('Zadávám test: ${_testNameController.text} pro třídu: $targetClass');
-                    },
-                    icon: const Icon(Icons.send_rounded, size: 20),
-                    label: Text(
-                      'Zadat test', 
-                      style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold)
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Theme.of(context).colorScheme.primary,
-                      foregroundColor: Theme.of(context).colorScheme.surface,
-                      minimumSize: const Size(240, 56), // Velké, dominantní tlačítko
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-                      elevation: 0,
-                    ),
+                      Center(
+                        child: ElevatedButton.icon(
+                          onPressed: _isSubmitting || groupId == 0 ? null : () => _submitTest(groupId),
+                          icon: _isSubmitting 
+                            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                            : const Icon(Icons.send_rounded, size: 20),
+                          label: Text('Zadat test', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Theme.of(context).colorScheme.primary,
+                            foregroundColor: Theme.of(context).colorScheme.surface,
+                            minimumSize: const Size(240, 56),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+                            elevation: 0,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 60),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 60), // Místo dole pro bezpečné scrollování
-              ],
-            ),
-          ),
         ),
       ],
     );
   }
 
-  // Vstupní pole pro název testu
+  Widget _buildBankExpansionTile(Map<String, dynamic> bank) {
+    int bankId = bank['id'];
+    bool isLoading = _bankQuestionsLoading[bankId] == true;
+    List<Map<String, dynamic>>? questions = _bankQuestionsCache[bankId];
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12.0),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(16.0),
+        border: Border.all(color: Theme.of(context).colorScheme.outline, width: 1.0),
+      ),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          tilePadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+          leading: Icon(Icons.folder_open_rounded, color: Theme.of(context).colorScheme.primary),
+          title: Text(bank['name'], style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface)),
+          onExpansionChanged: (expanded) {
+            if (expanded) {
+              _fetchQuestionsForBank(bankId);
+            }
+          },
+          childrenPadding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+          children: [
+            if (isLoading)
+              const Padding(padding: EdgeInsets.all(16.0), child: Center(child: CircularProgressIndicator()))
+            else if (questions == null || questions.isEmpty)
+              Padding(
+                padding: const EdgeInsets.all(16.0), 
+                child: Text('Tato banka neobsahuje žádné otázky.', style: TextStyle(color: Theme.of(context).colorScheme.secondary))
+              )
+            else
+              ...questions.map((q) {
+                int qId = q['id'];
+                bool isSelected = _selectedQuestionIds.contains(qId);
+                return QuestionSelectRowWidget(
+                  question: q['question'],
+                  type: q['type'],
+                  isSelected: isSelected,
+                  onToggle: () {
+                    setState(() {
+                      if (isSelected) {
+                        _selectedQuestionIds.remove(qId);
+                      } else {
+                        _selectedQuestionIds.add(qId);
+                      }
+                    });
+                  },
+                );
+              }).toList(),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildTestNameInput() {
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16.0),
         border: Border.all(color: Theme.of(context).colorScheme.outline, width: 1.0),
-        boxShadow: [
-          BoxShadow(
-            blurRadius: 10.0,
-            color: Colors.black.withValues(alpha: 0.02),
-            offset: const Offset(0, 4),
-          )
-        ],
       ),
       child: TextFormField(
         controller: _testNameController,
@@ -162,42 +353,6 @@ class _TestEditorWidgetState extends State<TestEditorWidget> {
           hintStyle: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontWeight: FontWeight.w400),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-        ),
-      ),
-    );
-  }
-
-  // Rozbalovací panel
-  Widget _buildExpandableSection({required String title, required String subtitle, required IconData icon, required List<Widget> children}) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(16.0),
-        border: Border.all(color: Theme.of(context).colorScheme.outline, width: 1.0),
-        boxShadow: [
-          BoxShadow(
-            blurRadius: 10.0,
-            color: Colors.black.withValues(alpha: 0.02),
-            offset: const Offset(0, 4),
-          )
-        ],
-      ),
-      child: Theme(
-        data: Theme.of(context).copyWith(dividerColor: Colors.transparent), // Skryje základní čáru
-        child: ExpansionTile(
-          tilePadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          leading: Icon(icon, color: Theme.of(context).colorScheme.secondary),
-          title: Text(
-            title, 
-            style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.secondary, letterSpacing: 1.1)
-          ),
-          subtitle: Padding(
-            padding: const EdgeInsets.only(top: 4.0),
-            child: Text(subtitle, style: GoogleFonts.inter(fontSize: 12, color: Theme.of(context).colorScheme.secondary)),
-          ),
-          childrenPadding: const EdgeInsets.all(16),
-          expandedCrossAxisAlignment: CrossAxisAlignment.stretch,
-          children: children,
         ),
       ),
     );
