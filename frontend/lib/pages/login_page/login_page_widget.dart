@@ -102,7 +102,7 @@ class _LoginPageWidgetState extends ConsumerState<LoginPageWidget> {
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(16.0),
-                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 20.0, offset: const Offset(0, 4))],
+                boxShadow: [BoxShadow(color: Theme.of(context).shadowColor.withValues(alpha: 0.05), blurRadius: 20.0, offset: const Offset(0, 4))],
               ),
               padding: const EdgeInsets.symmetric(horizontal: 40.0, vertical: 48.0),
               child: Column(

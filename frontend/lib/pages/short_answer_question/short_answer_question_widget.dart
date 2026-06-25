@@ -64,26 +64,26 @@ class _ShortAnswerQuestionWidgetState extends State<ShortAnswerQuestionWidget> {
               width: 375.0,
               height: 700.0,
               decoration: BoxDecoration(
-                color: const Color(0xFFF5F7FA), // Pozadí studentské aplikace
+                color: Theme.of(context).scaffoldBackgroundColor, // Pozadí studentské aplikace
                 borderRadius: BorderRadius.circular(36.0),
-                border: Border.all(color: const Color(0xFF111827), width: 10.0), // Rámeček mobilu
-                boxShadow: const [
-                  BoxShadow(color: Colors.black26, blurRadius: 20.0, offset: Offset(0, 10))
+                border: Border.all(color: Theme.of(context).colorScheme.onSurface, width: 10.0), // Rámeček mobilu
+                boxShadow: [
+                  BoxShadow(color: Theme.of(context).shadowColor.withValues(alpha: 0.1), blurRadius: 20.0, offset: const Offset(0, 10))
                 ],
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(26.0), // Vnitřní zaoblení displeje
                 child: Scaffold(
-                  backgroundColor: const Color(0xFFF5F7FA),
+                  backgroundColor: Theme.of(context).scaffoldBackgroundColor,
                   appBar: AppBar(
-                    backgroundColor: Colors.white,
+                    backgroundColor: Theme.of(context).colorScheme.surface,
                     elevation: 0,
                     centerTitle: true,
-                    title: Text('Ukázka testu', style: GoogleFonts.inter(color: Colors.black87, fontSize: 16, fontWeight: FontWeight.bold)),
+                    title: Text('Ukázka testu', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurface, fontSize: 16, fontWeight: FontWeight.bold)),
                     automaticallyImplyLeading: false, // Skryje šipku zpět
                     actions: [
                       IconButton(
-                        icon: const Icon(Icons.close, color: Colors.black87),
+                        icon: Icon(Icons.close, color: Theme.of(context).colorScheme.onSurface),
                         onPressed: () => Navigator.pop(context),
                       )
                     ],
@@ -98,7 +98,7 @@ class _ShortAnswerQuestionWidgetState extends State<ShortAnswerQuestionWidget> {
                           _questionTextController.text.isEmpty 
                               ? '[Zde bude znění otázky...]' 
                               : _questionTextController.text,
-                          style: GoogleFonts.inter(fontSize: 18.0, fontWeight: FontWeight.w600, color: const Color(0xFF111827)),
+                          style: GoogleFonts.inter(fontSize: 18.0, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface),
                         ),
                         const SizedBox(height: 32.0),
                         
@@ -106,11 +106,11 @@ class _ShortAnswerQuestionWidgetState extends State<ShortAnswerQuestionWidget> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.surface,
                             borderRadius: BorderRadius.circular(12.0),
-                            border: Border.all(color: const Color(0xFFE5E7EB)),
+                            border: Border.all(color: Theme.of(context).colorScheme.outline),
                           ),
-                          child: Text('Tvoje odpověď...', style: GoogleFonts.inter(color: const Color(0xFF9CA3AF))),
+                          child: Text('Tvoje odpověď...', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary)),
                         ),
                         
                         const Spacer(),
@@ -119,11 +119,11 @@ class _ShortAnswerQuestionWidgetState extends State<ShortAnswerQuestionWidget> {
                         ElevatedButton(
                           onPressed: () {},
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF0056D2),
+                            backgroundColor: Theme.of(context).colorScheme.primary,
                             minimumSize: const Size(double.infinity, 48.0),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.0)),
                           ),
-                          child: Text('Další otázka', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold)),
+                          child: Text('Další otázka', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.bold)),
                         )
                       ],
                     ),

@@ -310,10 +310,10 @@ class _TestActiveWidgetState extends State<TestActiveWidget> {
                           children: [
                             Text(
                               _currentIndex == totalQuestions - 1 ? 'Odevzdat test' : 'Další otázka', 
-                              style: GoogleFonts.inter(fontSize: 16.0, fontWeight: FontWeight.bold, color: Colors.white)
+                              style: GoogleFonts.inter(fontSize: 16.0, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onPrimary)
                             ),
                             const SizedBox(width: 8),
-                            Icon(_currentIndex == totalQuestions - 1 ? Icons.check_circle_outline : Icons.arrow_forward, color: Colors.white, size: 20),
+                            Icon(_currentIndex == totalQuestions - 1 ? Icons.check_circle_outline : Icons.arrow_forward, color: Theme.of(context).colorScheme.onPrimary, size: 20),
                           ],
                         ),
                       ),

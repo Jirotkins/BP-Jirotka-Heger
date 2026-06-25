@@ -85,10 +85,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/', builder: (context, state) => const LoginPageWidget()),
       GoRoute(
         path: '/loading',
-        builder: (context, state) => const Scaffold(
-          backgroundColor: Color(0xFFF5F7FA),
+        builder: (context, state) => Scaffold(
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           body: Center(
-            child: CircularProgressIndicator(color: Color(0xFF0056D2)),
+            child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary),
           ),
         ),
       ),

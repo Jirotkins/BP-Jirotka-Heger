@@ -8,6 +8,7 @@ import '../../components/page_header_widget.dart';
 import '../../components/question_select_row_widget.dart';
 import '../../components/test_settings_widget.dart';
 import '../../components/time_settings_widget.dart';
+import '../../theme/app_themes.dart';
 
 class TestEditorWidget extends ConsumerStatefulWidget {
   const TestEditorWidget({super.key});
@@ -189,13 +190,14 @@ class _TestEditorWidgetState extends ConsumerState<TestEditorWidget> {
       await apiClient.post('/groups/$groupId/exam-assignments', assignData);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Test byl úspěšně zadán!'), backgroundColor: Colors.green));
+        final customColors = Theme.of(context).extension<CustomColors>();
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: const Text('Test byl úspěšně zadán!'), backgroundColor: customColors?.greenBg ?? Colors.green));
         context.pop(true);
       }
 
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Chyba při zadávání testu: $e'), backgroundColor: Colors.red));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Chyba při zadávání testu: $e'), backgroundColor: Theme.of(context).colorScheme.error));
       }
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
@@ -231,7 +233,7 @@ class _TestEditorWidgetState extends ConsumerState<TestEditorWidget> {
           child: _isLoadingBanks 
             ? Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary))
             : _errorMessage != null
-              ? Center(child: Text(_errorMessage!, style: const TextStyle(color: Colors.red)))
+              ? Center(child: Text(_errorMessage!, style: TextStyle(color: Theme.of(context).colorScheme.error)))
               : SingleChildScrollView(
                   padding: const EdgeInsets.all(32.0),
                   child: Column(
@@ -259,7 +261,7 @@ class _TestEditorWidgetState extends ConsumerState<TestEditorWidget> {
                         child: ElevatedButton.icon(
                           onPressed: _isSubmitting || groupId == 0 ? null : () => _submitTest(groupId),
                           icon: _isSubmitting 
-                            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                            ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Theme.of(context).colorScheme.onPrimary, strokeWidth: 2))
                             : const Icon(Icons.send_rounded, size: 20),
                           label: Text('Zadat test', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold)),
                           style: ElevatedButton.styleFrom(

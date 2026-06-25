@@ -197,7 +197,7 @@ class _TestEvaluationWidgetState extends State<TestEvaluationWidget> {
             border: Border.all(color: Theme.of(context).colorScheme.outline),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.02),
+                color: Theme.of(context).shadowColor.withValues(alpha: 0.05),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
