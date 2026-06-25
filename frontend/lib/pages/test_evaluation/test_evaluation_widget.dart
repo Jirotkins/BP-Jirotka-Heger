@@ -311,9 +311,9 @@ class _TestEvaluationWidgetState extends State<TestEvaluationWidget> {
       };
     } else if (awarded <= 0) {
       return {
-        'bg': Theme.of(context).colorScheme.errorContainer,
-        'border': Theme.of(context).colorScheme.error.withValues(alpha: 0.3),
-        'icon': Theme.of(context).colorScheme.error,
+        'bg': customColors?.redBg ?? Theme.of(context).colorScheme.errorContainer,
+        'border': customColors?.redText?.withValues(alpha: 0.3) ?? Theme.of(context).colorScheme.error.withValues(alpha: 0.3),
+        'icon': customColors?.redText ?? Theme.of(context).colorScheme.error,
       };
     } else {
       return {

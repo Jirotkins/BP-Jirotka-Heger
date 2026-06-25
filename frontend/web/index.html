@@ -19,6 +19,11 @@
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="description" content="A new Flutter project.">
+  
+  <!-- KLÍČOVÉ PRO MOBILNÍ ZOBRAZENÍ A SAFARI DARK MODE OKRAJE -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#1E1E1E" media="(prefers-color-scheme: dark)">
 
   <!-- Odstranění zasekávání staré cache prohlížeče -->
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
@@ -36,6 +41,22 @@
 
   <title>bpjirotka</title>
   <link rel="manifest" href="manifest.json">
+  <style>
+    html, body {
+      background-color: #1E1E1E; /* Defaultní barva těla, aby neprosvítala na okrajích iOS (fallback je dark) */
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden; /* Zamezí "rubber-band" efektu na iOS a ponechá scrollování Flutteru */
+      overscroll-behavior-y: none;
+    }
+    @media (prefers-color-scheme: light) {
+      html, body {
+        background-color: #FFFFFF;
+      }
+    }
+  </style>
 </head>
 <body>
   <script src="flutter_bootstrap.js" async></script>

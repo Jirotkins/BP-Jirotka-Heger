@@ -51,7 +51,7 @@ class _StudentMainLayoutState extends State<StudentMainLayout> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       
       // PageView drží stránky a posouvá je
       body: PageView(
@@ -66,7 +66,7 @@ class _StudentMainLayoutState extends State<StudentMainLayout> {
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05), 
+              color: Theme.of(context).shadowColor.withValues(alpha: 0.05), 
               blurRadius: 10, 
               offset: const Offset(0, -5),
             ),
@@ -75,9 +75,9 @@ class _StudentMainLayoutState extends State<StudentMainLayout> {
         child: BottomNavigationBar(
           currentIndex: _currentIndex,
           onTap: _onItemTapped,
-          backgroundColor: Colors.white,
-          selectedItemColor: const Color(0xFF4285F4),
-          unselectedItemColor: Colors.grey.shade400,
+          backgroundColor: Theme.of(context).colorScheme.surface,
+          selectedItemColor: Theme.of(context).colorScheme.primary,
+          unselectedItemColor: Theme.of(context).colorScheme.secondary,
           showSelectedLabels: false, 
           showUnselectedLabels: false,
           type: BottomNavigationBarType.fixed,

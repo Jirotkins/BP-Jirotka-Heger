@@ -30,9 +30,9 @@ class TestSubmitPopupWidget extends StatelessWidget {
       child: Container(
         width: 340.0,
         decoration: BoxDecoration(
-          color: Colors.white, 
+          color: Theme.of(context).colorScheme.surface, 
           borderRadius: BorderRadius.circular(24.0),
-          boxShadow: const [BoxShadow(blurRadius: 16.0, color: Colors.black12, offset: Offset(0, 8))],
+          boxShadow: [BoxShadow(blurRadius: 16.0, color: Theme.of(context).shadowColor.withValues(alpha: 0.12), offset: const Offset(0, 8))],
         ),
         padding: const EdgeInsets.all(32.0),
         child: Column(
@@ -48,7 +48,7 @@ class TestSubmitPopupWidget extends StatelessWidget {
             Text(
               titleText,
               textAlign: TextAlign.center,
-              style: GoogleFonts.inter(fontSize: 22.0, fontWeight: FontWeight.bold, color: Colors.black87),
+              style: GoogleFonts.inter(fontSize: 22.0, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
             ),
             const SizedBox(height: 12.0),
             
@@ -59,7 +59,7 @@ class TestSubmitPopupWidget extends StatelessWidget {
               style: GoogleFonts.inter(
                 fontSize: 14.0, 
                 fontWeight: FontWeight.w600, 
-                color: hasUnanswered ? const Color(0xFFD97706) : Colors.grey.shade600,
+                color: hasUnanswered ? const Color(0xFFD97706) : Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
             
@@ -68,7 +68,7 @@ class TestSubmitPopupWidget extends StatelessWidget {
               Text(
                 'Doporučujeme se vrátit a test dokončit, abyste nepřišli o body.',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.inter(fontSize: 13.0, color: Colors.grey.shade600, height: 1.4),
+                style: GoogleFonts.inter(fontSize: 13.0, color: Theme.of(context).colorScheme.onSurfaceVariant, height: 1.4),
               ),
             ],
             
@@ -116,8 +116,8 @@ class TestSubmitPopupWidget extends StatelessWidget {
                   OutlinedButton(
                     onPressed: () => Navigator.of(context).pop(), 
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.grey.shade600,
-                      side: BorderSide(color: Colors.grey.shade300, width: 1.5),
+                      foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                      side: BorderSide(color: Theme.of(context).colorScheme.outline, width: 1.5),
                       padding: const EdgeInsets.symmetric(vertical: 16.0),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22.0)),
                     ),

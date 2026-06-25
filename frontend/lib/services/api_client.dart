@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/auth_provider.dart';
 
 // URL adresa backendu.
-const String baseUrl = 'http://127.0.0.1:8000';
+const String baseUrl = 'http://127.0.0.1:8000'; //172.20.10.8:8000
 
 class ApiException implements Exception {
   final String message;
@@ -41,7 +41,7 @@ class ApiClient {
         headers: _headers,
         body: json.encode(body),
       );
-      
+
       return _processResponse(response);
     } catch (e) {
       if (e is ApiException) rethrow;
@@ -52,11 +52,8 @@ class ApiClient {
   Future<dynamic> get(String endpoint) async {
     final uri = Uri.parse('$baseUrl$endpoint');
     try {
-      final response = await http.get(
-        uri,
-        headers: _headers,
-      );
-      
+      final response = await http.get(uri, headers: _headers);
+
       return _processResponse(response);
     } catch (e) {
       if (e is ApiException) rethrow;
@@ -67,7 +64,9 @@ class ApiClient {
   dynamic _processResponse(http.Response response) {
     dynamic body;
     try {
-      body = response.body.isNotEmpty ? json.decode(utf8.decode(response.bodyBytes)) : {};
+      body = response.body.isNotEmpty
+          ? json.decode(utf8.decode(response.bodyBytes))
+          : {};
     } catch (e) {
       body = response.body;
     }

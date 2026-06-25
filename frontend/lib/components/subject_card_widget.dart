@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../theme/app_themes.dart';
 
 class SubjectCardWidget extends StatelessWidget {
   final String id;
@@ -27,29 +28,30 @@ class SubjectCardWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final customColors = Theme.of(context).extension<CustomColors>();
     // --- Logika pro barevné odznáčky a texty podle stavu z backendu ---
-    Color badgeBgColor = const Color(0xFFF3F4F6); // Default šedá
-    Color badgeTextColor = const Color(0xFF6B7280);
+    Color badgeBgColor = Theme.of(context).colorScheme.surfaceContainerHighest; // Default šedá
+    Color badgeTextColor = Theme.of(context).colorScheme.secondary;
     String badgeText = "Žádný test";
     
-    Color timeIconColor = Colors.grey;
+    Color timeIconColor = Theme.of(context).colorScheme.secondary;
     IconData timeIcon = Icons.check_circle_outline;
 
     if (status == 'active') {
-      badgeBgColor = const Color(0xFFFEE2E2); // Světle červená
-      badgeTextColor = const Color(0xFFDC2626); // Tmavě červená
+      badgeBgColor = customColors?.redBg ?? Theme.of(context).colorScheme.errorContainer;
+      badgeTextColor = customColors?.redText ?? Theme.of(context).colorScheme.error;
       badgeText = "Test nyní";
-      timeIconColor = const Color(0xFFDC2626);
+      timeIconColor = badgeTextColor;
       timeIcon = Icons.schedule;
     } else if (status == 'upcoming') {
-      badgeBgColor = const Color(0xFFFEF9C3); // Světle žlutá
-      badgeTextColor = const Color(0xFFD97706); // Tmavě oranžová
+      badgeBgColor = customColors?.orangeBg ?? const Color(0xFFFEF9C3);
+      badgeTextColor = customColors?.orangeText ?? const Color(0xFFD97706);
       badgeText = "Test brzy";
-      timeIconColor = const Color(0xFFD97706);
+      timeIconColor = badgeTextColor;
       timeIcon = Icons.calendar_today_outlined;
     } else {
-      badgeBgColor = const Color(0xFFDCFCE7); // Světle zelená
-      badgeTextColor = const Color(0xFF16A34A); // Tmavě zelená
+      badgeBgColor = customColors?.greenBg ?? const Color(0xFFDCFCE7);
+      badgeTextColor = customColors?.greenText ?? const Color(0xFF16A34A);
     }
 
     return InkWell(
@@ -66,10 +68,10 @@ class SubjectCardWidget extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFE5E7EB)),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 8, offset: const Offset(0, 2))],
+          border: Border.all(color: Theme.of(context).colorScheme.outline),
+          boxShadow: [BoxShadow(color: Theme.of(context).shadowColor.withValues(alpha: 0.05), blurRadius: 8, offset: const Offset(0, 2))],
         ),
         child: Column(
           children: [
@@ -78,7 +80,7 @@ class SubjectCardWidget extends StatelessWidget {
               children: [
                 Container(
                   width: 48, height: 48,
-                  decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                  decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
                   alignment: Alignment.center,
                   child: Text(code, style: GoogleFonts.inter(color: color, fontWeight: FontWeight.bold, fontSize: 16)),
                 ),
@@ -87,9 +89,9 @@ class SubjectCardWidget extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(name, style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87)),
+                      Text(name, style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16, color: Theme.of(context).colorScheme.onSurface)),
                       const SizedBox(height: 2),
-                      Text(teacher, style: GoogleFonts.inter(color: Colors.grey.shade500, fontSize: 13)),
+                      Text(teacher, style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontSize: 13)),
                     ],
                   ),
                 ),
@@ -102,17 +104,17 @@ class SubjectCardWidget extends StatelessWidget {
               ],
             ),
             
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 12.0),
-              child: Divider(height: 1, color: Color(0xFFF3F4F6)),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12.0),
+              child: Divider(height: 1, color: Theme.of(context).colorScheme.outline),
             ),
 
             // SPODNÍ ŘÁDEK: Počet testů, časový údaj, šipka
             Row(
               children: [
-                Icon(Icons.assignment_outlined, size: 16, color: Colors.grey.shade500),
+                Icon(Icons.assignment_outlined, size: 16, color: Theme.of(context).colorScheme.secondary),
                 const SizedBox(width: 6),
-                Text('$testCount testy', style: GoogleFonts.inter(color: Colors.grey.shade500, fontSize: 12, fontWeight: FontWeight.w500)),
+                Text('$testCount testy', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontSize: 12, fontWeight: FontWeight.w500)),
                 
                 const SizedBox(width: 16),
                 
@@ -122,7 +124,7 @@ class SubjectCardWidget extends StatelessWidget {
                   child: Text(timeText ?? 'Vše ohodnoceno', style: GoogleFonts.inter(color: timeIconColor, fontSize: 12, fontWeight: FontWeight.w500)),
                 ),
                 
-                Icon(Icons.arrow_forward_ios, color: Colors.grey.shade400, size: 14),
+                Icon(Icons.arrow_forward_ios, color: Theme.of(context).colorScheme.onSurfaceVariant, size: 14),
               ],
             )
           ],

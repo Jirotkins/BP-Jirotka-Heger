@@ -49,12 +49,12 @@ class _StudentOverviewWidgetState extends State<StudentOverviewWidget> {
   Widget build(BuildContext context) {
     return Scaffold(
       key: scaffoldKey,
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       
       // --- HLAVIČKA APLIKACE (AppBar) ---
       appBar: AppBar(
         // Nastavení pro čistě bílou barvu nezávislou na scrollování (Material 3)
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor ?? Theme.of(context).colorScheme.surface,
         surfaceTintColor: Colors.transparent,
         scrolledUnderElevation: 0, 
         automaticallyImplyLeading: false,
@@ -63,9 +63,9 @@ class _StudentOverviewWidgetState extends State<StudentOverviewWidget> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Jakub Novák', style: GoogleFonts.inter(color: Colors.black87, fontSize: 24, fontWeight: FontWeight.w800)),
+            Text('Jakub Novák', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurface, fontSize: 24, fontWeight: FontWeight.w800)),
             const SizedBox(height: 2),
-            Text('Přehled studia', style: GoogleFonts.inter(color: Colors.grey, fontSize: 13, fontWeight: FontWeight.w500)),
+            Text('Přehled studia', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontSize: 13, fontWeight: FontWeight.w500)),
           ],
         ),
       ),
@@ -79,7 +79,7 @@ class _StudentOverviewWidgetState extends State<StudentOverviewWidget> {
             children: [
               
               // 1. SEKCE: AKTIVNÍ TESTY (Prioritní, vyžadují akci)
-              _buildSectionHeader('Aktivní testy', _activeTests.length, const Color(0xFFDC2626)),
+              _buildSectionHeader('Aktivní testy', _activeTests.length, Theme.of(context).colorScheme.error),
               const SizedBox(height: 16),
               // Vykreslí všechny probíhající testy jako velké červené karty
               ..._activeTests.map((test) => _buildActiveTestCard(test)).toList(),
@@ -119,12 +119,12 @@ class _StudentOverviewWidgetState extends State<StudentOverviewWidget> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(title, style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87)),
+        Text(title, style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface)),
         if (count != null && count > 0)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(color: countColor, borderRadius: BorderRadius.circular(12)),
-            child: Text(count.toString(), style: GoogleFonts.inter(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+            decoration: BoxDecoration(color: countColor ?? Theme.of(context).colorScheme.primary, borderRadius: BorderRadius.circular(12)),
+            child: Text(count.toString(), style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onError, fontSize: 12, fontWeight: FontWeight.bold)),
           ),
       ],
     );
@@ -137,10 +137,10 @@ class _StudentOverviewWidgetState extends State<StudentOverviewWidget> {
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16.0),
-        border: Border.all(color: const Color(0xFFDC2626).withOpacity(0.5), width: 1.5),
-        boxShadow: [BoxShadow(color: const Color(0xFFDC2626).withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+        border: Border.all(color: Theme.of(context).colorScheme.error.withValues(alpha: 0.5), width: 1.5),
+        boxShadow: [BoxShadow(color: Theme.of(context).shadowColor.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))],
       ),
       padding: const EdgeInsets.all(16.0),
       child: Row(
@@ -148,8 +148,8 @@ class _StudentOverviewWidgetState extends State<StudentOverviewWidget> {
           // Levá ikona
           Container(
             width: 48, height: 48,
-            decoration: BoxDecoration(color: const Color(0xFFFEF2F2), borderRadius: BorderRadius.circular(12)),
-            child: const Icon(Icons.quiz_outlined, color: Color(0xFFDC2626), size: 24),
+            decoration: BoxDecoration(color: Theme.of(context).colorScheme.errorContainer, borderRadius: BorderRadius.circular(12)),
+            child: Icon(Icons.quiz_outlined, color: Theme.of(context).colorScheme.error, size: 24),
           ),
           const SizedBox(width: 16),
           // Informace o testu
@@ -157,11 +157,11 @@ class _StudentOverviewWidgetState extends State<StudentOverviewWidget> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Probíhá', style: TextStyle(color: Color(0xFFDC2626), fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                Text('Probíhá', style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
                 const SizedBox(height: 2),
-                Text(test['title'], style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87)),
+                Text(test['title'], style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16, color: Theme.of(context).colorScheme.onSurface)),
                 const SizedBox(height: 2),
-                Text('Dostupný do: ${test['deadline']}', style: GoogleFonts.inter(color: Colors.grey.shade600, fontSize: 12)),
+                Text('Dostupný do: ${test['deadline']}', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontSize: 12)),
               ],
             ),
           ),
@@ -171,9 +171,9 @@ class _StudentOverviewWidgetState extends State<StudentOverviewWidget> {
             children: [
               Row(
                 children: [
-                  const Icon(Icons.schedule, color: Color(0xFFDC2626), size: 14),
+                  Icon(Icons.schedule, color: Theme.of(context).colorScheme.error, size: 14),
                   const SizedBox(width: 4),
-                  Text(test['expiresIn'], style: GoogleFonts.inter(color: Color(0xFFDC2626), fontSize: 12, fontWeight: FontWeight.bold)),
+                  Text(test['expiresIn'], style: GoogleFonts.inter(color: Theme.of(context).colorScheme.error, fontSize: 12, fontWeight: FontWeight.bold)),
                 ],
               ),
               const SizedBox(height: 12),
@@ -184,8 +184,8 @@ class _StudentOverviewWidgetState extends State<StudentOverviewWidget> {
                   context.push('/testActive', extra: {'testId': test['id'], 'testTitle': test['title']});
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFDC2626),
-                  foregroundColor: Colors.white,
+                  backgroundColor: Theme.of(context).colorScheme.error,
+                  foregroundColor: Theme.of(context).colorScheme.onError,
                   elevation: 0,
                   minimumSize: const Size(80, 36),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),

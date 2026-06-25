@@ -165,7 +165,7 @@ class _TestActiveWidgetState extends State<TestActiveWidget> {
 
     return Scaffold(
       key: scaffoldKey,
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       
       body: SafeArea(
         child: Column(
@@ -174,8 +174,8 @@ class _TestActiveWidgetState extends State<TestActiveWidget> {
             // Obsahuje křížek, název testu, odpočet a plynulý progress bar.
             Container(
               decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10.0, offset: const Offset(0, 4))],
+                color: Theme.of(context).colorScheme.surface,
+                boxShadow: [BoxShadow(color: Theme.of(context).shadowColor.withValues(alpha: 0.04), blurRadius: 10.0, offset: const Offset(0, 4))],
               ),
               padding: const EdgeInsets.only(top: 16.0, left: 24.0, right: 24.0, bottom: 20.0),
               child: Column(
@@ -185,11 +185,11 @@ class _TestActiveWidgetState extends State<TestActiveWidget> {
                       InkWell(
                         onTap: _showExitWarning,
                         borderRadius: BorderRadius.circular(20),
-                        child: const Padding(padding: EdgeInsets.all(4.0), child: Icon(Icons.close_rounded, color: Colors.black87, size: 24)),
+                        child: Padding(padding: const EdgeInsets.all(4.0), child: Icon(Icons.close_rounded, color: Theme.of(context).colorScheme.onSurface, size: 24)),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: Text(testTitle, style: GoogleFonts.inter(fontWeight: FontWeight.w800, color: Colors.black87, fontSize: 18)),
+                        child: Text(testTitle, style: GoogleFonts.inter(fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.onSurface, fontSize: 18)),
                       ),
                     ],
                   ),
@@ -197,12 +197,12 @@ class _TestActiveWidgetState extends State<TestActiveWidget> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Otázka ${_currentIndex + 1} z $totalQuestions', style: GoogleFonts.inter(color: Colors.black87, fontWeight: FontWeight.w600, fontSize: 14.0)),
+                      Text('Otázka ${_currentIndex + 1} z $totalQuestions', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.w600, fontSize: 14.0)),
                       Row(
                         children: [
-                          const Icon(Icons.timer_outlined, color: Color(0xFFDC2626), size: 18),
+                          Icon(Icons.timer_outlined, color: Theme.of(context).colorScheme.error, size: 18),
                           const SizedBox(width: 6),
-                          Text('14:10', style: GoogleFonts.inter(color: const Color(0xFFDC2626), fontWeight: FontWeight.bold, fontSize: 16.0)),
+                          Text('14:10', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.bold, fontSize: 16.0)),
                         ],
                       ),
                     ],
@@ -214,14 +214,14 @@ class _TestActiveWidgetState extends State<TestActiveWidget> {
                       return Container(
                         height: 6.0,
                         width: constraints.maxWidth,
-                        decoration: BoxDecoration(color: const Color(0xFFF3F4F6), borderRadius: BorderRadius.circular(6.0)),
+                        decoration: BoxDecoration(color: Theme.of(context).colorScheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(6.0)),
                         child: Row(
                           children: [
                             AnimatedContainer(
                               duration: const Duration(milliseconds: 400),
                               curve: Curves.easeOutCubic, 
                               width: constraints.maxWidth * progress,
-                              decoration: BoxDecoration(color: const Color(0xFF0056D2), borderRadius: BorderRadius.circular(6.0)),
+                              decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary, borderRadius: BorderRadius.circular(6.0)),
                             ),
                           ],
                         ),
@@ -245,14 +245,15 @@ class _TestActiveWidgetState extends State<TestActiveWidget> {
                     Container(
                       width: double.infinity,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.surface,
                         borderRadius: BorderRadius.circular(16.0),
-                        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10.0, offset: const Offset(0, 4))],
+                        border: Border.all(color: Theme.of(context).colorScheme.outline),
+                        boxShadow: [BoxShadow(color: Theme.of(context).shadowColor.withValues(alpha: 0.04), blurRadius: 10.0, offset: const Offset(0, 4))],
                       ),
                       padding: const EdgeInsets.all(24.0),
                       child: Text(
                         currentQuestion['text'],
-                        style: GoogleFonts.inter(fontSize: 18.0, fontWeight: FontWeight.w700, color: Colors.black87, height: 1.4),
+                        style: GoogleFonts.inter(fontSize: 18.0, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.onSurface, height: 1.4),
                       ),
                     ),
                     const SizedBox(height: 32.0),
@@ -276,7 +277,7 @@ class _TestActiveWidgetState extends State<TestActiveWidget> {
             // --- SPODNÍ NAVIGAČNÍ TLAČÍTKA ---
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-              decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))]),
+              decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, border: Border(top: BorderSide(color: Theme.of(context).colorScheme.outline)), boxShadow: [BoxShadow(color: Theme.of(context).shadowColor.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, -5))]),
               child: SafeArea(
                 top: false, // Safe area řešíme jen pro spodní lištu (notch na iPhonech)
                 child: Row(
@@ -288,8 +289,8 @@ class _TestActiveWidgetState extends State<TestActiveWidget> {
                         borderRadius: BorderRadius.circular(24.0),
                         child: Container(
                           height: 52, width: 52,
-                          decoration: BoxDecoration(border: Border.all(color: const Color(0xFFE5E7EB), width: 1.5), shape: BoxShape.circle),
-                          child: const Icon(Icons.arrow_back, color: Colors.black87),
+                          decoration: BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.outline, width: 1.5), shape: BoxShape.circle),
+                          child: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.onSurface),
                         ),
                       ),
                       const SizedBox(width: 16.0),
@@ -299,7 +300,7 @@ class _TestActiveWidgetState extends State<TestActiveWidget> {
                       child: ElevatedButton(
                         onPressed: _nextQuestion,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF0056D2), 
+                          backgroundColor: Theme.of(context).colorScheme.primary,
                           padding: const EdgeInsets.symmetric(vertical: 16.0),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26.0)),
                           elevation: 0,
@@ -337,7 +338,7 @@ class _TestActiveWidgetState extends State<TestActiveWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Vyberte jednu správnou odpověď:', style: GoogleFonts.inter(color: Colors.grey.shade600, fontWeight: FontWeight.bold, fontSize: 13.0)),
+        Text('Vyberte jednu správnou odpověď:', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontWeight: FontWeight.bold, fontSize: 13.0)),
         const SizedBox(height: 12.0),
         ...List.generate(question['options'].length, (index) {
           var option = question['options'][index];
@@ -350,9 +351,9 @@ class _TestActiveWidgetState extends State<TestActiveWidget> {
               borderRadius: BorderRadius.circular(14.0),
               child: Container(
                 decoration: BoxDecoration(
-                  color: isSelected ? const Color(0xFFF0F4FF) : Colors.white,
+                  color: isSelected ? Theme.of(context).colorScheme.primaryContainer : Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(14.0),
-                  border: Border.all(color: isSelected ? const Color(0xFF0056D2) : const Color(0xFFE5E7EB), width: isSelected ? 2.0 : 1.0),
+                  border: Border.all(color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.outline, width: isSelected ? 2.0 : 1.0),
                 ),
                 padding: const EdgeInsets.all(16.0),
                 child: Row(
@@ -360,15 +361,15 @@ class _TestActiveWidgetState extends State<TestActiveWidget> {
                     Container(
                       width: 36.0, height: 36.0,
                       decoration: BoxDecoration(
-                        color: isSelected ? const Color(0xFF0056D2).withOpacity(0.1) : const Color(0xFFF5F7FA),
+                        color: isSelected ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.1) : Theme.of(context).colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(10.0),
                       ),
                       alignment: Alignment.center,
-                      child: Text(option['letter'], style: GoogleFonts.inter(fontWeight: FontWeight.w700, color: isSelected ? const Color(0xFF0056D2) : Colors.black54)),
+                      child: Text(option['letter'], style: GoogleFonts.inter(fontWeight: FontWeight.w700, color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurfaceVariant)),
                     ),
                     const SizedBox(width: 16.0),
-                    Expanded(child: Text(option['text'], style: GoogleFonts.inter(fontSize: 15.0, fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500, color: Colors.black87))),
-                    Icon(isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked, color: isSelected ? const Color(0xFF0056D2) : Colors.grey.shade300, size: 22.0),
+                    Expanded(child: Text(option['text'], style: GoogleFonts.inter(fontSize: 15.0, fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500, color: Theme.of(context).colorScheme.onSurface))),
+                    Icon(isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked, color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.outline, size: 22.0),
                   ],
                 ),
               ),
@@ -386,7 +387,7 @@ class _TestActiveWidgetState extends State<TestActiveWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(isLong ? 'Zapište svou odpověď (vlastními slovy):' : 'Napište krátkou odpověď:', style: GoogleFonts.inter(color: Colors.grey.shade600, fontWeight: FontWeight.bold, fontSize: 13.0)),
+        Text(isLong ? 'Zapište svou odpověď (vlastními slovy):' : 'Napište krátkou odpověď:', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontWeight: FontWeight.bold, fontSize: 13.0)),
         const SizedBox(height: 12.0),
         TextFormField(
           controller: _textController,
@@ -395,14 +396,15 @@ class _TestActiveWidgetState extends State<TestActiveWidget> {
             // Ukládá potichu bez setState, aby nezmizela klávesnice při psaní!
             _selectedAnswers[_currentIndex] = val;
           },
-          style: GoogleFonts.inter(fontSize: 16.0, color: Colors.black87),
+          style: GoogleFonts.inter(fontSize: 16.0, color: Theme.of(context).colorScheme.onSurface),
           decoration: InputDecoration(
             hintText: isLong ? 'Zde se můžete rozepsat...' : 'Vaše odpověď...',
+            hintStyle: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurfaceVariant),
             filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16.0), borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16.0), borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
-            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16.0), borderSide: const BorderSide(color: Color(0xFF0056D2), width: 1.5)),
+            fillColor: Theme.of(context).colorScheme.surface,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16.0), borderSide: BorderSide(color: Theme.of(context).colorScheme.outline)),
+            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16.0), borderSide: BorderSide(color: Theme.of(context).colorScheme.outline)),
+            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16.0), borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5)),
           ),
         ),
       ],
@@ -421,7 +423,7 @@ class _TestActiveWidgetState extends State<TestActiveWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Seřaďte položky (podržte a přetáhněte):', style: GoogleFonts.inter(color: Colors.grey.shade600, fontWeight: FontWeight.bold, fontSize: 13.0)),
+        Text('Seřaďte položky (podržte a přetáhněte):', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontWeight: FontWeight.bold, fontSize: 13.0)),
         const SizedBox(height: 12.0),
         
         // ReorderableListView nativně řeší plynulé animace přesunů
@@ -443,13 +445,13 @@ class _TestActiveWidgetState extends State<TestActiveWidget> {
             return Container(
               key: ValueKey(items[index]), // Klíč je vyžadován frameworkem pro správný drag & drop
               margin: const EdgeInsets.only(bottom: 12.0),
-              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12.0), border: Border.all(color: const Color(0xFFE5E7EB))),
+              decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(12.0), border: Border.all(color: Theme.of(context).colorScheme.outline)),
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
               child: Row(
                 children: [
-                  const Icon(Icons.drag_indicator_rounded, color: Colors.grey),
+                  Icon(Icons.drag_indicator_rounded, color: Theme.of(context).colorScheme.outline),
                   const SizedBox(width: 16.0),
-                  Expanded(child: Text(items[index], style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: Colors.black87, fontSize: 15.0))),
+                  Expanded(child: Text(items[index], style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface, fontSize: 15.0))),
                 ],
               ),
             );
@@ -472,37 +474,37 @@ class _TestActiveWidgetState extends State<TestActiveWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Přiřaďte správný pojem ke každé položce:', style: GoogleFonts.inter(color: Colors.grey.shade600, fontWeight: FontWeight.bold, fontSize: 13.0)),
+        Text('Přiřaďte správný pojem ke každé položce:', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontWeight: FontWeight.bold, fontSize: 13.0)),
         const SizedBox(height: 12.0),
         
         ...leftItems.map((leftItem) {
           return Container(
             margin: const EdgeInsets.only(bottom: 16.0),
             padding: const EdgeInsets.all(16.0),
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16.0), border: Border.all(color: const Color(0xFFE5E7EB))),
+            decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(16.0), border: Border.all(color: Theme.of(context).colorScheme.outline)),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(leftItem, style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 16.0, color: Colors.black87)),
+                Text(leftItem, style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 16.0, color: Theme.of(context).colorScheme.onSurface)),
                 const SizedBox(height: 12.0),
                 
                 // Roletka pro výběr pravé části páru
                 DropdownButtonFormField<String>(
                   value: pairs[leftItem], 
                   isExpanded: true,
-                  hint: Text('Vyberte správnou možnost', style: GoogleFonts.inter(fontSize: 14.0, color: Colors.grey)),
+                  hint: Text('Vyberte správnou možnost', style: GoogleFonts.inter(fontSize: 14.0, color: Theme.of(context).colorScheme.onSurfaceVariant)),
                   decoration: InputDecoration(
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0), borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
-                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0), borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
-                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0), borderSide: const BorderSide(color: Color(0xFF0056D2))),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0), borderSide: BorderSide(color: Theme.of(context).colorScheme.outline)),
+                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0), borderSide: BorderSide(color: Theme.of(context).colorScheme.outline)),
+                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0), borderSide: BorderSide(color: Theme.of(context).colorScheme.primary)),
                     filled: true,
-                    fillColor: const Color(0xFFF9FAFB),
+                    fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                   ),
                   items: rightOptions.map((String option) {
                     return DropdownMenuItem<String>(
                       value: option,
-                      child: Text(option, style: GoogleFonts.inter(fontSize: 14.0, fontWeight: FontWeight.w500)),
+                      child: Text(option, style: GoogleFonts.inter(fontSize: 14.0, fontWeight: FontWeight.w500, color: Theme.of(context).colorScheme.onSurface)),
                     );
                   }).toList(),
                   onChanged: (String? newValue) {

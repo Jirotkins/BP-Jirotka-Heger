@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 
 // IMPORT PROVIDERŮ
 import 'providers/theme_provider.dart';
@@ -15,11 +17,20 @@ import 'theme/app_themes.dart';
 import 'layouts/teacher_main_layout.dart';
 import 'layouts/student_main_layout.dart'; 
 
-void main() {
+// Zde připravíme prázdný provider, který pak v main() přepíšeme skutečnou instancí
+final sharedPrefsProvider = Provider<SharedPreferences>((ref) => throw UnimplementedError());
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final prefs = await SharedPreferences.getInstance();
+
   // Spuštění samotné aplikace obalené v ProviderScope pro Riverpod
   runApp(
-    const ProviderScope(
-      child: BakalarkaApp(),
+    ProviderScope(
+      overrides: [
+        sharedPrefsProvider.overrideWithValue(prefs),
+      ],
+      child: const BakalarkaApp(),
     ),
   );
 }

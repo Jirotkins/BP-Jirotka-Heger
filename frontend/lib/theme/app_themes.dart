@@ -79,6 +79,7 @@ class AppThemes {
       onSurface: Color(0xFF111827),    // Hlavní text
       secondary: Color(0xFF6B7280),    // Podružný text / Ikony
       outline: Color(0xFFE5E7EB),      // Okraje karet
+      outlineVariant: Color(0xFFE5E7EB), // Varianta pro okraje a děliče
       error: Color(0xFFDC2626),        // Červená pro chyby
       errorContainer: Color(0xFFFEF2F2), // Světle červená
     ),
@@ -116,21 +117,22 @@ class AppThemes {
       onSurface: Color(0xFFF9FAFB),    // Hlavní text
       secondary: Color(0xFF9CA3AF),    // Podružný text / Ikony
       outline: Color(0xFF374151),      // Okraje karet
+      outlineVariant: Color(0xFF374151), // Varianta pro okraje a děliče
       error: Color(0xFFEF4444),        // Červená pro chyby
       errorContainer: Color(0xFF7F1D1D), // Tmavší červená
     ),
     extensions: const <ThemeExtension<dynamic>>[
       CustomColors(
         blueText: Color(0xFF60A5FA),
-        blueBg: Color(0xFF1E3A8A),
+        blueBg: Color(0xFF28323F), // Zjemněná modrá
         greenText: Color(0xFF10B981),
-        greenBg: Color(0xFF064E3B),
+        greenBg: Color(0xFF1C352D), // Zjemněná zelená
         orangeText: Color(0xFFF59E0B),
-        orangeBg: Color(0xFF78350F),
+        orangeBg: Color(0xFF3E311B), // Zjemněná oranžová
         purpleText: Color(0xFFA78BFA),
-        purpleBg: Color(0xFF4C1D95),
+        purpleBg: Color(0xFF322E3F), // Zjemněná fialová
         redText: Color(0xFFEF4444),
-        redBg: Color(0xFF7F1D1D),
+        redBg: Color(0xFF3D2323), // Zjemněná červená
       ),
     ],
     textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),

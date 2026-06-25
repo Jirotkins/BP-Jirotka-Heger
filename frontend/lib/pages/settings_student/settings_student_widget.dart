@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/theme_provider.dart';
+import '../../theme/app_themes.dart';
 
 // Obrazovka nastavení studentského účtu a aplikace.
 // Umožňuje správu profilu, notifikací, vzhledu a odhlášení.
@@ -17,17 +19,19 @@ class _SettingsStudentWidgetState extends ConsumerState<SettingsStudentWidget> {
   final scaffoldKey = GlobalKey<ScaffoldState>();
 
   bool _isEmailNotificationsEnabled = false;
-  bool _isDarkModeEnabled = false;
 
   @override
   Widget build(BuildContext context) {
+    final customColors = Theme.of(context).extension<CustomColors>();
+    final isDarkMode = ref.watch(themeProvider) == ThemeMode.dark;
+    
     return Scaffold(
       key: scaffoldKey,
-      backgroundColor: const Color(0xFFF5F7FA), 
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor, 
       
       // --- HLAVIČKA APLIKACE (AppBar) ---
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor ?? Theme.of(context).colorScheme.surface,
         surfaceTintColor: Colors.transparent,
         scrolledUnderElevation: 0, 
         automaticallyImplyLeading: false,
@@ -38,12 +42,12 @@ class _SettingsStudentWidgetState extends ConsumerState<SettingsStudentWidget> {
           children: [
             Text(
               'Jakub Novák',
-              style: GoogleFonts.inter(color: Colors.black87, fontSize: 24, fontWeight: FontWeight.w800),
+              style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurface, fontSize: 24, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 2),
             Text(
               'Nastavení',
-              style: GoogleFonts.inter(color: Colors.grey, fontSize: 13, fontWeight: FontWeight.w500),
+              style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontSize: 13, fontWeight: FontWeight.w500),
             ),
           ],
         ),
@@ -64,18 +68,18 @@ class _SettingsStudentWidgetState extends ConsumerState<SettingsStudentWidget> {
                 // ZMĚNA JMÉNA / EMAILU
                 _buildSettingsItem(
                   icon: Icons.person_outline_rounded,
-                  iconColor: const Color(0xFF3D5AF1),
+                  iconColor: customColors?.blueText ?? const Color(0xFF3D5AF1),
                   title: 'Změnit jméno',
                   subtitle: 'petr.novak@email.cz', 
                   onTap: () {
                     print('Změna jména');
                   },
                 ),
-                const Divider(height: 1, indent: 56),
+                Divider(height: 1, indent: 56, color: Theme.of(context).colorScheme.outline),
                 // ZMĚNA HESLA
                 _buildSettingsItem(
                   icon: Icons.lock_outline_rounded,
-                  iconColor: const Color(0xFF3D5AF1),
+                  iconColor: customColors?.blueText ?? const Color(0xFF3D5AF1),
                   title: 'Změnit heslo',
                   onTap: () {
                     print('Změna hesla');
@@ -92,35 +96,35 @@ class _SettingsStudentWidgetState extends ConsumerState<SettingsStudentWidget> {
                 // TMAVÝ REŽIM
                 _buildSettingsItem(
                   icon: Icons.dark_mode_outlined,
-                  iconColor: const Color(0xFF8E8EF5),
+                  iconColor: customColors?.blueText ?? const Color(0xFF8E8EF5),
                   title: 'Tmavý režim',
                   trailing: Switch(
-                    value: _isDarkModeEnabled,
-                    activeThumbColor: const Color(0xFF3D5AF1),
+                    value: isDarkMode,
+                    activeThumbColor: customColors?.blueText ?? const Color(0xFF3D5AF1),
                     onChanged: (val) {
-                      setState(() => _isDarkModeEnabled = val);
+                      ref.read(themeProvider.notifier).toggleTheme();
                     },
                   ),
                 ),
-                const Divider(height: 1, indent: 56),
+                Divider(height: 1, indent: 56, color: Theme.of(context).colorScheme.outline),
                 // E-MAILOVÁ OZNÁMENÍ
                 _buildSettingsItem(
                   icon: Icons.mail_outline_rounded,
-                  iconColor: const Color(0xFF34C759),
+                  iconColor: customColors?.greenText ?? const Color(0xFF34C759),
                   title: 'E-mailová oznámení',
                   trailing: Switch(
                     value: _isEmailNotificationsEnabled,
-                    activeThumbColor: const Color(0xFF3D5AF1),
+                    activeThumbColor: customColors?.blueText ?? const Color(0xFF3D5AF1),
                     onChanged: (val) {
                       setState(() => _isEmailNotificationsEnabled = val);
                     },
                   ),
                 ),
-                const Divider(height: 1, indent: 56),
+                Divider(height: 1, indent: 56, color: Theme.of(context).colorScheme.outline),
                 // O APLIKACI
                 _buildSettingsItem(
                   icon: Icons.info_outline_rounded,
-                  iconColor: const Color(0xFF8E8EF5),
+                  iconColor: customColors?.blueText ?? const Color(0xFF8E8EF5),
                   title: 'O aplikaci',
                   trailingText: 'v1.0.0',
                   onTap: () => print('O aplikaci'),
@@ -135,9 +139,9 @@ class _SettingsStudentWidgetState extends ConsumerState<SettingsStudentWidget> {
               _buildSettingsBox([
                 _buildSettingsItem(
                   icon: Icons.logout,
-                  iconColor: const Color(0xFFFF3B30),
+                  iconColor: customColors?.redText ?? const Color(0xFFFF3B30),
                   title: 'Odhlásit se',
-                  titleColor: const Color(0xFFFF3B30),
+                  titleColor: customColors?.redText ?? const Color(0xFFFF3B30),
                   showArrow: false,
                   onTap: () async {
                     await ref.read(authProvider.notifier).logout();
@@ -164,7 +168,7 @@ class _SettingsStudentWidgetState extends ConsumerState<SettingsStudentWidget> {
       child: Text(
         title,
         style: GoogleFonts.inter(
-          color: Colors.grey,
+          color: Theme.of(context).colorScheme.secondary,
           fontWeight: FontWeight.bold,
           letterSpacing: 1.2,
           fontSize: 12,
@@ -178,9 +182,10 @@ class _SettingsStudentWidgetState extends ConsumerState<SettingsStudentWidget> {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(14.0),
-        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 8.0, offset: Offset(0, 2))],
+        border: Border.all(color: Theme.of(context).colorScheme.outline),
+        boxShadow: [BoxShadow(color: Theme.of(context).shadowColor.withValues(alpha: 0.05), blurRadius: 8.0, offset: const Offset(0, 2))],
       ),
       child: Column(children: children),
     );
@@ -191,7 +196,7 @@ class _SettingsStudentWidgetState extends ConsumerState<SettingsStudentWidget> {
     required IconData icon,
     required String title,
     String? subtitle,
-    Color titleColor = Colors.black87,
+    Color? titleColor,
     required Color iconColor,
     VoidCallback? onTap,
     Widget? trailing, // Pro vložení Switche
@@ -209,7 +214,7 @@ class _SettingsStudentWidgetState extends ConsumerState<SettingsStudentWidget> {
             Container(
               width: 36.0, height: 36.0,
               decoration: BoxDecoration(
-                color: iconColor.withOpacity(0.1),
+                color: iconColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10.0),
               ),
               child: Icon(icon, color: iconColor, size: 18.0),
@@ -221,19 +226,19 @@ class _SettingsStudentWidgetState extends ConsumerState<SettingsStudentWidget> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: GoogleFonts.inter(fontSize: 15.0, fontWeight: FontWeight.w600, color: titleColor)),
+                  Text(title, style: GoogleFonts.inter(fontSize: 15.0, fontWeight: FontWeight.w600, color: titleColor ?? Theme.of(context).colorScheme.onSurface)),
                   if (subtitle != null)
-                    Text(subtitle, style: GoogleFonts.inter(fontSize: 12.0, color: Colors.grey.shade600)),
+                    Text(subtitle, style: GoogleFonts.inter(fontSize: 12.0, color: Theme.of(context).colorScheme.secondary)),
                 ],
               ),
             ),
             
             // Pravá část (verze, switch, nebo šipka)
             if (trailingText != null)
-              Text(trailingText, style: GoogleFonts.inter(color: Colors.grey.shade600, fontSize: 13.0)),
+              Text(trailingText, style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontSize: 13.0)),
             if (trailing != null) trailing,
             if (onTap != null && showArrow && trailing == null)
-              Icon(Icons.arrow_forward_ios, color: Colors.grey.shade400, size: 14.0),
+              Icon(Icons.arrow_forward_ios, color: Theme.of(context).colorScheme.onSurfaceVariant, size: 14.0),
           ],
         ),
       ),

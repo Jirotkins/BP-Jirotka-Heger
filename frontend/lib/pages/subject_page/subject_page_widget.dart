@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../theme/app_themes.dart';
 
 // Stránka s detailem konkrétního předmětu (např. Matematika).
 // Zobrazuje statistiky, právě probíhající test, budoucí termíny a historii.
@@ -59,18 +60,18 @@ class _SubjectPageWidgetState extends State<SubjectPageWidget> {
 
     return Scaffold(
       key: scaffoldKey,
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       
       // --- HLAVIČKA APLIKACE (AppBar) ---
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor ?? Theme.of(context).colorScheme.surface,
         surfaceTintColor: Colors.transparent, // Zabrání zešednutí při rolování
         scrolledUnderElevation: 0,
         elevation: 0,
         toolbarHeight: 80, 
         centerTitle: false,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: Colors.black87),
+          icon: Icon(Icons.arrow_back_rounded, color: Theme.of(context).colorScheme.onSurface),
           onPressed: () => Navigator.of(context).pop(), // Návrat do přehledu předmětů
         ),
         title: Column(
@@ -79,12 +80,12 @@ class _SubjectPageWidgetState extends State<SubjectPageWidget> {
           children: [
             Text(
               subjectName,
-              style: GoogleFonts.inter(fontWeight: FontWeight.w800, color: Colors.black87, fontSize: 24),
+              style: GoogleFonts.inter(fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.onSurface, fontSize: 24),
             ),
             const SizedBox(height: 2),
             Text(
               'Detail předmětu',
-              style: GoogleFonts.inter(color: Colors.grey, fontSize: 13, fontWeight: FontWeight.w500),
+              style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontSize: 13, fontWeight: FontWeight.w500),
             ),
           ],
         ),
@@ -101,25 +102,25 @@ class _SubjectPageWidgetState extends State<SubjectPageWidget> {
               // 1. HLAVNÍ STATISTIKA (Bílý box s průměrem)
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(16.0),
-                  border: Border.all(color: const Color(0xFFE5E7EB)),
+                  border: Border.all(color: Theme.of(context).colorScheme.outline),
                 ),
                 padding: const EdgeInsets.all(16.0),
                 child: Row(
                   children: [
                     Container(
                       width: 48.0, height: 48.0,
-                      decoration: BoxDecoration(color: const Color(0xFFF0F4FF), borderRadius: BorderRadius.circular(12.0)),
-                      child: const Icon(Icons.calculate_outlined, color: Color(0xFF4285F4), size: 24.0),
+                      decoration: BoxDecoration(color: Theme.of(context).colorScheme.primaryContainer, borderRadius: BorderRadius.circular(12.0)),
+                      child: Icon(Icons.calculate_outlined, color: Theme.of(context).colorScheme.primary, size: 24.0),
                     ),
                     const SizedBox(width: 16.0),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Předmět', style: GoogleFonts.inter(color: Colors.grey.shade500, fontSize: 12.0, fontWeight: FontWeight.w600)),
-                          Text(subjectName, style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 18.0, color: Colors.black87)),
+                          Text('Předmět', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontSize: 12.0, fontWeight: FontWeight.w600)),
+                          Text(subjectName, style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 18.0, color: Theme.of(context).colorScheme.onSurface)),
                         ],
                       ),
                     ),
@@ -131,7 +132,7 @@ class _SubjectPageWidgetState extends State<SubjectPageWidget> {
 
               // 2. AKTIVNÍ TEST (Zobrazí se POUZE, pokud nějaký aktuálně probíhá)
               if (_activeTest != null) ...[
-                _buildSectionHeader('Aktivní testy', 1, const Color(0xFFDC2626)),
+                _buildSectionHeader('Aktivní testy', 1, Theme.of(context).colorScheme.error),
                 const SizedBox(height: 16.0),
                 InkWell(
                   onTap: () {
@@ -141,9 +142,9 @@ class _SubjectPageWidgetState extends State<SubjectPageWidget> {
                   borderRadius: BorderRadius.circular(12.0),
                   child: Container(
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF8FAFF), 
+                      color: Theme.of(context).colorScheme.surface, 
                       borderRadius: BorderRadius.circular(12.0),
-                      border: Border.all(color: const Color(0xFF8B5CF6).withOpacity(0.5), width: 1.5), 
+                      border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5), width: 1.5), 
                     ),
                     padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
                     child: Row(
@@ -154,19 +155,19 @@ class _SubjectPageWidgetState extends State<SubjectPageWidget> {
                             children: [
                               Row(
                                 children: [
-                                  Container(width: 6, height: 6, decoration: const BoxDecoration(color: Color(0xFFDC2626), shape: BoxShape.circle)),
+                                  Container(width: 6, height: 6, decoration: BoxDecoration(color: Theme.of(context).colorScheme.error, shape: BoxShape.circle)),
                                   const SizedBox(width: 6),
-                                  Text('Probíhá', style: GoogleFonts.inter(color: const Color(0xFFDC2626), fontSize: 11, fontWeight: FontWeight.bold)),
+                                  Text('Probíhá', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.error, fontSize: 11, fontWeight: FontWeight.bold)),
                                 ],
                               ),
                               const SizedBox(height: 6),
-                              Text(_activeTest!['title'], style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16.0, color: Colors.black87)),
+                              Text(_activeTest!['title'], style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16.0, color: Theme.of(context).colorScheme.onSurface)),
                               const SizedBox(height: 2),
-                              Text(_activeTest!['info'], style: GoogleFonts.inter(color: Colors.grey.shade600, fontSize: 12.0)),
+                              Text(_activeTest!['info'], style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontSize: 12.0)),
                             ],
                           ),
                         ),
-                        const Icon(Icons.arrow_forward_ios, color: Color(0xFF4285F4), size: 16.0),
+                        Icon(Icons.arrow_forward_ios, color: Theme.of(context).colorScheme.primary, size: 16.0),
                       ],
                     ),
                   ),
@@ -179,9 +180,9 @@ class _SubjectPageWidgetState extends State<SubjectPageWidget> {
               const SizedBox(height: 12.0),
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(16.0),
-                  border: Border.all(color: const Color(0xFFE5E7EB)),
+                  border: Border.all(color: Theme.of(context).colorScheme.outline),
                 ),
                 child: Column(
                   children: _upcomingTests.asMap().entries.map((entry) {
@@ -192,7 +193,7 @@ class _SubjectPageWidgetState extends State<SubjectPageWidget> {
                         _buildUpcomingTestCard(test),
                         // Vykreslí jemnou oddělovací čáru mezi položkami (kromě poslední)
                         if (index != _upcomingTests.length - 1)
-                          const Divider(height: 1, thickness: 1, color: Color(0xFFF3F4F6), indent: 20, endIndent: 20),
+                          Divider(height: 1, thickness: 1, color: Theme.of(context).colorScheme.outline, indent: 20, endIndent: 20),
                       ],
                     );
                   }).toList(),
@@ -206,9 +207,9 @@ class _SubjectPageWidgetState extends State<SubjectPageWidget> {
               const SizedBox(height: 12.0),
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(16.0),
-                  border: Border.all(color: const Color(0xFFE5E7EB)),
+                  border: Border.all(color: Theme.of(context).colorScheme.outline),
                 ),
                 child: Column(
                   children: _pastTests.asMap().entries.map((entry) {
@@ -218,7 +219,7 @@ class _SubjectPageWidgetState extends State<SubjectPageWidget> {
                       children: [
                         _buildPastTestCard(test),
                         if (index != _pastTests.length - 1)
-                          const Divider(height: 1, thickness: 1, color: Color(0xFFF3F4F6), indent: 20, endIndent: 20),
+                          Divider(height: 1, thickness: 1, color: Theme.of(context).colorScheme.outline, indent: 20, endIndent: 20),
                       ],
                     );
                   }).toList(),
@@ -242,12 +243,12 @@ class _SubjectPageWidgetState extends State<SubjectPageWidget> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(title, style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87)),
+        Text(title, style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface)),
         if (count != null && count > 0)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(color: countColor, borderRadius: BorderRadius.circular(12)),
-            child: Text(count.toString(), style: GoogleFonts.inter(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+            decoration: BoxDecoration(color: countColor ?? Theme.of(context).colorScheme.primary, borderRadius: BorderRadius.circular(12)),
+            child: Text(count.toString(), style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onError, fontSize: 11, fontWeight: FontWeight.bold)),
           ),
       ],
     );
@@ -267,13 +268,13 @@ class _SubjectPageWidgetState extends State<SubjectPageWidget> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(test['title'], style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14.0, color: Colors.black87)),
+                  Text(test['title'], style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14.0, color: Theme.of(context).colorScheme.onSurface)),
                   const SizedBox(height: 4),
-                  Text('Termín: ${test['deadline']} • ${test['questions']} otázek', style: GoogleFonts.inter(color: Colors.grey.shade500, fontSize: 12.0)),
+                  Text('Termín: ${test['deadline']} • ${test['questions']} otázek', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontSize: 12.0)),
                 ],
               ),
             ),
-            Icon(Icons.arrow_forward_ios, color: Colors.grey.shade400, size: 14.0),
+            Icon(Icons.arrow_forward_ios, color: Theme.of(context).colorScheme.onSurfaceVariant, size: 14.0),
           ],
         ),
       ),
@@ -283,7 +284,8 @@ class _SubjectPageWidgetState extends State<SubjectPageWidget> {
   // Karta reprezentující historický test. Může mít oranžové skóre při horším výsledku.
   Widget _buildPastTestCard(Map<String, dynamic> test) {
     bool isWarning = test['isWarning'] == true;
-    Color scoreColor = isWarning ? const Color(0xFFD97706) : const Color(0xFF16A34A);
+    final customColors = Theme.of(context).extension<CustomColors>();
+    Color scoreColor = isWarning ? (customColors?.orangeText ?? const Color(0xFFD97706)) : (customColors?.greenText ?? const Color(0xFF16A34A));
 
     return InkWell(
       onTap: () {
@@ -297,9 +299,9 @@ class _SubjectPageWidgetState extends State<SubjectPageWidget> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(test['title'], style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14.0, color: Colors.black87)),
+                  Text(test['title'], style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14.0, color: Theme.of(context).colorScheme.onSurface)),
                   const SizedBox(height: 4),
-                  Text('${test['date']} • ${test['questions']} otázek', style: GoogleFonts.inter(color: Colors.grey.shade500, fontSize: 12.0)),
+                  Text('${test['date']} • ${test['questions']} otázek', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontSize: 12.0)),
                 ],
               ),
             ),
@@ -307,7 +309,7 @@ class _SubjectPageWidgetState extends State<SubjectPageWidget> {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(test['score'], style: GoogleFonts.inter(color: scoreColor, fontWeight: FontWeight.bold, fontSize: 16)),
-                Text('1', style: GoogleFonts.inter(color: Colors.grey.shade400, fontSize: 12)), 
+                Text('1', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12)), 
               ],
             ),
           ],
