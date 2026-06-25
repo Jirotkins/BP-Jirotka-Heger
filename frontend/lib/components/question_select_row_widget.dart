@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_themes.dart';
+import '../utils/question_type_helper.dart';
 
 class QuestionSelectRowWidget extends StatelessWidget {
   final String question;
@@ -15,44 +16,11 @@ class QuestionSelectRowWidget extends StatelessWidget {
     required this.onToggle,
   });
 
-  String _getTypeLabel(String questionType) {
-    switch (questionType) {
-      case 'SINGLE_CHOICE':
-      case 'MULTI_CHOICE': return 'Výběr';
-      case 'ORDERING': return 'Seřazení';
-      case 'MATCHING': return 'Párování';
-      case 'OPEN_TEXT': return 'Otevřená';
-      case 'SHORT_ANSWER': return 'Krátká';
-      default: return questionType;
-    }
-  }
-
-  // Pomocná metoda pro barvy štítků podle typu otázky
-  Map<String, Color> _getTypeColors(BuildContext context, String questionType) {
-    final customColors = Theme.of(context).extension<CustomColors>();
-    
-    switch (questionType) {
-      case 'SINGLE_CHOICE':
-      case 'MULTI_CHOICE':
-        return {'bg': customColors?.blueBg ?? Theme.of(context).colorScheme.primaryContainer, 'text': customColors?.blueText ?? Theme.of(context).colorScheme.primary};
-      case 'ORDERING':
-        return {'bg': customColors?.orangeBg ?? Theme.of(context).colorScheme.primaryContainer, 'text': customColors?.orangeText ?? Theme.of(context).colorScheme.primary};
-      case 'MATCHING':
-        return {'bg': customColors?.purpleBg ?? Theme.of(context).colorScheme.primaryContainer, 'text': customColors?.purpleText ?? Theme.of(context).colorScheme.primary};
-      case 'OPEN_TEXT':
-        return {'bg': customColors?.greenBg ?? Theme.of(context).colorScheme.primaryContainer, 'text': customColors?.greenText ?? Theme.of(context).colorScheme.primary};
-      case 'SHORT_ANSWER':
-        return {'bg': customColors?.redBg ?? Theme.of(context).colorScheme.errorContainer, 'text': customColors?.redText ?? Theme.of(context).colorScheme.error};
-      default:
-        return {'bg': Theme.of(context).colorScheme.surfaceContainerHighest, 'text': Theme.of(context).colorScheme.onSurface};
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final Color primaryBlue = Theme.of(context).colorScheme.primary;
-    final typeColors = _getTypeColors(context, type);
-    final displayType = _getTypeLabel(type);
+    final typeColors = QuestionTypeHelper.getColors(context, type);
+    final displayType = QuestionTypeHelper.getShortLabel(type);
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),

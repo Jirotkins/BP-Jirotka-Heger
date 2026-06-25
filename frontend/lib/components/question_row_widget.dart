@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_themes.dart';
+import '../utils/question_type_helper.dart';
 
 class QuestionRowWidget extends StatelessWidget {
   final int id;
@@ -13,28 +14,11 @@ class QuestionRowWidget extends StatelessWidget {
     required this.type,
   });
 
-  Map<String, Color> _getTypeColors(BuildContext context, String questionType) {
-    final customColors = Theme.of(context).extension<CustomColors>();
-    switch (questionType) {
-      case 'Výběr z možností':
-        return {'bg': customColors?.blueBg ?? Theme.of(context).colorScheme.primaryContainer, 'text': customColors?.blueText ?? Theme.of(context).colorScheme.primary};
-      case 'Seřazení':
-        return {'bg': customColors?.orangeBg ?? Theme.of(context).colorScheme.primaryContainer, 'text': customColors?.orangeText ?? Theme.of(context).colorScheme.primary};
-      case 'Párování':
-        return {'bg': customColors?.purpleBg ?? Theme.of(context).colorScheme.primaryContainer, 'text': customColors?.purpleText ?? Theme.of(context).colorScheme.primary};
-      case 'Otevřená':
-        return {'bg': customColors?.greenBg ?? Theme.of(context).colorScheme.primaryContainer, 'text': customColors?.greenText ?? Theme.of(context).colorScheme.primary};
-      case 'Krátká odpověď':
-        return {'bg': customColors?.redBg ?? Theme.of(context).colorScheme.primaryContainer, 'text': customColors?.redText ?? Theme.of(context).colorScheme.primary};
-      default:
-        return {'bg': Theme.of(context).colorScheme.surfaceContainerHighest, 'text': Theme.of(context).colorScheme.onSurface};
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     // Získáme barvy pro aktuální typ otázky
-    final typeColors = _getTypeColors(context, type);
+    final typeColors = QuestionTypeHelper.getColors(context, type);
+    final displayType = QuestionTypeHelper.getLabel(type);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
@@ -85,7 +69,7 @@ class QuestionRowWidget extends StatelessWidget {
               alignment: Alignment.center,
               padding: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 8.0),
               child: Text(
-                type,
+                displayType,
                 style: TextStyle(
                   color: typeColors['text'],
                   fontWeight: FontWeight.w600,
