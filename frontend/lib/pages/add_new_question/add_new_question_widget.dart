@@ -30,10 +30,10 @@ class _AddNewQuestionWidgetState extends State<AddNewQuestionWidget> {
         ),
         
         // VYSKAKOVACÍ MENU PRO VÝBĚR TYPU OTÁZKY
-        const Expanded(
+        Expanded(
           child: Center(
             child: SingleChildScrollView( 
-              child: QuestionTypeMenuWidget(),
+              child: QuestionTypeMenuWidget(args: args),
             ),
           ),
         ),

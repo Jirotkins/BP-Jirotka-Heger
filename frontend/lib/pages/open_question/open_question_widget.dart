@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../components/page_header_widget.dart';
-import '../../components/next_question_button_widget.dart';
+import '../../services/api_client.dart';
 import '../../theme/app_themes.dart';
 
-class OpenQuestionWidget extends StatefulWidget {
+class OpenQuestionWidget extends ConsumerStatefulWidget {
   const OpenQuestionWidget({super.key});
 
   @override
-  State<OpenQuestionWidget> createState() => _OpenQuestionWidgetState();
+  ConsumerState<OpenQuestionWidget> createState() => _OpenQuestionWidgetState();
 }
 
-class _OpenQuestionWidgetState extends State<OpenQuestionWidget> {
+class _OpenQuestionWidgetState extends ConsumerState<OpenQuestionWidget> {
   // Stavy pro textové pole znění otázky
   late TextEditingController _questionTextController;
   late FocusNode _questionFocusNode;
@@ -29,6 +30,36 @@ class _OpenQuestionWidgetState extends State<OpenQuestionWidget> {
     _questionTextController.dispose();
     _questionFocusNode.dispose();
     super.dispose();
+  }
+
+  Future<bool> _saveQuestion(int bankId) async {
+    if (_questionTextController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Zadejte znění otázky'), backgroundColor: Theme.of(context).colorScheme.error));
+      return false;
+    }
+
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      
+      final requestData = {
+        "text": _questionTextController.text.trim(),
+        "type": "OPEN_TEXT",
+        "default_points": 1,
+        "answers": [],
+      };
+
+      await apiClient.post('/banks/$bankId/questions', requestData);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: const Text('Otázka uložena'), backgroundColor: Colors.green));
+      }
+      return true;
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Chyba při ukládání: $e'), backgroundColor: Theme.of(context).colorScheme.error));
+      }
+      return false;
+    }
   }
 
   // --- FUNKCE PRO ZOBRAZENÍ NÁHLEDU STUDENTA ---
@@ -123,6 +154,7 @@ class _OpenQuestionWidgetState extends State<OpenQuestionWidget> {
     // CHYTÁNÍ DAT Z MENU
     final args = GoRouterState.of(context).extra as Map<String, dynamic>?;
     final String targetName = args?['targetName'] ?? 'Neznámá banka';
+    final int bankId = args?['bankId'] ?? 0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -151,9 +183,11 @@ class _OpenQuestionWidgetState extends State<OpenQuestionWidget> {
             const SizedBox(width: 12.0),
 
             ElevatedButton.icon(
-              onPressed: () {
-                print('Uloženo znění: ${_questionTextController.text}');
-                print('Uložena otevřená otázka (bez konkrétních možností).');
+              onPressed: () async {
+                final success = await _saveQuestion(bankId);
+                if (success && context.mounted) {
+                  context.pop();
+                }
               },
               icon: const Icon(Icons.save_outlined, size: 18),
               label: Text('Uložit', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14)),
@@ -276,8 +310,6 @@ class _OpenQuestionWidgetState extends State<OpenQuestionWidget> {
                     ),
                   ),
 
-                  const SizedBox(height: 48.0),
-                  const NextQuestionButtonWidget(),
                   const SizedBox(height: 40.0),
                 ],
               ),

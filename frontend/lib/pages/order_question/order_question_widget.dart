@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../components/page_header_widget.dart';
-import '../../components/next_question_button_widget.dart';
+import '../../services/api_client.dart';
 import '../../theme/app_themes.dart';
 
-class OrderQuestionWidget extends StatefulWidget {
+class OrderQuestionWidget extends ConsumerStatefulWidget {
   const OrderQuestionWidget({super.key});
 
   @override
-  State<OrderQuestionWidget> createState() => _OrderQuestionWidgetState();
+  ConsumerState<OrderQuestionWidget> createState() => _OrderQuestionWidgetState();
 }
 
-class _OrderQuestionWidgetState extends State<OrderQuestionWidget> {
+class _OrderQuestionWidgetState extends ConsumerState<OrderQuestionWidget> {
   // Stav pro znění otázky
   late TextEditingController _questionTextController;
   late FocusNode _questionFocusNode;
@@ -66,6 +67,51 @@ class _OrderQuestionWidgetState extends State<OrderQuestionWidget> {
         );
       }
     });
+  }
+
+  Future<bool> _saveQuestion(int bankId) async {
+    if (_questionTextController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Zadejte znění otázky'), backgroundColor: Theme.of(context).colorScheme.error));
+      return false;
+    }
+
+    final validOptions = _optionControllers.map((c) => c.text.trim()).where((text) => text.isNotEmpty).toList();
+
+    if (validOptions.length < 3) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Zadejte alespoň 3 platné položky k seřazení'), backgroundColor: Theme.of(context).colorScheme.error));
+      return false;
+    }
+
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      
+      final answers = List.generate(validOptions.length, (index) {
+        return {
+          "text": validOptions[index],
+          "is_correct": true,
+          "order_index": index + 1, // Pořadí začíná od 1
+        };
+      });
+
+      final requestData = {
+        "text": _questionTextController.text.trim(),
+        "type": "ORDERING",
+        "default_points": 1,
+        "answers": answers,
+      };
+
+      await apiClient.post('/banks/$bankId/questions', requestData);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: const Text('Otázka uložena'), backgroundColor: Colors.green));
+      }
+      return true;
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Chyba při ukládání: $e'), backgroundColor: Theme.of(context).colorScheme.error));
+      }
+      return false;
+    }
   }
 
   // --- FUNKCE PRO ZOBRAZENÍ NÁHLEDU STUDENTA ---
@@ -172,6 +218,7 @@ class _OrderQuestionWidgetState extends State<OrderQuestionWidget> {
   Widget build(BuildContext context) {
     final args = GoRouterState.of(context).extra as Map<String, dynamic>?;
     final String targetName = args?['targetName'] ?? 'Neznámá banka';
+    final int bankId = args?['bankId'] ?? 0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -200,9 +247,11 @@ class _OrderQuestionWidgetState extends State<OrderQuestionWidget> {
             const SizedBox(width: 12.0),
 
             ElevatedButton.icon(
-              onPressed: () {
-                print('Uloženo znění: ${_questionTextController.text}');
-                print('Správné pořadí: ${_optionControllers.map((c) => c.text).toList()}');
+              onPressed: () async {
+                final success = await _saveQuestion(bankId);
+                if (success && context.mounted) {
+                  context.pop();
+                }
               },
               icon: const Icon(Icons.save_outlined, size: 18),
               label: Text('Uložit', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14)),
@@ -360,8 +409,6 @@ class _OrderQuestionWidgetState extends State<OrderQuestionWidget> {
                     ),
                   ),
                   
-                  const SizedBox(height: 48.0),
-                  const NextQuestionButtonWidget(),
                   const SizedBox(height: 40.0),
                 ],
               ),

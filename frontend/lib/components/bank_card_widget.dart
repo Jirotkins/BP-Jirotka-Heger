@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 
 class BankCardWidget extends StatelessWidget {
+  final int id;
   final String title;
   final String subject;
   final int questionCount;
@@ -10,6 +11,7 @@ class BankCardWidget extends StatelessWidget {
 
   const BankCardWidget({
     super.key,
+    required this.id,
     required this.title,
     required this.subject,
     required this.questionCount,
@@ -95,10 +97,11 @@ class BankCardWidget extends StatelessWidget {
                 context.push(
                   '/questionsOverview', // Cesta na přehled otázek
                   extra: {
+                    'bankId': id,
                     'bankName': title, // Posíláme název (např. Gravitační pole)
                     'subject': subject,
                   },
-                ); 
+                );
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),

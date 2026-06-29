@@ -4,13 +4,17 @@ import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_themes.dart';
 
 class QuestionTypeMenuWidget extends StatelessWidget {
-  const QuestionTypeMenuWidget({super.key});
+  final Map<String, dynamic>? args;
+
+  const QuestionTypeMenuWidget({
+    super.key,
+    this.args,
+  });
 
   @override
   Widget build(BuildContext context) {
     final customColors = Theme.of(context).extension<CustomColors>();
-    // ZÍSKÁNÍ DAT Z PŘEDCHOZÍ STRÁNKY (Z AddNewQuestionWidget)
-    final args = GoRouterState.of(context).extra as Map<String, dynamic>?;
+    // ZÍSKÁNÍ DAT Z PARAMETRU (nikoliv přes router context uvnitř dialogu)
     final String targetName = args?['targetName'] ?? 'Neznámá banka';
 
     // Pomocná funkce pro navigaci, která rovnou předá název banky dál

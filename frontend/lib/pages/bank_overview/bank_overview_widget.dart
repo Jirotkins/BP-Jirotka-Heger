@@ -47,7 +47,9 @@ class _BankOverviewWidgetState extends ConsumerState<BankOverviewWidget> {
       if (mounted) {
         final banks = data['banks'] as List;
         setState(() {
-          _banksData = banks.map((b) {
+          final banksData = <Map<String, dynamic>>[];
+          
+          for (var b in banks) {
             String subject = 'Neznámý předmět';
             int iconIndex = 0;
             try {
@@ -58,19 +60,20 @@ class _BankOverviewWidgetState extends ConsumerState<BankOverviewWidget> {
               subject = b['description'] ?? 'Neznámý předmět';
             }
             
-            // Ošetření indexu ikony
             if (iconIndex < 0 || iconIndex >= _availableIcons.length) {
               iconIndex = 0;
             }
 
-            return {
+            banksData.add({
               'id': b['bank_id'],
               'title': b['name'] ?? 'Neznámý název',
               'subject': subject,
               'icon': _availableIcons[iconIndex],
-              'questionCount': 0, // Backend zatím nevrací počet otázek přímo v /banks
-            };
-          }).toList();
+              'questionCount': 0, // Čekáme na backend, až bude vracet počet otázek
+            });
+          }
+
+          _banksData = banksData;
           _isLoading = false;
         });
       }
@@ -170,6 +173,7 @@ class _BankOverviewWidgetState extends ConsumerState<BankOverviewWidget> {
                                         );
                                       },
                                       child: BankCardWidget(
+                                        id: bankData['id'],
                                         title: bankData['title'] as String,
                                         subject: bankData['subject'] as String,
                                         questionCount: bankData['questionCount'] as int,

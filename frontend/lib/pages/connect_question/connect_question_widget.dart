@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../components/page_header_widget.dart';
-import '../../components/next_question_button_widget.dart';
+import '../../services/api_client.dart';
 import '../../theme/app_themes.dart';
 
-class ConnectQuestionWidget extends StatefulWidget {
+class ConnectQuestionWidget extends ConsumerStatefulWidget {
   const ConnectQuestionWidget({super.key});
 
   @override
-  State<ConnectQuestionWidget> createState() => _ConnectQuestionWidgetState();
+  ConsumerState<ConnectQuestionWidget> createState() => _ConnectQuestionWidgetState();
 }
 
-class _ConnectQuestionWidgetState extends State<ConnectQuestionWidget> {
+class _ConnectQuestionWidgetState extends ConsumerState<ConnectQuestionWidget> {
   // Stav pro hlavní znění otázky
   late TextEditingController _questionTextController;
   late FocusNode _questionFocusNode;
@@ -72,6 +73,51 @@ class _ConnectQuestionWidgetState extends State<ConnectQuestionWidget> {
         );
       }
     });
+  }
+
+  Future<bool> _saveQuestion(int bankId) async {
+    if (_questionTextController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Zadejte znění otázky'), backgroundColor: Theme.of(context).colorScheme.error));
+      return false;
+    }
+
+    final validPairs = _pairControllers.where((p) => p['left']!.text.trim().isNotEmpty && p['right']!.text.trim().isNotEmpty).toList();
+
+    if (validPairs.length < 2) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Zadejte alespoň 2 kompletní dvojice k propojení'), backgroundColor: Theme.of(context).colorScheme.error));
+      return false;
+    }
+
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      
+      final answers = validPairs.map((p) {
+        return {
+          "text": p['left']!.text.trim(),
+          "match_text": p['right']!.text.trim(), // Speciální pole pro druhou část páru, pokud backend podporuje
+          "is_correct": true,
+        };
+      }).toList();
+
+      final requestData = {
+        "text": _questionTextController.text.trim(),
+        "type": "MATCHING",
+        "default_points": 1,
+        "answers": answers,
+      };
+
+      await apiClient.post('/banks/$bankId/questions', requestData);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: const Text('Otázka uložena'), backgroundColor: Colors.green));
+      }
+      return true;
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Chyba při ukládání: $e'), backgroundColor: Theme.of(context).colorScheme.error));
+      }
+      return false;
+    }
   }
 
   // --- FUNKCE PRO ZOBRAZENÍ NÁHLEDU STUDENTA ---
@@ -211,6 +257,7 @@ class _ConnectQuestionWidgetState extends State<ConnectQuestionWidget> {
   Widget build(BuildContext context) {
     final args = GoRouterState.of(context).extra as Map<String, dynamic>?;
     final String targetName = args?['targetName'] ?? 'Neznámá banka';
+    final int bankId = args?['bankId'] ?? 0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -220,8 +267,9 @@ class _ConnectQuestionWidgetState extends State<ConnectQuestionWidget> {
         PageHeaderWidget(
           title: 'Tvorba: $targetName',
           actions: [
+            // TLAČÍTKO 1: Pohled studenta
             ElevatedButton.icon(
-              onPressed: _showStudentPreview, 
+              onPressed: _showStudentPreview, // Otevře mobilní simulátor
               icon: const Icon(Icons.visibility_outlined, size: 18),
               label: Text('Pohled studenta', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14)),
               style: ElevatedButton.styleFrom(
@@ -229,16 +277,22 @@ class _ConnectQuestionWidgetState extends State<ConnectQuestionWidget> {
                 foregroundColor: Theme.of(context).colorScheme.primary,
                 minimumSize: const Size(0, 40),
                 padding: const EdgeInsets.symmetric(horizontal: 20),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  side: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5)
+                ),
                 elevation: 0,
               ),
             ),
             const SizedBox(width: 12.0),
 
+            // TLAČÍTKO 2: Uložit
             ElevatedButton.icon(
-              onPressed: () {
-                print('Uloženo znění: ${_questionTextController.text}');
-                print('Páry: ${_pairControllers.map((p) => '${p['left']!.text} -> ${p['right']!.text}').toList()}');
+              onPressed: () async {
+                final success = await _saveQuestion(bankId);
+                if (success && context.mounted) {
+                  context.pop();
+                }
               },
               icon: const Icon(Icons.save_outlined, size: 18),
               label: Text('Uložit', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14)),
@@ -462,8 +516,6 @@ class _ConnectQuestionWidgetState extends State<ConnectQuestionWidget> {
                     ),
                   ),
                   
-                  const SizedBox(height: 48.0),
-                  const NextQuestionButtonWidget(),
                   const SizedBox(height: 40.0),
                 ],
               ),

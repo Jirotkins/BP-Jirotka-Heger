@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../components/page_header_widget.dart';
-import '../../components/next_question_button_widget.dart';
+import '../../services/api_client.dart';
 
-class MultiChoiceQuestionWidget extends StatefulWidget {
+class MultiChoiceQuestionWidget extends ConsumerStatefulWidget {
   const MultiChoiceQuestionWidget({super.key});
 
   @override
-  State<MultiChoiceQuestionWidget> createState() => _MultiChoiceQuestionWidgetState();
+  ConsumerState<MultiChoiceQuestionWidget> createState() => _MultiChoiceQuestionWidgetState();
 }
 
-class _MultiChoiceQuestionWidgetState extends State<MultiChoiceQuestionWidget> {
+class _MultiChoiceQuestionWidgetState extends ConsumerState<MultiChoiceQuestionWidget> {
   // Stav pro hlavní znění otázky
   late TextEditingController _questionTextController;
   late FocusNode _questionFocusNode;
@@ -71,6 +72,58 @@ class _MultiChoiceQuestionWidgetState extends State<MultiChoiceQuestionWidget> {
         );
       }
     });
+  }
+
+  Future<bool> _saveQuestion(int bankId) async {
+    if (_questionTextController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Zadejte znění otázky'), backgroundColor: Theme.of(context).colorScheme.error));
+      return false;
+    }
+
+    final validOptions = _options.where((opt) => (opt['controller'] as TextEditingController).text.trim().isNotEmpty).toList();
+
+    if (validOptions.length < 2) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Zadejte alespoň 2 platné varianty'), backgroundColor: Theme.of(context).colorScheme.error));
+      return false;
+    }
+
+    final hasCorrect = validOptions.any((opt) => opt['isCorrect'] == true);
+    if (!hasCorrect) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Označte alespoň jednu odpověď jako správnou'), backgroundColor: Theme.of(context).colorScheme.error));
+      return false;
+    }
+
+    // Určíme přesnější typ
+    int correctCount = validOptions.where((opt) => opt['isCorrect'] == true).length;
+    String qType = (correctCount == 1) ? "SINGLE_CHOICE" : "MULTI_CHOICE";
+
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      
+      final answers = validOptions.map((opt) => {
+        "text": (opt['controller'] as TextEditingController).text.trim(),
+        "is_correct": opt['isCorrect'] as bool,
+      }).toList();
+
+      final requestData = {
+        "text": _questionTextController.text.trim(),
+        "type": qType,
+        "default_points": 1,
+        "answers": answers,
+      };
+
+      await apiClient.post('/banks/$bankId/questions', requestData);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: const Text('Otázka uložena'), backgroundColor: Colors.green));
+      }
+      return true;
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Chyba při ukládání: $e'), backgroundColor: Theme.of(context).colorScheme.error));
+      }
+      return false;
+    }
   }
 
   // --- FUNKCE PRO ZOBRAZENÍ NÁHLEDU STUDENTA ---
@@ -218,6 +271,7 @@ class _MultiChoiceQuestionWidgetState extends State<MultiChoiceQuestionWidget> {
   Widget build(BuildContext context) {
     final args = GoRouterState.of(context).extra as Map<String, dynamic>?;
     final String targetName = args?['targetName'] ?? 'Neznámá banka';
+    final int bankId = args?['bankId'] ?? 0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -227,8 +281,9 @@ class _MultiChoiceQuestionWidgetState extends State<MultiChoiceQuestionWidget> {
         PageHeaderWidget(
           title: 'Tvorba: $targetName',
           actions: [
+            // TLAČÍTKO 1: Pohled studenta
             ElevatedButton.icon(
-              onPressed: _showStudentPreview, 
+              onPressed: _showStudentPreview, // Otevře mobilní simulátor
               icon: const Icon(Icons.visibility_outlined, size: 18),
               label: Text('Pohled studenta', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14)),
               style: ElevatedButton.styleFrom(
@@ -236,16 +291,22 @@ class _MultiChoiceQuestionWidgetState extends State<MultiChoiceQuestionWidget> {
                 foregroundColor: Theme.of(context).colorScheme.primary,
                 minimumSize: const Size(0, 40),
                 padding: const EdgeInsets.symmetric(horizontal: 20),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  side: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5)
+                ),
                 elevation: 0,
               ),
             ),
             const SizedBox(width: 12.0),
 
+            // TLAČÍTKO 2: Uložit
             ElevatedButton.icon(
-              onPressed: () {
-                print('Uloženo znění: ${_questionTextController.text}');
-                print('Možnosti: ${_options.map((o) => "{text: ${(o['controller'] as TextEditingController).text}, correct: ${o['isCorrect']}}").toList()}');
+              onPressed: () async {
+                final success = await _saveQuestion(bankId);
+                if (success && context.mounted) {
+                  context.pop();
+                }
               },
               icon: const Icon(Icons.save_outlined, size: 18),
               label: Text('Uložit', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14)),
@@ -431,8 +492,6 @@ class _MultiChoiceQuestionWidgetState extends State<MultiChoiceQuestionWidget> {
                     ),
                   ),
                   
-                  const SizedBox(height: 48.0),
-                  const NextQuestionButtonWidget(),
                   const SizedBox(height: 40.0),
                 ],
               ),

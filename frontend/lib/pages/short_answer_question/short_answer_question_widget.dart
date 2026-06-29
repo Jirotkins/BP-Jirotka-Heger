@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../components/page_header_widget.dart';
-import '../../components/next_question_button_widget.dart';
+import '../../services/api_client.dart';
 
-class ShortAnswerQuestionWidget extends StatefulWidget {
+class ShortAnswerQuestionWidget extends ConsumerStatefulWidget {
   const ShortAnswerQuestionWidget({super.key});
 
   @override
-  State<ShortAnswerQuestionWidget> createState() => _ShortAnswerQuestionWidgetState();
+  ConsumerState<ShortAnswerQuestionWidget> createState() => _ShortAnswerQuestionWidgetState();
 }
 
-class _ShortAnswerQuestionWidgetState extends State<ShortAnswerQuestionWidget> {
+class _ShortAnswerQuestionWidgetState extends ConsumerState<ShortAnswerQuestionWidget> {
   late TextEditingController _questionTextController;
   late FocusNode _questionFocusNode;
 
@@ -48,6 +49,51 @@ class _ShortAnswerQuestionWidgetState extends State<ShortAnswerQuestionWidget> {
         _answerControllers.removeAt(index);
       }
     });
+  }
+
+  Future<bool> _saveQuestion(int bankId) async {
+    if (_questionTextController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Zadejte znění otázky'), backgroundColor: Theme.of(context).colorScheme.error));
+      return false;
+    }
+
+    final validAnswers = _answerControllers
+        .map((c) => c.text.trim())
+        .where((text) => text.isNotEmpty)
+        .toList();
+
+    if (validAnswers.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Zadejte alespoň jednu uznávanou odpověď'), backgroundColor: Theme.of(context).colorScheme.error));
+      return false;
+    }
+
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      
+      final answers = validAnswers.map((text) => {
+        "text": text,
+        "is_correct": true,
+      }).toList();
+
+      final requestData = {
+        "text": _questionTextController.text.trim(),
+        "type": "SHORT_ANSWER",
+        "default_points": 1,
+        "answers": answers,
+      };
+
+      await apiClient.post('/banks/$bankId/questions', requestData);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: const Text('Otázka uložena'), backgroundColor: Colors.green));
+      }
+      return true;
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Chyba při ukládání: $e'), backgroundColor: Theme.of(context).colorScheme.error));
+      }
+      return false;
+    }
   }
 
   // --- FUNKCE PRO ZOBRAZENÍ NÁHLEDU STUDENTA ---
@@ -141,6 +187,7 @@ class _ShortAnswerQuestionWidgetState extends State<ShortAnswerQuestionWidget> {
   Widget build(BuildContext context) {
     final args = GoRouterState.of(context).extra as Map<String, dynamic>?;
     final String targetName = args?['targetName'] ?? 'Neznámá banka';
+    final int bankId = args?['bankId'] ?? 0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -171,9 +218,11 @@ class _ShortAnswerQuestionWidgetState extends State<ShortAnswerQuestionWidget> {
 
             // TLAČÍTKO 2: Uložit
             ElevatedButton.icon(
-              onPressed: () {
-                print('Uloženo znění: ${_questionTextController.text}');
-                print('Uznávané odpovědi: ${_answerControllers.map((c) => c.text).toList()}');
+              onPressed: () async {
+                final success = await _saveQuestion(bankId);
+                if (success && context.mounted) {
+                  context.pop();
+                }
               },
               icon: const Icon(Icons.save_outlined, size: 18),
               label: Text('Uložit', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14)),
@@ -342,9 +391,7 @@ class _ShortAnswerQuestionWidgetState extends State<ShortAnswerQuestionWidget> {
                     ),
                   ),
                   
-                  const SizedBox(height: 48.0),
-                  const NextQuestionButtonWidget(),
-                  const SizedBox(height: 40.0),
+                  const SizedBox(height: 64.0),
                 ],
               ),
             ),
