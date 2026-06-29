@@ -20,6 +20,23 @@ class QuestionTypeHelper {
         return backendType;
     }
   }
+  static String getRouteForType(String backendType) {
+    switch (backendType) {
+      case 'SINGLE_CHOICE':
+      case 'MULTI_CHOICE':
+        return '/multiChoiceQuestion';
+      case 'ORDERING':
+        return '/orderQuestion';
+      case 'MATCHING':
+        return '/connectQuestion';
+      case 'OPEN_TEXT':
+        return '/openQuestion';
+      case 'SHORT_ANSWER':
+        return '/shortAnswerQuestion';
+      default:
+        return '/addNewQuestion';
+    }
+  }
 
   /// Vrací krátký český název (vhodný do malých štítků, např. v Test Editoru)
   static String getShortLabel(String backendType) {

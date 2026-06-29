@@ -19,6 +19,7 @@ class _MultiChoiceQuestionWidgetState extends ConsumerState<MultiChoiceQuestionW
 
   // DYNAMICKÝ SEZNAM pro možnosti (Textový kontroler + informace, zda je to správná odpověď)
   final List<Map<String, dynamic>> _options = [];
+  bool _isInitialized = false;
 
   @override
   void initState() {
@@ -32,6 +33,35 @@ class _MultiChoiceQuestionWidgetState extends ConsumerState<MultiChoiceQuestionW
         'controller': TextEditingController(),
         'isCorrect': false, // Ve výchozím stavu není možnost označena jako správná
       });
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_isInitialized) {
+      final args = GoRouterState.of(context).extra as Map<String, dynamic>?;
+      final questionData = args?['questionData'] as Map<String, dynamic>?;
+      
+      if (questionData != null) {
+        _questionTextController.text = questionData['text'] ?? '';
+        
+        final answers = questionData['answers'] as List?;
+        if (answers != null && answers.isNotEmpty) {
+          for (var opt in _options) {
+            (opt['controller'] as TextEditingController).dispose();
+          }
+          _options.clear();
+          
+          for (var ans in answers) {
+            _options.add({
+              'controller': TextEditingController(text: ans['text'] ?? ''),
+              'isCorrect': ans['is_correct'] == true,
+            });
+          }
+        }
+      }
+      _isInitialized = true;
     }
   }
 
@@ -74,7 +104,7 @@ class _MultiChoiceQuestionWidgetState extends ConsumerState<MultiChoiceQuestionW
     });
   }
 
-  Future<bool> _saveQuestion(int bankId) async {
+  Future<bool> _saveQuestion(int bankId, {int? questionId}) async {
     if (_questionTextController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Zadejte znění otázky'), backgroundColor: Theme.of(context).colorScheme.error));
       return false;
@@ -112,10 +142,14 @@ class _MultiChoiceQuestionWidgetState extends ConsumerState<MultiChoiceQuestionW
         "answers": answers,
       };
 
-      await apiClient.post('/banks/$bankId/questions', requestData);
+      if (questionId != null) {
+        await apiClient.put('/banks/$bankId/questions/$questionId', requestData);
+      } else {
+        await apiClient.post('/banks/$bankId/questions', requestData);
+      }
       
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: const Text('Otázka uložena'), backgroundColor: Colors.green));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(questionId != null ? 'Otázka upravena' : 'Otázka uložena'), backgroundColor: Colors.green));
       }
       return true;
     } catch (e) {
@@ -272,6 +306,9 @@ class _MultiChoiceQuestionWidgetState extends ConsumerState<MultiChoiceQuestionW
     final args = GoRouterState.of(context).extra as Map<String, dynamic>?;
     final String targetName = args?['targetName'] ?? 'Neznámá banka';
     final int bankId = args?['bankId'] ?? 0;
+    final Map<String, dynamic>? questionData = args?['questionData'];
+    final bool isEdit = questionData != null;
+    final int? questionId = questionData?['question_id'] ?? questionData?['id'];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -279,7 +316,7 @@ class _MultiChoiceQuestionWidgetState extends ConsumerState<MultiChoiceQuestionW
         
         // --- DYNAMICKÁ HLAVIČKA ---
         PageHeaderWidget(
-          title: 'Tvorba: $targetName',
+          title: isEdit ? 'Úprava otázky' : 'Tvorba: $targetName',
           actions: [
             // TLAČÍTKO 1: Pohled studenta
             ElevatedButton.icon(
@@ -303,7 +340,7 @@ class _MultiChoiceQuestionWidgetState extends ConsumerState<MultiChoiceQuestionW
             // TLAČÍTKO 2: Uložit
             ElevatedButton.icon(
               onPressed: () async {
-                final success = await _saveQuestion(bankId);
+                final success = await _saveQuestion(bankId, questionId: questionId);
                 if (success && context.mounted) {
                   context.pop();
                 }

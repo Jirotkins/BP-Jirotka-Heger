@@ -20,6 +20,7 @@ class _ConnectQuestionWidgetState extends ConsumerState<ConnectQuestionWidget> {
 
   // DYNAMICKÝ SEZNAM pro párování (každá položka obsahuje Levý a Pravý kontroler)
   final List<Map<String, TextEditingController>> _pairControllers = [];
+  bool _isInitialized = false;
 
   @override
   void initState() {
@@ -30,6 +31,36 @@ class _ConnectQuestionWidgetState extends ConsumerState<ConnectQuestionWidget> {
     // Výchozí stav: Přidáme 3 prázdné dvojice k propojení
     for (int i = 0; i < 3; i++) {
       _addPair();
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_isInitialized) {
+      final args = GoRouterState.of(context).extra as Map<String, dynamic>?;
+      final questionData = args?['questionData'] as Map<String, dynamic>?;
+      
+      if (questionData != null) {
+        _questionTextController.text = questionData['text'] ?? '';
+        
+        final answers = questionData['answers'] as List?;
+        if (answers != null && answers.isNotEmpty) {
+          for (var p in _pairControllers) {
+            p['left']?.dispose();
+            p['right']?.dispose();
+          }
+          _pairControllers.clear();
+          
+          for (var ans in answers) {
+            _pairControllers.add({
+              'left': TextEditingController(text: ans['text'] ?? ''),
+              'right': TextEditingController(text: ans['match_text'] ?? ''),
+            });
+          }
+        }
+      }
+      _isInitialized = true;
     }
   }
 
@@ -75,7 +106,7 @@ class _ConnectQuestionWidgetState extends ConsumerState<ConnectQuestionWidget> {
     });
   }
 
-  Future<bool> _saveQuestion(int bankId) async {
+  Future<bool> _saveQuestion(int bankId, {int? questionId}) async {
     if (_questionTextController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Zadejte znění otázky'), backgroundColor: Theme.of(context).colorScheme.error));
       return false;
@@ -106,10 +137,14 @@ class _ConnectQuestionWidgetState extends ConsumerState<ConnectQuestionWidget> {
         "answers": answers,
       };
 
-      await apiClient.post('/banks/$bankId/questions', requestData);
+      if (questionId != null) {
+        await apiClient.put('/banks/$bankId/questions/$questionId', requestData);
+      } else {
+        await apiClient.post('/banks/$bankId/questions', requestData);
+      }
       
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: const Text('Otázka uložena'), backgroundColor: Colors.green));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(questionId != null ? 'Otázka upravena' : 'Otázka uložena'), backgroundColor: Colors.green));
       }
       return true;
     } catch (e) {
@@ -258,6 +293,9 @@ class _ConnectQuestionWidgetState extends ConsumerState<ConnectQuestionWidget> {
     final args = GoRouterState.of(context).extra as Map<String, dynamic>?;
     final String targetName = args?['targetName'] ?? 'Neznámá banka';
     final int bankId = args?['bankId'] ?? 0;
+    final Map<String, dynamic>? questionData = args?['questionData'];
+    final bool isEdit = questionData != null;
+    final int? questionId = questionData?['question_id'] ?? questionData?['id'];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -265,7 +303,7 @@ class _ConnectQuestionWidgetState extends ConsumerState<ConnectQuestionWidget> {
         
         // --- DYNAMICKÁ HLAVIČKA ---
         PageHeaderWidget(
-          title: 'Tvorba: $targetName',
+          title: isEdit ? 'Úprava otázky' : 'Tvorba: $targetName',
           actions: [
             // TLAČÍTKO 1: Pohled studenta
             ElevatedButton.icon(
@@ -289,7 +327,7 @@ class _ConnectQuestionWidgetState extends ConsumerState<ConnectQuestionWidget> {
             // TLAČÍTKO 2: Uložit
             ElevatedButton.icon(
               onPressed: () async {
-                final success = await _saveQuestion(bankId);
+                final success = await _saveQuestion(bankId, questionId: questionId);
                 if (success && context.mounted) {
                   context.pop();
                 }

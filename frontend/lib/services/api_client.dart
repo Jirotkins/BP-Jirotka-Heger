@@ -49,6 +49,34 @@ class ApiClient {
     }
   }
 
+  Future<dynamic> put(String endpoint, Map<String, dynamic> body) async {
+    final uri = Uri.parse('$baseUrl$endpoint');
+    try {
+      final response = await http.put(
+        uri,
+        headers: _headers,
+        body: json.encode(body),
+      );
+
+      return _processResponse(response);
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException('Chyba síťového připojení k API', 0);
+    }
+  }
+
+  Future<dynamic> delete(String endpoint) async {
+    final uri = Uri.parse('$baseUrl$endpoint');
+    try {
+      final response = await http.delete(uri, headers: _headers);
+
+      return _processResponse(response);
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException('Chyba síťového připojení k API', 0);
+    }
+  }
+
   Future<dynamic> get(String endpoint) async {
     final uri = Uri.parse('$baseUrl$endpoint');
     try {

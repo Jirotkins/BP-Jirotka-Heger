@@ -9,13 +9,10 @@ import 'providers/theme_provider.dart';
 import 'providers/auth_provider.dart';
 
 // IMPORT VŠECH POUŽÍVANÝCH STRÁNEK A ROUTERU
-import 'pages/pages.dart';
-import 'router/app_router.dart';
-import 'theme/app_themes.dart';
+import 'package:google_fonts/google_fonts.dart';
 
-// IMPORT LAYOUTŮ (SPA RÁMCŮ)
-import 'layouts/teacher_main_layout.dart';
-import 'layouts/student_main_layout.dart'; 
+import 'theme/app_themes.dart';
+import 'router/app_router.dart'; 
 
 // Zde připravíme prázdný provider, který pak v main() přepíšeme skutečnou instancí
 final sharedPrefsProvider = Provider<SharedPreferences>((ref) => throw UnimplementedError());

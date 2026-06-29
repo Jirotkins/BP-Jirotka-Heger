@@ -17,6 +17,7 @@ class _ShortAnswerQuestionWidgetState extends ConsumerState<ShortAnswerQuestionW
   late FocusNode _questionFocusNode;
 
   final List<TextEditingController> _answerControllers = [];
+  bool _isInitialized = false;
 
   @override
   void initState() {
@@ -24,6 +25,32 @@ class _ShortAnswerQuestionWidgetState extends ConsumerState<ShortAnswerQuestionW
     _questionTextController = TextEditingController();
     _questionFocusNode = FocusNode();
     _answerControllers.add(TextEditingController());
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_isInitialized) {
+      final args = GoRouterState.of(context).extra as Map<String, dynamic>?;
+      final questionData = args?['questionData'] as Map<String, dynamic>?;
+      
+      if (questionData != null) {
+        _questionTextController.text = questionData['text'] ?? '';
+        
+        final answers = questionData['answers'] as List?;
+        if (answers != null && answers.isNotEmpty) {
+          for (var c in _answerControllers) {
+            c.dispose();
+          }
+          _answerControllers.clear();
+          
+          for (var ans in answers) {
+            _answerControllers.add(TextEditingController(text: ans['text'] ?? ''));
+          }
+        }
+      }
+      _isInitialized = true;
+    }
   }
 
   @override
@@ -51,41 +78,43 @@ class _ShortAnswerQuestionWidgetState extends ConsumerState<ShortAnswerQuestionW
     });
   }
 
-  Future<bool> _saveQuestion(int bankId) async {
+  Future<bool> _saveQuestion(int bankId, {int? questionId}) async {
     if (_questionTextController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Zadejte znění otázky'), backgroundColor: Theme.of(context).colorScheme.error));
       return false;
     }
 
-    final validAnswers = _answerControllers
-        .map((c) => c.text.trim())
-        .where((text) => text.isNotEmpty)
-        .toList();
+    final validAnswers = _answerControllers.map((c) => c.text.trim()).where((text) => text.isNotEmpty).toList();
 
     if (validAnswers.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Zadejte alespoň jednu uznávanou odpověď'), backgroundColor: Theme.of(context).colorScheme.error));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Zadejte alespoň jednu správnou odpověď'), backgroundColor: Theme.of(context).colorScheme.error));
       return false;
     }
 
     try {
       final apiClient = ref.read(apiClientProvider);
       
-      final answers = validAnswers.map((text) => {
-        "text": text,
+      final answers = validAnswers.map((ans) => {
+        "text": ans,
         "is_correct": true,
       }).toList();
 
       final requestData = {
         "text": _questionTextController.text.trim(),
-        "type": "SHORT_ANSWER",
+        "type": "OPEN_TEXT", // Upraveno zpět na OPEN_TEXT kvůli backendu
         "default_points": 1,
         "answers": answers,
       };
 
-      await apiClient.post('/banks/$bankId/questions', requestData);
+      if (questionId != null) {
+        // Zavoláme PUT endpoint (ačkoliv zatím neexistuje)
+        await apiClient.put('/banks/$bankId/questions/$questionId', requestData);
+      } else {
+        await apiClient.post('/banks/$bankId/questions', requestData);
+      }
       
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: const Text('Otázka uložena'), backgroundColor: Colors.green));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(questionId != null ? 'Otázka upravena' : 'Otázka uložena'), backgroundColor: Colors.green));
       }
       return true;
     } catch (e) {
@@ -188,6 +217,9 @@ class _ShortAnswerQuestionWidgetState extends ConsumerState<ShortAnswerQuestionW
     final args = GoRouterState.of(context).extra as Map<String, dynamic>?;
     final String targetName = args?['targetName'] ?? 'Neznámá banka';
     final int bankId = args?['bankId'] ?? 0;
+    final Map<String, dynamic>? questionData = args?['questionData'];
+    final bool isEdit = questionData != null;
+    final int? questionId = questionData?['question_id'] ?? questionData?['id'];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -195,7 +227,7 @@ class _ShortAnswerQuestionWidgetState extends ConsumerState<ShortAnswerQuestionW
         
         // --- DYNAMICKÁ HLAVIČKA ---
         PageHeaderWidget(
-          title: 'Tvorba: $targetName',
+          title: isEdit ? 'Úprava otázky' : 'Tvorba: $targetName',
           actions: [
             // TLAČÍTKO 1: Pohled studenta
             ElevatedButton.icon(
@@ -219,7 +251,7 @@ class _ShortAnswerQuestionWidgetState extends ConsumerState<ShortAnswerQuestionW
             // TLAČÍTKO 2: Uložit
             ElevatedButton.icon(
               onPressed: () async {
-                final success = await _saveQuestion(bankId);
+                final success = await _saveQuestion(bankId, questionId: questionId);
                 if (success && context.mounted) {
                   context.pop();
                 }

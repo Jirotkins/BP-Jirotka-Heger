@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../theme/app_themes.dart';
 import '../utils/question_type_helper.dart';
 
@@ -6,12 +7,20 @@ class QuestionRowWidget extends StatelessWidget {
   final int id;
   final String question;
   final String type;
+  final int bankId;
+  final String targetName;
+  final Map<String, dynamic>? questionData;
+  final VoidCallback? onDelete;
 
   const QuestionRowWidget({
     super.key,
     required this.id,
     required this.question,
     required this.type,
+    this.bankId = 0,
+    this.targetName = 'Neznámá banka',
+    this.questionData,
+    this.onDelete,
   });
 
   @override
@@ -94,7 +103,12 @@ class QuestionRowWidget extends StatelessWidget {
                   child: IconButton(
                     icon: Icon(Icons.edit_outlined, color: Theme.of(context).colorScheme.primary, size: 18.0),
                     onPressed: () {
-                      print('Editovat otázku $id');
+                      final route = QuestionTypeHelper.getRouteForType(type);
+                      context.push(route, extra: {
+                        'targetName': targetName,
+                        'bankId': bankId,
+                        'questionData': questionData,
+                      });
                     },
                     padding: EdgeInsets.zero,
                   ),
@@ -112,7 +126,9 @@ class QuestionRowWidget extends StatelessWidget {
                   child: IconButton(
                     icon: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error, size: 18.0),
                     onPressed: () {
-                      print('Smazat otázku $id');
+                      if (onDelete != null) {
+                        onDelete!();
+                      }
                     },
                     padding: EdgeInsets.zero,
                   ),

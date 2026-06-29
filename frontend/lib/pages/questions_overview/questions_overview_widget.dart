@@ -58,6 +58,7 @@ class _QuestionsOverviewWidgetState extends ConsumerState<QuestionsOverviewWidge
               'id': q['question_id'],
               'question': q['text'] ?? 'Prázdná otázka',
               'type': q['type'] ?? 'Neznámý typ',
+              'raw': q,
             };
           }).toList();
           _isLoading = false;
@@ -69,6 +70,52 @@ class _QuestionsOverviewWidgetState extends ConsumerState<QuestionsOverviewWidge
           _errorMessage = 'Chyba při načítání otázek: $e';
           _isLoading = false;
         });
+      }
+    }
+  }
+
+  Future<void> _deleteQuestion(int questionId) async {
+    // 1. Zobrazit potvrzovací dialog
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Smazat otázku?'),
+          content: const Text('Opravdu chcete tuto otázku smazat? Tuto akci nelze vrátit zpět.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Zrušit'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.error,
+                foregroundColor: Theme.of(context).colorScheme.onError,
+              ),
+              child: const Text('Smazat'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirm != true) return;
+
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      // Zavoláme delete (i když backend endpoint zatím možná chybí)
+      await apiClient.delete('/banks/${widget.bankId}/questions/$questionId');
+
+      if (mounted) {
+        setState(() {
+          _questionsData.removeWhere((q) => q['id'] == questionId);
+        });
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Otázka byla úspěšně smazána'), backgroundColor: Colors.green));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Chyba při mazání: $e'), backgroundColor: Theme.of(context).colorScheme.error));
       }
     }
   }
@@ -150,6 +197,10 @@ class _QuestionsOverviewWidgetState extends ConsumerState<QuestionsOverviewWidge
                                   id: questionData['id'],
                                   question: questionData['question'],
                                   type: questionData['type'],
+                                  bankId: widget.bankId,
+                                  targetName: widget.bankName,
+                                  questionData: questionData['raw'],
+                                  onDelete: () => _deleteQuestion(questionData['id']),
                                 );
                               },
                             ),
