@@ -1,20 +1,24 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../services/api_client.dart';
 import '../../components/test_submit_popup_widget.dart';
 import '../../components/test_exit_popup_widget.dart';
 
 // Hlavní obrazovka pro vyplňování testu studentem.
 // Dynamicky renderuje různé typy otázek a spravuje lokální stav odpovědí.
-class TestActiveWidget extends StatefulWidget {
+class TestActiveWidget extends ConsumerStatefulWidget {
   const TestActiveWidget({super.key});
 
   @override
-  State<TestActiveWidget> createState() => _TestActiveWidgetState();
+  ConsumerState<TestActiveWidget> createState() => _TestActiveWidgetState();
 }
 
-class _TestActiveWidgetState extends State<TestActiveWidget> {
+class _TestActiveWidgetState extends ConsumerState<TestActiveWidget> {
   final scaffoldKey = GlobalKey<ScaffoldState>();
 
   // --- STAVOVÉ PROMĚNNÉ ---
@@ -30,7 +34,19 @@ class _TestActiveWidgetState extends State<TestActiveWidget> {
   // Kontroler pro textová pole (otevřené a krátké odpovědi).
   final TextEditingController _textController = TextEditingController();
 
-  // --- DATOVÝ MODEL (MOCK) ---
+  bool _isLoading = true;
+  String? _errorMessage;
+  int? _assignmentId;
+  String _testTitle = 'Načítání testu...';
+  List<Map<String, dynamic>> _questions = [];
+
+  // --- ČASOMÍRA ---
+  Timer? _timer;
+  int _remainingSeconds = 0;
+
+  bool _isExiting = false;
+
+  // --- DATOVÝ MODEL (MOCK FALLBACK) ---
   
   final List<Map<String, dynamic>> _mockQuestions = [
     {
@@ -70,15 +86,90 @@ class _TestActiveWidgetState extends State<TestActiveWidget> {
     }
   ];
 
+  bool _hasInitialized = false;
+
   @override
-  void initState() {
-    super.initState();
-    // Načte případnou textovou odpověď do kontroleru při prvním spuštění
-    _loadAnswerForCurrentQuestion();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_hasInitialized) {
+      _hasInitialized = true;
+      final args = GoRouterState.of(context).extra as Map<String, dynamic>?;
+      _assignmentId = args?['assignmentId'] as int?;
+      _testTitle = args?['testTitle'] ?? 'Neznámý test';
+      _fetchTest();
+    }
+  }
+
+  Future<void> _fetchTest() async {
+    if (_assignmentId == null) {
+      _useFallbackMockData('Chybí ID přiřazení testu.');
+      return;
+    }
+
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      // POŽADAVEK #6 - Získání zadání testu (endpoint zatím neexistuje)
+      final response = await apiClient.get('/exam-assignments/$_assignmentId/take');
+      
+      if (mounted) {
+        setState(() {
+          // Zde se očekává, že server vrátí seznam otázek, například v klíči 'questions'
+          _questions = List<Map<String, dynamic>>.from(response['questions'] ?? []);
+          
+          // Načtení časového limitu (v minutách)
+          int limitMinutes = response['time_limit_minutes'] ?? 0;
+          if (limitMinutes > 0) {
+            _remainingSeconds = limitMinutes * 60;
+            _startTimer();
+          }
+
+          _isLoading = false;
+          _loadAnswerForCurrentQuestion();
+        });
+      }
+    } catch (e) {
+      // Backend zatím endpoint nemá, takže to spadne (404/405). Použijeme mock data.
+      _useFallbackMockData('Nepodařilo se načíst test ze serveru ($e). Používám ukázková data.');
+    }
+  }
+
+  void _useFallbackMockData(String message) {
+    if (mounted) {
+      setState(() {
+        _questions = List<Map<String, dynamic>>.from(_mockQuestions);
+        // Pro fallback nastavíme např. 5 minut
+        _remainingSeconds = 5 * 60;
+        _startTimer();
+
+        _isLoading = false;
+        _loadAnswerForCurrentQuestion();
+      });
+      // Volitelně můžeme zobrazit snackbar, že jsme ve fallback režimu
+      // ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    }
+  }
+
+  void _startTimer() {
+    _timer?.cancel();
+    if (_remainingSeconds <= 0) return;
+    
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (mounted) {
+        setState(() {
+          if (_remainingSeconds > 0) {
+            _remainingSeconds--;
+          } else {
+            _timer?.cancel();
+            _submitTest(autoSubmit: true); // Automatické odeslání při vypršení času
+          }
+        });
+      }
+    });
   }
 
   @override
   void dispose() {
+    _timer?.cancel();
     _textController.dispose();
     super.dispose();
   }
@@ -87,15 +178,16 @@ class _TestActiveWidgetState extends State<TestActiveWidget> {
 
   // Zajistí, že při posunu vpřed/vzad se textové pole správně předvyplní uloženou odpovědí.
   void _loadAnswerForCurrentQuestion() {
-    var qType = _mockQuestions[_currentIndex]['type'];
-    if (qType == 'open' || qType == 'short_answer') {
-      _textController.text = _selectedAnswers[_currentIndex] ?? '';
+    if (_questions.isEmpty) return;
+    var qType = _questions[_currentIndex]['type'];
+    if (qType == 'open' || qType == 'short_answer' || qType == 'OPEN_TEXT' || qType == 'SHORT_ANSWER') {
+      _textController.text = _selectedAnswers[_currentIndex]?.toString() ?? '';
     }
   }
 
   // Přechod na další otázku nebo odevzdání testu, pokud jsme na konci.
   void _nextQuestion() {
-    if (_currentIndex < _mockQuestions.length - 1) {
+    if (_currentIndex < _questions.length - 1) {
       setState(() {
         _currentIndex++;
         _loadAnswerForCurrentQuestion();
@@ -116,26 +208,75 @@ class _TestActiveWidgetState extends State<TestActiveWidget> {
   }
 
   // Zobrazí popup pro finální odevzdání a po potvrzení odesílá data na API.
-  void _submitTest() {
+  void _submitTest({bool autoSubmit = false}) {
     int answeredCount = _selectedAnswers.length;
+
+    if (autoSubmit) {
+      // Pokud vypršel čas, rovnou odesíláme, neptáme se.
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Čas vypršel. Test byl automaticky odevzdán.'), backgroundColor: Theme.of(context).colorScheme.error),
+      );
+      _executeSubmission();
+      return;
+    }
 
     showDialog(
       context: context,
       barrierDismissible: false, // Nelze zavřít kliknutím mimo okno
       builder: (dialogContext) => TestSubmitPopupWidget(
         answeredQuestions: answeredCount,
-        totalQuestions: _mockQuestions.length,
-        onSubmit: () {
-          // Odesíláme mapu '_selectedAnswers'.
-          print('Odesláno na backend: $_selectedAnswers');
-          
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Test byl úspěšně odevzdán!'), backgroundColor: Color(0xFF16A34A)),
-          );
-          Navigator.pop(context); // Návrat do přehledu předmětu
+        totalQuestions: _questions.length,
+        onSubmit: () async {
+          await _executeSubmission();
         },
       ),
     );
+  }
+
+  Future<void> _executeSubmission() async {
+    // Odesíláme mapu '_selectedAnswers'.
+    print('Odesláno na backend: $_selectedAnswers');
+    
+    if (_assignmentId != null) {
+      try {
+        final apiClient = ref.read(apiClientProvider);
+        // POŽADAVEK #7 - Odeslání pokusu
+        
+        // Příprava payloadu - mapujeme _selectedAnswers do formátu očekávaného backendem
+        // (Zde jen ukázková konverze, přesný formát dodá backend)
+        List<Map<String, dynamic>> answersPayload = [];
+        _selectedAnswers.forEach((index, answerData) {
+          final questionId = _questions[index]['id'] ?? _questions[index]['question_id'];
+          answersPayload.add({
+            "question_id": questionId,
+            "answer_data": answerData, // Může být string, list, map podle typu
+          });
+        });
+
+        await apiClient.post('/exam-assignments/$_assignmentId/attempts', {
+          "answers": answersPayload
+        });
+
+        if (mounted) {
+          setState(() { _isExiting = true; });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Test byl úspěšně odevzdán!'), backgroundColor: Color(0xFF16A34A)),
+          );
+          context.pop(); // Návrat do přehledu
+        }
+      } catch (e) {
+          if (mounted) {
+          setState(() { _isExiting = true; });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Endpoint pro odevzdání chybí. Odpovědi: $_selectedAnswers'), backgroundColor: Theme.of(context).colorScheme.error),
+          );
+          context.pop(); // Stejně zavřeme pro účely dema
+        }
+      }
+    } else {
+      setState(() { _isExiting = true; });
+      context.pop();
+    }
   }
 
   // Zobrazí varování před opuštěním rozepsaného testu (např. při kliknutí na křížek).
@@ -144,32 +285,59 @@ class _TestActiveWidgetState extends State<TestActiveWidget> {
       context: context,
       builder: (dialogContext) => TestExitPopupWidget(
         onExit: () {
-          Navigator.pop(context); 
+          setState(() { _isExiting = true; });
+          context.pop(); 
         }
       ),
     );
   }
 
+  String _formatTime(int seconds) {
+    int m = seconds ~/ 60;
+    int s = seconds % 60;
+    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+  }
+
   @override
   Widget build(BuildContext context) {
-    // 1. Zpracování argumentů z navigace
-    final args = GoRouterState.of(context).extra as Map<String, dynamic>?;
-    final String testTitle = args?['testTitle'] ?? 'Biologie - Buňka 1';
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        body: Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary)),
+      );
+    }
+
+    if (_questions.isEmpty) {
+      return Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        body: Center(child: Text('Tento test neobsahuje žádné otázky.', style: TextStyle(color: Theme.of(context).colorScheme.onSurface))),
+      );
+    }
 
     // 2. Výpočet pro progress bar
-    int totalQuestions = _mockQuestions.length;
+    int totalQuestions = _questions.length;
     double progress = (_currentIndex + 1) / totalQuestions;
 
     // Aktuální otázka pro vykreslení
-    var currentQuestion = _mockQuestions[_currentIndex];
+    var currentQuestion = _questions[_currentIndex];
 
-    return Scaffold(
-      key: scaffoldKey,
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      
-      body: SafeArea(
-        child: Column(
-          children: [
+    // Barva časomíry
+    bool isTimeRunningOut = _remainingSeconds <= 60 && _remainingSeconds > 0;
+    Color timeColor = isTimeRunningOut ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.onSurface;
+
+    return PopScope(
+      canPop: _isExiting,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        _showExitWarning();
+      },
+      child: Scaffold(
+        key: scaffoldKey,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        
+        body: SafeArea(
+          child: Column(
+            children: [
             // --- SJEDNOCENÁ HLAVIČKA TESTU ---
             // Obsahuje křížek, název testu, odpočet a plynulý progress bar.
             Container(
@@ -189,7 +357,7 @@ class _TestActiveWidgetState extends State<TestActiveWidget> {
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: Text(testTitle, style: GoogleFonts.inter(fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.onSurface, fontSize: 18)),
+                        child: Text(_testTitle, style: GoogleFonts.inter(fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.onSurface, fontSize: 18)),
                       ),
                     ],
                   ),
@@ -200,9 +368,9 @@ class _TestActiveWidgetState extends State<TestActiveWidget> {
                       Text('Otázka ${_currentIndex + 1} z $totalQuestions', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.w600, fontSize: 14.0)),
                       Row(
                         children: [
-                          Icon(Icons.timer_outlined, color: Theme.of(context).colorScheme.error, size: 18),
+                          Icon(Icons.timer_outlined, color: timeColor, size: 18),
                           const SizedBox(width: 6),
-                          Text('14:10', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.bold, fontSize: 16.0)),
+                          Text(_formatTime(_remainingSeconds), style: GoogleFonts.inter(color: timeColor, fontWeight: FontWeight.bold, fontSize: 16.0)),
                         ],
                       ),
                     ],
@@ -259,13 +427,13 @@ class _TestActiveWidgetState extends State<TestActiveWidget> {
                     const SizedBox(height: 32.0),
 
                     // Dynamický renderovač odpovědí
-                    if (currentQuestion['type'] == 'choice')
+                    if (currentQuestion['type'] == 'choice' || currentQuestion['type'] == 'SINGLE_CHOICE' || currentQuestion['type'] == 'MULTI_CHOICE')
                       _buildChoiceQuestion(currentQuestion)
-                    else if (currentQuestion['type'] == 'open' || currentQuestion['type'] == 'short_answer')
+                    else if (currentQuestion['type'] == 'open' || currentQuestion['type'] == 'short_answer' || currentQuestion['type'] == 'OPEN_TEXT' || currentQuestion['type'] == 'SHORT_ANSWER')
                       _buildTextQuestion(currentQuestion)
-                    else if (currentQuestion['type'] == 'order')
+                    else if (currentQuestion['type'] == 'order' || currentQuestion['type'] == 'ORDERING')
                       _buildOrderQuestion(currentQuestion)
-                    else if (currentQuestion['type'] == 'match')
+                    else if (currentQuestion['type'] == 'match' || currentQuestion['type'] == 'MATCHING')
                       _buildMatchQuestion(currentQuestion),
 
                     const SizedBox(height: 24.0),
@@ -325,7 +493,7 @@ class _TestActiveWidgetState extends State<TestActiveWidget> {
           ],
         ),
       ),
-    );
+    ));
   }
 
   // =========================================================
