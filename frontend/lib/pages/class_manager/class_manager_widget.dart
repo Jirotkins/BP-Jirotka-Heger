@@ -309,7 +309,7 @@ class _ClassManagerWidgetState extends ConsumerState<ClassManagerWidget> {
                   title: test['template_name'] ?? 'Neznámý test',
                   subtitle: '${test['submitted_count'] ?? 0}/${test['total_students'] ?? 0} odevzdalo',
                   onTap: () {
-                    context.push('/testEvaluation');
+                    context.push('/testEvaluation', extra: {'assignmentId': test['id'] ?? 999, 'attemptId': 1});
                   },
                 ),
               );
