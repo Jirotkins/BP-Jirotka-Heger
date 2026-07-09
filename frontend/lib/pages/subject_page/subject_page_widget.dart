@@ -17,7 +17,7 @@ class _SubjectPageWidgetState extends State<SubjectPageWidget> {
 
   // Právě probíhající test (pokud existuje). Pokud ne, hodnota je null.
   final Map<String, dynamic>? _activeTest = {
-    'id': 'test_999',
+    'id': 999,
     'title': 'Funkce',
     'info': 'Termín: 15. 1. 2025 • 20 otázek',
   };
@@ -137,7 +137,7 @@ class _SubjectPageWidgetState extends State<SubjectPageWidget> {
                 InkWell(
                   onTap: () {
                     // Navigace do ostrého testu s předáním ID testu
-                    context.push('/testActive', extra: {'testId': _activeTest!['id'], 'testTitle': _activeTest!['title']});
+                    context.push('/testActive', extra: {'assignmentId': _activeTest!['id'], 'testTitle': _activeTest!['title']});
                   },
                   borderRadius: BorderRadius.circular(12.0),
                   child: Container(
@@ -258,7 +258,7 @@ class _SubjectPageWidgetState extends State<SubjectPageWidget> {
   Widget _buildUpcomingTestCard(Map<String, dynamic> test) {
     return InkWell(
       onTap: () {
-         context.push('/testActive', extra: {'testId': test['id'], 'testTitle': test['title']});
+         context.push('/testActive', extra: {'assignmentId': test['id'], 'testTitle': test['title']});
       },
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 20.0),

@@ -599,6 +599,14 @@ class _TestActiveWidgetState extends ConsumerState<TestActiveWidget> {
           shrinkWrap: true, // Nutné uvnitř ScrollView
           physics: const NeverScrollableScrollPhysics(), 
           itemCount: items.length,
+          proxyDecorator: (Widget child, int index, Animation<double> animation) {
+            // Opravuje "bílý ocas" při tažení, který způsobuje výchozí Material widget nad marginem
+            return Material(
+              color: Colors.transparent,
+              elevation: 0,
+              child: child,
+            );
+          },
           onReorder: (oldIndex, newIndex) {
             setState(() {
               if (newIndex > oldIndex) {

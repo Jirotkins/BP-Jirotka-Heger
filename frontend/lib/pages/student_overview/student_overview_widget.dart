@@ -1,49 +1,87 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../components/subject_card_widget.dart'; 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../components/subject_card_widget.dart';
+import '../../services/api_client.dart';
 
 // Úvodní domovská obrazovka studenta (Dashboard).
 // Slouží jako rozcestník pro probíhající testy a přehled zapsaných předmětů.
-class StudentOverviewWidget extends StatefulWidget {
+class StudentOverviewWidget extends ConsumerStatefulWidget {
   const StudentOverviewWidget({super.key});
 
   @override
-  State<StudentOverviewWidget> createState() => _StudentOverviewWidgetState();
+  ConsumerState<StudentOverviewWidget> createState() => _StudentOverviewWidgetState();
 }
 
-class _StudentOverviewWidgetState extends State<StudentOverviewWidget> {
+class _StudentOverviewWidgetState extends ConsumerState<StudentOverviewWidget> {
   final scaffoldKey = GlobalKey<ScaffoldState>();
+  
+  bool _isLoading = true;
+  String? _errorMessage;
 
-  // Seznam aktuálně probíhajících testů.
-  final List<Map<String, dynamic>> _activeTests = [
-    {
-      'id': 'test_999', 
-      'title': 'Matematika – Funkce',
-      'deadline': 'Dnes 23:59',
-      'expiresIn': '45 min',
+  List<Map<String, dynamic>> _activeTests = [];
+  List<Map<String, dynamic>> _mySubjects = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchDashboardData();
+  }
+
+  Future<void> _fetchDashboardData() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      
+      // Pokus o stažení dat z backendu (endpoint momentálně neexistuje, viz requirement 8)
+      final response = await apiClient.get('/student/dashboard');
+      
+      // Pokud by endpoint někdy ožil a vrátil data:
+      setState(() {
+        _activeTests = List<Map<String, dynamic>>.from(response['active_tests'] ?? []);
+        _mySubjects = List<Map<String, dynamic>>.from(response['subjects'] ?? []);
+        _isLoading = false;
+      });
+    } catch (e) {
+      // Backend to zatím neumí -> spadneme do fallbacku (mock data)
+      _useFallbackMockData();
     }
-  ];
+  }
 
-  // Seznam předmětů žáka.
-  // Atribut 'status' je klíčový pro design karty. Očekáváme hodnoty:
-  // - 'active' (Test nyní - červená barva)
-  // - 'upcoming' (Test brzy - žlutá/oranžová barva)
-  // - 'none' (Žádný test / Vše ohodnoceno - zelená barva)
-  final List<Map<String, dynamic>> _mySubjects = [
-    {
-      'id': 'sub_1', 'code': 'MA', 'name': 'Matematika', 'teacher': 'Ing. Petr Svoboda', 
-      'color': const Color(0xFF4285F4), 'testCount': 3, 'status': 'active', 'timeText': 'Vyprší 45 min'
-    },
-    {
-      'id': 'sub_2', 'code': 'FY', 'name': 'Fyzika', 'teacher': 'doc. Jana Horáková', 
-      'color': const Color(0xFF34A853), 'testCount': 2, 'status': 'upcoming', 'timeText': 'Za 2 dny'
-    },
-    {
-      'id': 'sub_3', 'code': 'CH', 'name': 'Chemie', 'teacher': 'Mgr. Tomáš Blažek', 
-      'color': const Color(0xFFAB47DB), 'testCount': 4, 'status': 'none', 'timeText': 'Vše ohodnoceno'
-    },
-  ];
+  void _useFallbackMockData() {
+    setState(() {
+      _activeTests = [
+        {
+          'id': 999, // ID přiřazení (assignmentId)
+          'title': 'Matematika – Funkce',
+          'deadline': 'Dnes 23:59',
+          'expiresIn': '45 min',
+        }
+      ];
+
+      _mySubjects = [
+        {
+          'id': 'sub_1', 'code': 'MA', 'name': 'Matematika', 'teacher': 'Ing. Petr Svoboda', 
+          'color': const Color(0xFF4285F4), 'testCount': 3, 'status': 'active', 'timeText': 'Vyprší 45 min'
+        },
+        {
+          'id': 'sub_2', 'code': 'FY', 'name': 'Fyzika', 'teacher': 'doc. Jana Horáková', 
+          'color': const Color(0xFF34A853), 'testCount': 2, 'status': 'upcoming', 'timeText': 'Za 2 dny'
+        },
+        {
+          'id': 'sub_3', 'code': 'CH', 'name': 'Chemie', 'teacher': 'Mgr. Tomáš Blažek', 
+          'color': const Color(0xFFAB47DB), 'testCount': 4, 'status': 'none', 'timeText': 'Vše ohodnoceno'
+        },
+      ];
+      _isLoading = false;
+      _errorMessage = 'Nepodařilo se načíst data z API, používám ukázková data.';
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -71,8 +109,10 @@ class _StudentOverviewWidgetState extends State<StudentOverviewWidget> {
       ),
       
       // --- TĚLO STRÁNKY ---
-      body: SafeArea(
-        child: SingleChildScrollView(
+      body: _isLoading 
+        ? Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary))
+        : SafeArea(
+            child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -179,9 +219,9 @@ class _StudentOverviewWidgetState extends State<StudentOverviewWidget> {
               const SizedBox(height: 12),
               ElevatedButton(
                 onPressed: () {
-                  // Otevře ostrý test a předá do něj ID testu, aby si TestActiveWidget
-                  // mohl z API (GET /api/tests/{testId}/take) načíst příslušné otázky.
-                  context.push('/testActive', extra: {'testId': test['id'], 'testTitle': test['title']});
+                  // Otevře ostrý test a předá do něj ID přiřazení (assignmentId), aby si TestActiveWidget
+                  // mohl z API (GET /exam-assignments/{assignmentId}/take) načíst příslušné otázky.
+                  context.push('/testActive', extra: {'assignmentId': test['id'], 'testTitle': test['title']});
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Theme.of(context).colorScheme.error,
