@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../components/page_header_widget.dart';
+import '../../components/image_upload_widget.dart';
 import '../../services/api_client.dart';
 import '../../theme/app_themes.dart';
 
@@ -400,22 +401,10 @@ class _ConnectQuestionWidgetState extends ConsumerState<ConnectQuestionWidget> {
                   const SizedBox(height: 24.0),
 
                   // UPLOAD OBRÁZKU
-                  Container(
-                    height: 120.0,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surface,
-                      borderRadius: BorderRadius.circular(12.0),
-                      border: Border.all(color: Theme.of(context).colorScheme.outline, width: 1.5),
-                    ),
-                    alignment: Alignment.center,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.cloud_upload_outlined, color: Theme.of(context).colorScheme.secondary, size: 36.0),
-                        const SizedBox(height: 8.0),
-                        Text('Přetáhněte obrázek nebo schéma (volitelné)', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontSize: 14.0)),
-                      ],
-                    ),
+                  ImageUploadWidget(
+                    onImageSelected: (file, bytes) {
+                      print('Image selected: ${file?.name}');
+                    },
                   ),
                   
                   const SizedBox(height: 48.0),
