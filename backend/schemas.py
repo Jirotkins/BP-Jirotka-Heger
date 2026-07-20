@@ -235,6 +235,7 @@ class ExamAssignmentCreate(BaseModel):
     activate_to: str | None = None    # ISO datetime
     time_limit_minutes: int | None = None
     access_password: str | None = None
+    show_immediate_feedback: bool = False
 
     @field_validator('time_limit_minutes')
     @classmethod
@@ -271,6 +272,7 @@ class ExamAssignmentUpdate(BaseModel):
     time_limit_minutes: int | None = None
     access_password: str | None = None
     is_active: bool | None = None
+    show_immediate_feedback: bool | None = None
 
 
 class ExamAssignmentResponse(BaseModel):
@@ -283,6 +285,7 @@ class ExamAssignmentResponse(BaseModel):
     is_active: bool
     time_limit_minutes: int | None = None
     access_password: str | None = None
+    show_immediate_feedback: bool = False
     created_at: str
 
     class Config:
@@ -401,3 +404,49 @@ class CreateTemplateQuestionRequest(BaseModel):
         if v is not None and v < 0:
             raise ValueError("Počet bodů nemůže být negativní")
         return v
+
+
+# --- Student API Schemas ---
+
+from typing import Any
+
+class StudentAssignmentResponse(BaseModel):
+    """Schema pro vrácení přiřazených testů studentovi"""
+    assignment_id: int
+    template_name: str
+    description: str | None = None
+    activate_from: str | None = None
+    activate_to: str | None = None
+    time_limit_minutes: int | None = None
+    requires_password: bool
+    status: str | None = None  # None, STARTED, SUBMITTED, GRADED
+    
+    class Config:
+        from_attributes = True
+
+
+class StartAttemptRequest(BaseModel):
+    access_password: str | None = None
+
+
+class StartAttemptResponse(BaseModel):
+    attempt_id: int
+    started_at: str
+    time_limit_minutes: int | None = None
+    questions_snapshot: list[dict]
+    
+    class Config:
+        from_attributes = True
+
+
+class SaveAnswersRequest(BaseModel):
+    """Průběžné uložení odpovědí"""
+    answers: dict[int, Any]  # question_id -> answer_data
+
+
+class SubmitAttemptResponse(BaseModel):
+    attempt_id: int
+    status: str
+    total_points: float | None = None
+    max_points: float | None = None
+    score_percent: float | None = None

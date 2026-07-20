@@ -172,6 +172,7 @@ class ExamAssignment(Base):
     is_active = Column(Boolean, default=False)
     time_limit_minutes = Column(Integer)
     access_password = Column(String)
+    show_immediate_feedback = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     # Vztahy

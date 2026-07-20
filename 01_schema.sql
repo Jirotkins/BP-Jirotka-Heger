@@ -134,6 +134,7 @@ CREATE TABLE exam_assignments (
     is_active BOOLEAN DEFAULT FALSE,
     time_limit_minutes INT,              -- Časový limit v minutách (např. 45)
     access_password VARCHAR(50),         -- Volitelné heslo pro spuštění testu
+    show_immediate_feedback BOOLEAN DEFAULT FALSE, -- Okamžitá zpětná vazba pro studenty
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -162,4 +163,6 @@ CREATE TABLE student_attempts (
 -- ============================================================
 -- ALTER TABLE exam_assignments
 --     ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT FALSE;
+-- ALTER TABLE exam_assignments
+--     ADD COLUMN IF NOT EXISTS show_immediate_feedback BOOLEAN DEFAULT FALSE;
 -- ============================================================

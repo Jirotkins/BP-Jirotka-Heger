@@ -442,8 +442,9 @@ def get_teacher_test_templates(db: Session, teacher_id: int):
 # --- Exam Assignment Functions (Phase 1) ---
 
 def create_exam_assignment(db: Session, teacher_id: int, group_id: int, template_id: int,
-                          activate_from: str = None, activate_to: str = None,
-                          time_limit_minutes: int = None, access_password: str = None):
+                           activate_from: str = None, activate_to: str = None,
+                           time_limit_minutes: int = None, access_password: str = None,
+                           show_immediate_feedback: bool = False):
     """Vytvoří nové přiřazení testu skupině.
 
     Dva režimy:
@@ -460,6 +461,7 @@ def create_exam_assignment(db: Session, teacher_id: int, group_id: int, template
         activate_to: ISO datetime string - kdy se test zavře (volitelné)
         time_limit_minutes: Maximální čas na test (volitelné)
         access_password: Heslo pro přístup k testu (volitelné)
+        show_immediate_feedback: Zda zobrazit zpětnou vazbu ihned (default False)
 
     Returns:
         ExamAssignment model instance
@@ -514,7 +516,8 @@ def create_exam_assignment(db: Session, teacher_id: int, group_id: int, template
         activate_to=activate_to_dt,
         is_active=is_active,
         time_limit_minutes=time_limit_minutes,
-        access_password=access_password
+        access_password=access_password,
+        show_immediate_feedback=show_immediate_feedback
     )
 
     db.add(new_assignment)
@@ -598,7 +601,7 @@ def update_assignment(db: Session, assignment_id: int, teacher_id: int, update_d
         assignment_id: ID přiřazení
         teacher_id: ID učitele
         update_data: Dictionary s novými hodnotami
-            (activate_from, activate_to, time_limit_minutes, access_password, is_active)
+            (activate_from, activate_to, time_limit_minutes, access_password, is_active, show_immediate_feedback)
 
     Returns:
         Updated ExamAssignment instance
@@ -625,6 +628,9 @@ def update_assignment(db: Session, assignment_id: int, teacher_id: int, update_d
     # is_active lze měnit přímo přes PUT (případně přes /activate a /deactivate)
     if 'is_active' in update_data and update_data['is_active'] is not None:
         assignment.is_active = update_data['is_active']
+        
+    if 'show_immediate_feedback' in update_data and update_data['show_immediate_feedback'] is not None:
+        assignment.show_immediate_feedback = update_data['show_immediate_feedback']
 
     db.commit()
     db.refresh(assignment)
@@ -1145,3 +1151,282 @@ def get_group_assignments_overview(db: Session, group_id: int, teacher_id: int) 
         "upcoming": upcoming,
         "finished": finished,
     }
+
+
+# --- Student Test Taking API ---
+from datetime import datetime, timezone
+
+def get_student_assignments(db: Session, student_id: int):
+    # Najít všechny skupiny, ve kterých student je
+    student = db.query(Student).filter(Student.student_id == student_id).first()
+    if not student:
+        return []
+    
+    group_ids = [g.group_id for g in student.groups]
+    if not group_ids:
+        return []
+        
+    # Najít všechny assignments pro tyto skupiny
+    assignments = db.query(ExamAssignment).filter(ExamAssignment.group_id.in_(group_ids)).all()
+    
+    result = []
+    for a in assignments:
+        # Check status from student attempts
+        attempt = db.query(StudentAttempt).filter(
+            StudentAttempt.assignment_id == a.assignment_id,
+            StudentAttempt.student_id == student_id
+        ).first()
+        
+        status = attempt.status.value if attempt else None
+        
+        # Determine if it requires password
+        requires_password = a.access_password is not None and len(a.access_password) > 0
+        
+        result.append({
+            "assignment_id": a.assignment_id,
+            "template_name": a.template.name,
+            "description": a.template.description,
+            "activate_from": a.activate_from.isoformat() if a.activate_from else None,
+            "activate_to": a.activate_to.isoformat() if a.activate_to else None,
+            "time_limit_minutes": a.time_limit_minutes,
+            "requires_password": requires_password,
+            "status": status
+        })
+    return result
+
+def start_student_attempt(db: Session, student_id: int, assignment_id: int, password: str = None):
+    assignment = db.query(ExamAssignment).filter(ExamAssignment.assignment_id == assignment_id).first()
+    if not assignment:
+        raise Exception("Přiřazení nenalezeno.")
+        
+    if not assignment.is_active:
+        raise Exception("Test momentálně není aktivní.")
+        
+    now = datetime.now(timezone.utc)
+    if assignment.activate_from and now < assignment.activate_from:
+        raise Exception("Čas pro test ještě nenastal.")
+    if assignment.activate_to and now > assignment.activate_to:
+        raise Exception("Čas pro test již vypršel.")
+        
+    if assignment.access_password and assignment.access_password != password:
+        raise Exception("Nesprávné heslo pro přístup k testu.")
+        
+    # Zkontroluj, jestli už nemá attempt
+    existing_attempt = db.query(StudentAttempt).filter(
+        StudentAttempt.assignment_id == assignment_id,
+        StudentAttempt.student_id == student_id
+    ).first()
+    
+    if existing_attempt:
+        return existing_attempt  # Můžeme vrátit existující, pokud už začal
+        
+    # Vytvořit snapshot otázek
+    questions = []
+    max_points = 0.0
+    
+    # Seřadit podle pozice
+    template_questions = sorted(assignment.template.question_associations, key=lambda x: x.position)
+    
+    for tq in template_questions:
+        q = tq.question
+        # Snapshot formát pro otázku
+        q_snap = {
+            "question_id": q.question_id,
+            "text": q.text,
+            "type": q.type.value,
+            "image_url": q.image_url,
+            "points": tq.points_custom if tq.points_custom is not None else q.default_points,
+            "position": tq.position,
+            "answers": []
+        }
+        max_points += q_snap["points"]
+        
+        # Odpovědi
+        for ans in q.answers:
+            ans_snap = {
+                "answer_id": ans.answer_id,
+                "text": ans.text,
+                "is_correct": ans.is_correct,
+                "order_index": ans.order_index
+            }
+            q_snap["answers"].append(ans_snap)
+            
+        questions.append(q_snap)
+        
+    # Vytvoření pokusu
+    new_attempt = StudentAttempt(
+        assignment_id=assignment_id,
+        student_id=student_id,
+        questions_snapshot=questions,
+        max_points=max_points,
+        status=AttemptStatus.STARTED,
+        student_answers={}
+    )
+    db.add(new_attempt)
+    db.commit()
+    db.refresh(new_attempt)
+    
+    return new_attempt
+
+
+from sse_manager import sse_manager
+
+def save_student_answers(db: Session, student_id: int, attempt_id: int, answers_dict: dict):
+    attempt = db.query(StudentAttempt).filter(
+        StudentAttempt.attempt_id == attempt_id,
+        StudentAttempt.student_id == student_id
+    ).first()
+    
+    if not attempt:
+        raise Exception("Pokus nenalezen.")
+        
+    if attempt.status != AttemptStatus.STARTED:
+        raise Exception("Nelze ukládat odpovědi k odevzdanému testu.")
+        
+    attempt.student_answers = answers_dict
+    db.commit()
+    db.refresh(attempt)
+    
+    # 1. Notifikace pro učitele
+    teacher_channel = f"teacher_assignment_{attempt.assignment_id}"
+    sse_manager.sync_publish(teacher_channel, {
+        "event": "progress_update",
+        "attempt_id": attempt_id,
+        "student_id": student_id,
+        "answers_count": len(answers_dict)
+    })
+    
+    # 2. Zpětná vazba pro studenta (pokud je zapnutá)
+    assignment = attempt.assignment
+    if assignment.show_immediate_feedback:
+        feedback_detail = {}
+        for q_snap in attempt.questions_snapshot:
+            q_id = str(q_snap["question_id"])
+            q_id_int = q_snap["question_id"]
+            ans_data = answers_dict.get(q_id) if q_id in answers_dict else answers_dict.get(q_id_int)
+            
+            if ans_data is None:
+                continue
+                
+            q_type = q_snap["type"]
+            if q_type == "OPEN_TEXT":
+                feedback_detail[q_id] = "pending"
+                continue
+                
+            correct_answers = [a for a in q_snap["answers"] if a.get("is_correct", False)]
+            is_correct = False
+            
+            if q_type == "SINGLE_CHOICE":
+                if len(correct_answers) > 0 and correct_answers[0]["answer_id"] == ans_data:
+                    is_correct = True
+            elif q_type == "MULTI_CHOICE":
+                if isinstance(ans_data, list):
+                    correct_ids = set(a["answer_id"] for a in correct_answers)
+                    selected_ids = set(ans_data)
+                    if correct_ids == selected_ids:
+                        is_correct = True
+            elif q_type == "ORDERING":
+                if isinstance(ans_data, list):
+                    sorted_correct = sorted(q_snap["answers"], key=lambda x: x.get("order_index", 0))
+                    correct_ids_ordered = [a["answer_id"] for a in sorted_correct]
+                    if correct_ids_ordered == ans_data:
+                        is_correct = True
+                        
+            feedback_detail[q_id] = "correct" if is_correct else "incorrect"
+            
+        student_channel = f"student_attempt_{attempt_id}"
+        sse_manager.sync_publish(student_channel, {
+            "event": "immediate_feedback",
+            "feedback": feedback_detail
+        })
+        
+    return attempt
+
+
+def auto_grade(questions_snapshot: list, student_answers: dict):
+    total_points = 0.0
+    has_open_text = False
+    
+    for q_snap in questions_snapshot:
+        q_id = str(q_snap["question_id"])
+        q_id_int = q_snap["question_id"]
+        # Odpověď může být uložena pod string klíčem z JSON, zkusíme obojí
+        ans_data = student_answers.get(q_id) if q_id in student_answers else student_answers.get(q_id_int)
+        
+        q_type = q_snap["type"]
+        points = q_snap["points"]
+        
+        if q_type == "OPEN_TEXT":
+            has_open_text = True
+            continue
+            
+        if ans_data is None:
+            continue
+            
+        correct_answers = [a for a in q_snap["answers"] if a.get("is_correct", False)]
+        
+        if q_type == "SINGLE_CHOICE":
+            # ans_data by mělo být answer_id (int)
+            if len(correct_answers) > 0 and correct_answers[0]["answer_id"] == ans_data:
+                total_points += points
+                
+        elif q_type == "MULTI_CHOICE":
+            # ans_data by měl být list[int]
+            if isinstance(ans_data, list):
+                correct_ids = set(a["answer_id"] for a in correct_answers)
+                selected_ids = set(ans_data)
+                # Vše nebo nic
+                if correct_ids == selected_ids:
+                    total_points += points
+                    
+        elif q_type == "ORDERING":
+            # ans_data by měl být list[int]
+            if isinstance(ans_data, list):
+                # Seřadit správné odpovědi podle order_index
+                sorted_correct = sorted(q_snap["answers"], key=lambda x: x.get("order_index", 0))
+                correct_ids_ordered = [a["answer_id"] for a in sorted_correct]
+                
+                # Vše nebo nic
+                if correct_ids_ordered == ans_data:
+                    total_points += points
+                    
+    return total_points, has_open_text
+
+
+def submit_student_attempt(db: Session, student_id: int, attempt_id: int, final_answers: dict = None):
+    attempt = db.query(StudentAttempt).filter(
+        StudentAttempt.attempt_id == attempt_id,
+        StudentAttempt.student_id == student_id
+    ).first()
+    
+    if not attempt:
+        raise Exception("Pokus nenalezen.")
+        
+    if attempt.status != AttemptStatus.STARTED:
+        raise Exception("Tento pokus již byl odevzdán.")
+        
+    if final_answers is not None:
+        attempt.student_answers = final_answers
+        
+    # Zastavení času
+    now = datetime.now(timezone.utc)
+    
+    # Auto grade
+    total_points, has_open_text = auto_grade(attempt.questions_snapshot, attempt.student_answers)
+    
+    attempt.total_points = total_points
+    if attempt.max_points and attempt.max_points > 0:
+        attempt.score_percent = (float(total_points) / float(attempt.max_points)) * 100.0
+    else:
+        attempt.score_percent = 0.0
+        
+    if has_open_text:
+        attempt.status = AttemptStatus.SUBMITTED
+    else:
+        attempt.status = AttemptStatus.GRADED
+        
+    attempt.finished_at = now
+    
+    db.commit()
+    db.refresh(attempt)
+    return attempt

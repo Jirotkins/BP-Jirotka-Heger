@@ -915,7 +915,8 @@ def create_exam_assignment(
             activate_from=assignment_data.activate_from,
             activate_to=assignment_data.activate_to,
             time_limit_minutes=assignment_data.time_limit_minutes,
-            access_password=assignment_data.access_password
+            access_password=assignment_data.access_password,
+            show_immediate_feedback=assignment_data.show_immediate_feedback
         )
         return {
             "success": True,
@@ -927,6 +928,7 @@ def create_exam_assignment(
                 "activate_from": assignment.activate_from.isoformat() if assignment.activate_from else None,
                 "activate_to": assignment.activate_to.isoformat() if assignment.activate_to else None,
                 "is_active": assignment.is_active,
+                "show_immediate_feedback": assignment.show_immediate_feedback,
                 "time_limit_minutes": assignment.time_limit_minutes,
                 "created_at": assignment.created_at.isoformat()
             }
@@ -1076,7 +1078,8 @@ def update_assignment(
                 "activate_from": assignment.activate_from.isoformat() if assignment.activate_from else None,
                 "activate_to": assignment.activate_to.isoformat() if assignment.activate_to else None,
                 "is_active": assignment.is_active,
-                "time_limit_minutes": assignment.time_limit_minutes
+                "show_immediate_feedback": assignment.show_immediate_feedback,
+                "time_limit_minutes": assignment.time_limit_minutes,
             }
         }
     except ValueError as e:
@@ -1414,3 +1417,82 @@ def test_create_student(student_data: CreateStudentRequest, db: Session = Depend
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Chyba při vytváření studenta: {str(e)}"
         )
+
+
+# ============================================================
+# STUDENTSKÉ ROZHRANÍ PRO TESTY
+# ============================================================
+from schemas import (
+    StudentAssignmentResponse, StartAttemptRequest, StartAttemptResponse, 
+    SaveAnswersRequest, SubmitAttemptResponse
+)
+
+@app.get("/api/student/assignments", response_model=list[StudentAssignmentResponse], tags=["Studentské Rozhraní"])
+def get_student_assignments_endpoint(
+    current_student: dict = Depends(require_student),
+    db: Session = Depends(get_db)
+):
+    """Získat seznam testů přiřazených studentovi (přes jeho skupiny)."""
+    return db_layer.get_student_assignments(db, current_student["user_id"])
+
+@app.post("/api/student/assignments/{assignment_id}/start", response_model=StartAttemptResponse, tags=["Studentské Rozhraní"])
+def start_student_attempt_endpoint(
+    assignment_id: int,
+    request: StartAttemptRequest = None,
+    current_student: dict = Depends(require_student),
+    db: Session = Depends(get_db)
+):
+    """Zahájit pokus o test."""
+    try:
+        pwd = request.access_password if request else None
+        attempt = db_layer.start_student_attempt(db, current_student["user_id"], assignment_id, pwd)
+        return attempt
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.put("/api/student/attempts/{attempt_id}/answers", tags=["Studentské Rozhraní"])
+def save_student_answers_endpoint(
+    attempt_id: int,
+    request: SaveAnswersRequest,
+    current_student: dict = Depends(require_student),
+    db: Session = Depends(get_db)
+):
+    """Průběžně uložit odpovědi."""
+    try:
+        db_layer.save_student_answers(db, current_student["user_id"], attempt_id, request.answers)
+        return {"success": True}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/api/student/attempts/{attempt_id}/submit", response_model=SubmitAttemptResponse, tags=["Studentské Rozhraní"])
+def submit_student_attempt_endpoint(
+    attempt_id: int,
+    request: SaveAnswersRequest = None,
+    current_student: dict = Depends(require_student),
+    db: Session = Depends(get_db)
+):
+    """Odevzdat test a provést automatické hodnocení."""
+    try:
+        final_answers = request.answers if request else None
+        attempt = db_layer.submit_student_attempt(db, current_student["user_id"], attempt_id, final_answers)
+        return attempt
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+# ============================================================
+# SSE (Server-Sent Events) ENDPOINTY
+# ============================================================
+from sse_starlette.sse import EventSourceResponse
+from sse_manager import sse_manager
+
+@app.get("/api/sse/teacher/assignments/{assignment_id}/progress", tags=["SSE"])
+async def sse_teacher_progress(assignment_id: int, current_teacher: dict = Depends(require_teacher)):
+    """SSE endpoint pro učitele ke sledování postupu studentů v testu v reálném čase."""
+    channel = f"teacher_assignment_{assignment_id}"
+    return EventSourceResponse(sse_manager.subscribe(channel))
+
+@app.get("/api/sse/student/attempts/{attempt_id}/feedback", tags=["SSE"])
+async def sse_student_feedback(attempt_id: int, current_student: dict = Depends(require_student)):
+    """SSE endpoint pro studenta k přijímání okamžité zpětné vazby (správně/špatně) na odpovězené otázky."""
+    channel = f"student_attempt_{attempt_id}"
+    return EventSourceResponse(sse_manager.subscribe(channel))
