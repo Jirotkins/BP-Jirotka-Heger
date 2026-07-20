@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../components/page_header_widget.dart';
 import '../../components/image_upload_widget.dart';
 import '../../services/api_client.dart';
+import '../questions_overview/questions_overview_provider.dart';
 
 class MultiChoiceQuestionPage extends ConsumerStatefulWidget {
   const MultiChoiceQuestionPage({super.key});
@@ -343,6 +344,7 @@ class _MultiChoiceQuestionPageState extends ConsumerState<MultiChoiceQuestionPag
               onPressed: () async {
                 final success = await _saveQuestion(bankId, questionId: questionId);
                 if (success && context.mounted) {
+                  ref.read(questionsOverviewProvider.notifier).refresh();
                   context.pop();
                 }
               },

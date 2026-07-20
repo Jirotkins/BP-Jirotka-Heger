@@ -3,8 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../services/api_client.dart';
-import '../test_evaluation/test_evaluation_page.dart';
+import 'class_manager_provider.dart';
 import '../../components/active_test_card_widget.dart';
 import '../../components/control_test_card_widget.dart';
 import '../../components/page_header_widget.dart';
@@ -19,10 +18,6 @@ class ClassManagerPage extends ConsumerStatefulWidget {
 }
 
 class _ClassManagerPageState extends ConsumerState<ClassManagerPage> {
-  bool _isLoading = true;
-  String? _errorMessage;
-  Map<String, dynamic>? _overviewData;
-  List<dynamic> _studentsData = [];
   int? _lastGroupId;
 
   @override
@@ -33,47 +28,38 @@ class _ClassManagerPageState extends ConsumerState<ClassManagerPage> {
     
     if (groupId != null && groupId != _lastGroupId) {
       _lastGroupId = groupId;
-      _fetchData(groupId);
-    } else if (groupId == null) {
-      setState(() {
-        _isLoading = false;
-        _errorMessage = 'Nebylo zadáno ID třídy (groupId).';
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(classManagerProvider.notifier).fetchData(groupId);
+      });
+    } else if (groupId == null && _lastGroupId == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(classManagerProvider.notifier).setGroupMissingError();
       });
     }
   }
 
-  Future<void> _fetchData(int groupId) async {
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      setState(() {
-        _isLoading = true;
-        _errorMessage = null;
-      });
-      try {
-        final apiClient = ref.read(apiClientProvider);
-        // Spustíme oba požadavky paralelně
-        final results = await Future.wait([
-          apiClient.get('/groups/$groupId/exam-assignments/overview'),
-          apiClient.get('/groups/$groupId/students'),
-        ]);
-        
-        setState(() {
-          _overviewData = results[0];
-          _studentsData = (results[1] as Map<String, dynamic>)['students'] as List<dynamic>? ?? [];
-          _isLoading = false;
-        });
-      } catch (e) {
-        setState(() {
-          _errorMessage = e.toString();
-          _isLoading = false;
-        });
-      }
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
+    final state = ref.watch(classManagerProvider);
+    final notifier = ref.read(classManagerProvider.notifier);
+    
     final args = GoRouterState.of(context).extra as Map<String, dynamic>?;
     final String className = args?['className'] ?? 'Neznámá třída';
+
+    // Ošetření zobrazení chyb přes SnackBar, aby UI nezůstalo zamrzlé v chybě napořád
+    ref.listen<ClassManagerState>(classManagerProvider, (previous, next) {
+      if (next.errorMessage != null && next.errorMessage != previous?.errorMessage) {
+        if (next.errorMessage != 'Nebylo zadáno ID třídy (groupId).') {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(next.errorMessage!),
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+          );
+        }
+        notifier.clearError();
+      }
+    });
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -93,7 +79,7 @@ class _ClassManagerPageState extends ConsumerState<ClassManagerPage> {
                       insetPadding: EdgeInsets.zero,
                       child: AddNewStudentsPopupWidget(
                         groupId: _lastGroupId!,
-                        onSuccess: () => _fetchData(_lastGroupId!),
+                        onSuccess: () => notifier.refresh(),
                       ),
                     ),
                   );
@@ -114,7 +100,7 @@ class _ClassManagerPageState extends ConsumerState<ClassManagerPage> {
               onPressed: () async {
                 await context.push('/testEditor', extra: {'targetName': className, 'groupId': _lastGroupId});
                 if (_lastGroupId != null) {
-                  _fetchData(_lastGroupId!);
+                  notifier.refresh();
                 }
               },
               icon: const Icon(Icons.post_add, size: 18),
@@ -131,11 +117,11 @@ class _ClassManagerPageState extends ConsumerState<ClassManagerPage> {
         ),
         
         Expanded(
-          child: _isLoading 
+          child: state.isLoading 
               ? Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary))
-              : _errorMessage != null
-                  ? Center(child: Text(_errorMessage!, style: TextStyle(color: Theme.of(context).colorScheme.error)))
-                  : _buildContent(),
+              : (state.errorMessage != null && state.errorMessage == 'Nebylo zadáno ID třídy (groupId).')
+                  ? Center(child: Text(state.errorMessage!, style: TextStyle(color: Theme.of(context).colorScheme.error)))
+                  : _buildContent(state, notifier),
         ),
       ],
     );
@@ -151,7 +137,7 @@ class _ClassManagerPageState extends ConsumerState<ClassManagerPage> {
     }
   }
 
-  void _showActivateDialog(int assignmentId) {
+  void _showActivateDialog(int assignmentId, ClassManagerNotifier notifier) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -169,18 +155,9 @@ class _ClassManagerPageState extends ConsumerState<ClassManagerPage> {
               foregroundColor: Theme.of(context).colorScheme.surface,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             ),
-            onPressed: () async {
+            onPressed: () {
               Navigator.pop(ctx);
-              setState(() => _isLoading = true);
-              try {
-                await ref.read(apiClientProvider).post('/exam-assignments/$assignmentId/activate', {});
-                if (_lastGroupId != null) _fetchData(_lastGroupId!);
-              } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Chyba: $e'), backgroundColor: Colors.red));
-                }
-                setState(() => _isLoading = false);
-              }
+              notifier.activateTest(assignmentId);
             },
             child: const Text('Spustit nyní'),
           ),
@@ -189,10 +166,10 @@ class _ClassManagerPageState extends ConsumerState<ClassManagerPage> {
     );
   }
 
-  Widget _buildContent() {
-    final activeTests = (_overviewData?['active'] as List?) ?? [];
-    final upcomingTests = (_overviewData?['upcoming'] as List?) ?? [];
-    final finishedTests = (_overviewData?['finished'] as List?) ?? [];
+  Widget _buildContent(ClassManagerState state, ClassManagerNotifier notifier) {
+    final activeTests = (state.overviewData?['active'] as List?) ?? [];
+    final upcomingTests = (state.overviewData?['upcoming'] as List?) ?? [];
+    final finishedTests = (state.overviewData?['finished'] as List?) ?? [];
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(32.0),
@@ -223,7 +200,7 @@ class _ClassManagerPageState extends ConsumerState<ClassManagerPage> {
                       width: 24, height: 24,
                       decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary, shape: BoxShape.circle),
                       alignment: Alignment.center,
-                      child: Text(_studentsData.length.toString(), style: GoogleFonts.inter(color: Theme.of(context).colorScheme.surface, fontSize: 12, fontWeight: FontWeight.bold)),
+                      child: Text(state.studentsData.length.toString(), style: GoogleFonts.inter(color: Theme.of(context).colorScheme.surface, fontSize: 12, fontWeight: FontWeight.bold)),
                     ),
                   ],
                 ),
@@ -232,14 +209,14 @@ class _ClassManagerPageState extends ConsumerState<ClassManagerPage> {
                   child: Text('Rozklikněte pro rozbalení seznamu studentů', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontSize: 12)),
                 ),
                 children: [
-                  if (_studentsData.isEmpty)
+                  if (state.studentsData.isEmpty)
                     Padding(
                       padding: const EdgeInsets.all(16.0),
                       child: Text('Zatím nejsou přidáni žádní studenti.', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary)),
                     )
                   else
                     Column(
-                      children: _studentsData.asMap().entries.map((entry) {
+                      children: state.studentsData.asMap().entries.map((entry) {
                         final index = entry.key;
                         final student = entry.value;
                         return Column(
@@ -251,7 +228,7 @@ class _ClassManagerPageState extends ConsumerState<ClassManagerPage> {
                                 studentName: student['email'] ?? 'Neznámý student',
                               ),
                             ),
-                            if (index < _studentsData.length - 1)
+                            if (index < state.studentsData.length - 1)
                               Divider(height: 1, color: Theme.of(context).colorScheme.outline, indent: 20, endIndent: 20),
                           ],
                         );
@@ -287,12 +264,12 @@ class _ClassManagerPageState extends ConsumerState<ClassManagerPage> {
             ...upcomingTests.map((test) {
               return Padding(
                 padding: const EdgeInsets.only(bottom: 16.0),
-                child: ActiveTestCard( // Můžeme zatím použít ActiveTestCard nebo vytvořit novou
+                child: ActiveTestCard( 
                   title: test['template_name'] ?? 'Neznámý test',
                   subtitle: test['activate_from'] != null ? 'Naplánováno na: ${_formatDate(test['activate_from'] as String?)}' : 'Čeká na manuální spuštění',
                   submittedCount: test['submitted_count'] ?? 0,
                   totalStudents: test['total_students'] ?? 0,
-                  onTap: () => _showActivateDialog(test['assignment_id']),
+                  onTap: () => _showActivateDialog(test['assignment_id'], notifier),
                 ),
               );
             }).toList(),

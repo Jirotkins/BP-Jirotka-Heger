@@ -14,14 +14,18 @@ class QuestionTypeMenuWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final customColors = Theme.of(context).extension<CustomColors>();
-    // ZÍSKÁNÍ DAT Z PARAMETRU (nikoliv přes router context uvnitř dialogu)
-    final String targetName = args?['targetName'] ?? 'Neznámá banka';
+    // ZÍSKÁNÍ DAT Z PARAMETRU
+    final String targetName = args?['targetName'] ?? args?['bankName'] ?? 'Neznámá banka';
 
-    // Pomocná funkce pro navigaci, která rovnou předá název banky dál
+    // Pomocná funkce pro navigaci
     void navigateToEditor(String routeName) {
-      context.push(
+      final updatedArgs = Map<String, dynamic>.from(args ?? {});
+      updatedArgs['targetName'] = targetName;
+      updatedArgs['bankName'] = targetName;
+      
+      context.pushReplacement(
         routeName,
-        extra: args,
+        extra: updatedArgs,
       );
     }
 

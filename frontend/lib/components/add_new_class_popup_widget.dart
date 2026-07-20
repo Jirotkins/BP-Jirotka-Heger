@@ -1,12 +1,9 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../services/api_client.dart';
+import '../pages/class_overview/class_overview_provider.dart';
 
 class AddNewClassPopupWidget extends ConsumerStatefulWidget {
-  final VoidCallback? onSuccess;
-
-  const AddNewClassPopupWidget({super.key, this.onSuccess});
+  const AddNewClassPopupWidget({super.key});
 
   @override
   ConsumerState<AddNewClassPopupWidget> createState() => _AddNewClassPopupWidgetState();
@@ -19,8 +16,7 @@ class _AddNewClassPopupWidgetState extends ConsumerState<AddNewClassPopupWidget>
   late FocusNode _subjectFocusNode;
 
   int _selectedIconIndex = 0;
-  bool _isSaving = false;
-  String? _errorMessage;
+  String? _localError;
 
   final List<IconData> _availableIcons = [
     Icons.menu_book_outlined,
@@ -50,45 +46,30 @@ class _AddNewClassPopupWidgetState extends ConsumerState<AddNewClassPopupWidget>
 
   Future<void> _saveClass() async {
     if (_nameController.text.trim().isEmpty) {
-      setState(() => _errorMessage = 'Název třídy je povinný.');
+      setState(() => _localError = 'Název třídy je povinný.');
       return;
     }
 
-    setState(() {
-      _isSaving = true;
-      _errorMessage = null;
-    });
-
-    try {
-      final apiClient = ref.read(apiClientProvider);
-      
-      final descriptionData = {
-        "subject": _subjectController.text.trim().isEmpty 
-            ? 'Předmět neuveden' 
-            : _subjectController.text.trim(),
-        "icon": _availableIcons[_selectedIconIndex].codePoint.toString(),
-      };
-
-      // Voláme API POST /groups
-      await apiClient.post('/groups', {
-        'name': _nameController.text.trim(),
-        'description': jsonEncode(descriptionData),
-      });
-      
-      if (mounted) {
-        Navigator.of(context).pop();
-        widget.onSuccess?.call(); // Upozorníme nadřazený widget na úspěch
-      }
-    } catch (e) {
-      setState(() {
-        _errorMessage = 'Chyba: ${e.toString()}';
-        _isSaving = false;
-      });
+    setState(() => _localError = null);
+    
+    // Uložit přes provider
+    await ref.read(classOverviewProvider.notifier).addGroup(
+      _nameController.text.trim(),
+      _subjectController.text.trim(),
+      _availableIcons[_selectedIconIndex],
+    );
+    
+    // Pokud nenastala žádná chyba, zavřít okno
+    if (mounted && ref.read(classOverviewProvider).errorMessage == null) {
+      Navigator.of(context).pop();
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final state = ref.watch(classOverviewProvider);
+    final errorToShow = _localError ?? state.errorMessage;
+
     return Container(
       width: 400.0,
       decoration: BoxDecoration(
@@ -107,24 +88,24 @@ class _AddNewClassPopupWidgetState extends ConsumerState<AddNewClassPopupWidget>
           ),
           const SizedBox(height: 24.0),
 
-          if (_errorMessage != null) ...[
+          if (errorToShow != null) ...[
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(color: Theme.of(context).colorScheme.errorContainer, borderRadius: BorderRadius.circular(8)),
-              child: Text(_errorMessage!, style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer, fontSize: 13)),
+              child: Text(errorToShow, style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer, fontSize: 13)),
             ),
             const SizedBox(height: 16.0),
           ],
 
           _buildInputLabel('Název'),
           const SizedBox(height: 6.0),
-          _buildTextField(_nameController, _nameFocusNode, 'Zadejte název (např. 1.A)'),
+          _buildTextField(_nameController, _nameFocusNode, 'Zadejte název (např. 1.A)', state.isLoading),
           
           const SizedBox(height: 16.0),
 
           _buildInputLabel('Předmět'),
           const SizedBox(height: 6.0),
-          _buildTextField(_subjectController, _subjectFocusNode, 'Zadejte předmět (volitelné)'),
+          _buildTextField(_subjectController, _subjectFocusNode, 'Zadejte předmět (volitelné)', state.isLoading),
 
           const SizedBox(height: 16.0),
 
@@ -164,7 +145,10 @@ class _AddNewClassPopupWidgetState extends ConsumerState<AddNewClassPopupWidget>
             children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: _isSaving ? null : () => Navigator.of(context).pop(),
+                  onPressed: state.isLoading ? null : () {
+                    ref.read(classOverviewProvider.notifier).clearError();
+                    Navigator.of(context).pop();
+                  },
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16.0),
                     side: BorderSide(color: Theme.of(context).colorScheme.outline),
@@ -176,14 +160,14 @@ class _AddNewClassPopupWidgetState extends ConsumerState<AddNewClassPopupWidget>
               const SizedBox(width: 12.0),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: _isSaving ? null : _saveClass,
+                  onPressed: state.isLoading ? null : _saveClass,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Theme.of(context).colorScheme.primary,
                     padding: const EdgeInsets.symmetric(vertical: 16.0),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     elevation: 0,
                   ),
-                  child: _isSaving
+                  child: state.isLoading
                       ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Theme.of(context).colorScheme.surface, strokeWidth: 2))
                       : Text('Uložit', style: TextStyle(color: Theme.of(context).colorScheme.surface, fontWeight: FontWeight.bold)),
                 ),
@@ -199,11 +183,11 @@ class _AddNewClassPopupWidgetState extends ConsumerState<AddNewClassPopupWidget>
     return Text(label, style: TextStyle(color: Theme.of(context).colorScheme.secondary, fontWeight: FontWeight.w600, fontSize: 13.0));
   }
 
-  Widget _buildTextField(TextEditingController controller, FocusNode focusNode, String hint) {
+  Widget _buildTextField(TextEditingController controller, FocusNode focusNode, String hint, bool isSaving) {
     return TextFormField(
       controller: controller,
       focusNode: focusNode,
-      enabled: !_isSaving,
+      enabled: !isSaving,
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: TextStyle(color: Theme.of(context).colorScheme.secondary, fontSize: 14.0),

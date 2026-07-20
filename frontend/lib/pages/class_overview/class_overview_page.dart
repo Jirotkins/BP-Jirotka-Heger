@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../services/api_client.dart';
+import 'class_overview_provider.dart';
 import '../../components/page_header_widget.dart';
 import '../../components/add_new_class_popup_widget.dart';
 import '../../components/class_card_widget.dart';
@@ -15,40 +15,32 @@ class ClassOverviewPage extends ConsumerStatefulWidget {
 }
 
 class _ClassOverviewPageState extends ConsumerState<ClassOverviewPage> {
-  bool _isLoading = true;
-  String? _errorMessage;
-  List<dynamic> _groups = [];
 
   @override
   void initState() {
     super.initState();
-    _fetchGroups();
-  }
-
-  Future<void> _fetchGroups() async {
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      setState(() {
-        _isLoading = true;
-        _errorMessage = null;
-      });
-      try {
-        final apiClient = ref.read(apiClientProvider);
-        final response = await apiClient.get('/groups');
-        setState(() {
-          _groups = response['groups'] ?? [];
-          _isLoading = false;
-        });
-      } catch (e) {
-        setState(() {
-          _errorMessage = e.toString();
-          _isLoading = false;
-        });
-      }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(classOverviewProvider.notifier).fetchGroups();
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final state = ref.watch(classOverviewProvider);
+    final notifier = ref.read(classOverviewProvider.notifier);
+
+    ref.listen<ClassOverviewState>(classOverviewProvider, (previous, next) {
+      if (next.errorMessage != null && next.errorMessage != previous?.errorMessage) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(next.errorMessage!),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+        notifier.clearError();
+      }
+    });
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -66,11 +58,7 @@ class _ClassOverviewPageState extends ConsumerState<ClassOverviewPage> {
                     elevation: 0,
                     backgroundColor: Colors.transparent,
                     insetPadding: EdgeInsets.zero,
-                    child: AddNewClassPopupWidget(
-                      onSuccess: () {
-                        _fetchGroups();
-                      },
-                    ),
+                    child: const AddNewClassPopupWidget(),
                   ),
                 );
               },
@@ -93,86 +81,65 @@ class _ClassOverviewPageState extends ConsumerState<ClassOverviewPage> {
 
         // --- SEKCE S KARTAMI ---
         Expanded(
-          child: _isLoading
+          child: state.isLoading && state.groups.isEmpty
               ? Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary))
-              : _errorMessage != null
+              : state.groups.isEmpty
                   ? Center(
                       child: Text(
-                        _errorMessage!,
-                        style: TextStyle(color: Theme.of(context).colorScheme.error),
+                        'Zatím nemáte vytvořenou žádnou třídu.\nKlikněte na tlačítko "Přidat novou třídu" vpravo nahoře.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Theme.of(context).colorScheme.secondary, fontSize: 16.0),
                       ),
                     )
-                  : _groups.isEmpty
-                      ? Center(
-                          child: Text(
-                            'Zatím nemáte žádné třídy.',
-                            style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontSize: 16),
-                          ),
-                        )
-                      : SingleChildScrollView(
-                          padding: const EdgeInsets.all(24.0),
-                          child: LayoutBuilder(
-                            builder: (context, constraints) {
-                              
-                              // Výpočet přesné šířky karty
-                              double cardWidth;
-                              if (constraints.maxWidth >= 1200) {
-                                // Velké monitory: 3 karty vedle sebe (2 mezery po 24px)
-                                cardWidth = (constraints.maxWidth - (2 * 24.0)) / 3;
-                              } else if (constraints.maxWidth >= 700) {
-                                // Střední monitory/tablety: 2 karty vedle sebe
-                                cardWidth = (constraints.maxWidth - 24.0) / 2;
-                              } else {
-                                // Mobily: 1 karta na plnou šířku
-                                cardWidth = constraints.maxWidth;
-                              }
-
-                              return Wrap(
-                                spacing: 24.0, // Horizontální mezera
-                                runSpacing: 24.0, // Vertikální mezera
-                                children: List.generate(_groups.length, (index) {
-                                  final group = _groups[index];
-                                  
-                                  // Parsování JSON popisku
-                                  String parsedSubject = 'Předmět neuveden';
-                                  IconData parsedIcon = Icons.school_outlined;
-                                  
-                                  try {
-                                    final descStr = group['description']?.toString() ?? '';
-                                    if (descStr.startsWith('{')) {
-                                      final descMap = jsonDecode(descStr) as Map<String, dynamic>;
-                                      parsedSubject = descMap['subject'] ?? 'Předmět neuveden';
-                                      if (descMap['icon'] != null) {
-                                        parsedIcon = IconData(int.parse(descMap['icon']), fontFamily: 'MaterialIcons');
-                                      }
-                                    } else if (descStr.isNotEmpty) {
-                                      parsedSubject = descStr;
-                                    }
-                                  } catch (_) {
-                                    // Pokud to není JSON, použije se výchozí nastavení nebo původní string (který je už ošetřen výše)
-                                    final descStr = group['description']?.toString() ?? '';
-                                    if (descStr.isNotEmpty && !descStr.startsWith('{')) {
-                                      parsedSubject = descStr;
-                                    }
-                                  }
-
-                                  return SizedBox(
-                                    width: cardWidth,
-                                    child: ClassCardWidget(
-                                      groupId: group['group_id'] as int,
-                                      title: group['name'] as String,
-                                      subject: parsedSubject,
-                                      studentCount: group['student_count'] as int,
-                                      activeTestCount: group['active_assignment_count'] as int,
-                                      testsToControl: group['pending_grade_count'] as int,
-                                      icon: Icon(parsedIcon, color: Theme.of(context).colorScheme.primary, size: 28),
-                                    ),
-                                  );
-                                }),
-                              );
-                            },
-                          ),
+                  : RefreshIndicator(
+                      onRefresh: () async => notifier.fetchGroups(),
+                      child: GridView.builder(
+                        padding: const EdgeInsets.all(32.0),
+                        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                          maxCrossAxisExtent: 400.0,
+                          mainAxisExtent: 210.0,
+                          crossAxisSpacing: 24.0,
+                          mainAxisSpacing: 24.0,
                         ),
+                        itemCount: state.groups.length,
+                        itemBuilder: (context, index) {
+                          final g = state.groups[index];
+
+                          // Pokus o rozparsování description jako JSON, kvůli uložení ikony a předmětu
+                          String subject = 'Neznámý předmět';
+                          IconData displayIcon = Icons.menu_book_outlined;
+
+                          try {
+                            if (g['description'] != null && g['description'].toString().startsWith('{')) {
+                              final descMap = jsonDecode(g['description']);
+                              if (descMap['subject'] != null) {
+                                subject = descMap['subject'];
+                              }
+                              if (descMap['icon'] != null) {
+                                int codePoint = int.tryParse(descMap['icon'].toString()) ?? 0;
+                                if (codePoint != 0) {
+                                  displayIcon = IconData(codePoint, fontFamily: 'MaterialIcons');
+                                }
+                              }
+                            } else if (g['description'] != null && g['description'].toString().trim().isNotEmpty) {
+                              subject = g['description'];
+                            }
+                          } catch (e) {
+                            print('Nelze rozparsovat JSON z description: $e');
+                          }
+
+                          return ClassCardWidget(
+                            groupId: g['group_id'],
+                            title: g['name'] ?? 'Neznámý název',
+                            subject: subject,
+                            icon: Icon(displayIcon, color: Theme.of(context).colorScheme.primary, size: 28),
+                            studentCount: g['student_count'] ?? 0,
+                            activeTestCount: g['active_assignment_count'] ?? 0,
+                            testsToControl: g['pending_grade_count'] ?? 0,
+                          );
+                        },
+                      ),
+                    ),
         ),
       ],
     );

@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'questions_overview_provider.dart';
 import '../../components/page_header_widget.dart';
 import '../../components/question_row_widget.dart';
-import '../../services/api_client.dart';
 
 class QuestionsOverviewPage extends ConsumerStatefulWidget {
   final int bankId;
@@ -21,60 +21,15 @@ class QuestionsOverviewPage extends ConsumerStatefulWidget {
 }
 
 class _QuestionsOverviewPageState extends ConsumerState<QuestionsOverviewPage> {
-  List<Map<String, dynamic>> _questionsData = [];
-  bool _isLoading = true;
-  String? _errorMessage;
-
   @override
   void initState() {
     super.initState();
-    _fetchQuestions();
-  }
-
-  Future<void> _fetchQuestions() async {
-    if (widget.bankId == 0) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(questionsOverviewProvider.notifier).fetchQuestions(widget.bankId);
     });
-
-    try {
-      final apiClient = ref.read(apiClientProvider);
-      final data = await apiClient.get('/banks/${widget.bankId}/questions');
-      
-      if (mounted) {
-        final questions = data['questions'] as List? ?? [];
-        setState(() {
-          _questionsData = questions.map((q) {
-            return {
-              'id': q['question_id'],
-              'question': q['text'] ?? 'Prázdná otázka',
-              'type': q['type'] ?? 'Neznámý typ',
-              'raw': q,
-            };
-          }).toList();
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _errorMessage = 'Chyba při načítání otázek: $e';
-          _isLoading = false;
-        });
-      }
-    }
   }
 
-  Future<void> _deleteQuestion(int questionId) async {
+  Future<void> _deleteQuestion(int questionId, QuestionsOverviewNotifier notifier) async {
     // 1. Zobrazit potvrzovací dialog
     final bool? confirm = await showDialog<bool>(
       context: context,
@@ -100,45 +55,44 @@ class _QuestionsOverviewPageState extends ConsumerState<QuestionsOverviewPage> {
       },
     );
 
-    if (confirm != true) return;
-
-    try {
-      final apiClient = ref.read(apiClientProvider);
-      // Zavoláme delete (i když backend endpoint zatím možná chybí)
-      await apiClient.delete('/banks/${widget.bankId}/questions/$questionId');
-
-      if (mounted) {
-        setState(() {
-          _questionsData.removeWhere((q) => q['id'] == questionId);
-        });
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Otázka byla úspěšně smazána'), backgroundColor: Colors.green));
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Chyba při mazání: $e'), backgroundColor: Theme.of(context).colorScheme.error));
-      }
+    if (confirm == true) {
+      notifier.deleteQuestion(questionId);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final state = ref.watch(questionsOverviewProvider);
+    final notifier = ref.read(questionsOverviewProvider.notifier);
+
+    ref.listen<QuestionsOverviewState>(questionsOverviewProvider, (previous, next) {
+      if (next.errorMessage != null && next.errorMessage != previous?.errorMessage) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(next.errorMessage!),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+        notifier.clearError();
+      }
+    });
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // --- DYNAMICKÁ HLAVIČKA ---
+        // --- HLAVIČKA ---
         PageHeaderWidget(
-          title: widget.bankName, 
+          title: 'Banka: ${widget.bankName}',
           actions: [
-            // TLAČÍTKO: Přidat novou otázku 
             ElevatedButton.icon(
               onPressed: () {
-                // Přesměrování na tvorbu otázky s předáním názvu banky
                 context.push('/addNewQuestion', extra: {
-                  'targetName': widget.bankName, 
+                  'targetName': widget.bankName,
+                  'bankName': widget.bankName,
                   'bankId': widget.bankId,
                 });
               },
-              icon: const Icon(Icons.add_circle_outline, size: 18),
+              icon: const Icon(Icons.add_circle_outline, size: 18.0),
               label: Text(
                 'Přidat novou otázku',
                 style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14),
@@ -155,59 +109,56 @@ class _QuestionsOverviewPageState extends ConsumerState<QuestionsOverviewPage> {
           ],
         ),
 
-        // --- HLAVNÍ PLOCHA (SEZNAM OTÁZEK) ---
+        // --- OBSAH (SEZNAM OTÁZEK) ---
         Expanded(
-          child: Padding(
-            padding: const EdgeInsets.all(32.0),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.circular(16.0),
-                border: Border.all(color: Theme.of(context).colorScheme.outline, width: 1.0),
-                boxShadow: [
-                  BoxShadow(
-                    blurRadius: 10.0,
-                    color: Colors.black.withValues(alpha: 0.02),
-                    offset: const Offset(0, 4),
-                  )
-                ],
-              ),
-              child: _isLoading
-                  ? Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary))
-                  : _errorMessage != null
-                      ? Center(child: Text(_errorMessage!, style: TextStyle(color: Theme.of(context).colorScheme.error)))
-                      : _questionsData.isEmpty
-                          ? Center(
-                              child: Text(
-                                'Zatím nemáte v této bance žádné otázky.',
-                                style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontSize: 16),
-                              ),
-                            )
-                          : ListView.separated(
-                              padding: const EdgeInsets.all(24.0),
-                              itemCount: _questionsData.length,
-                              separatorBuilder: (context, index) => Divider(
-                                height: 32.0, // Mezera kolem čáry
-                                thickness: 1.0,
-                                color: Theme.of(context).colorScheme.outline, 
-                              ),
-                              itemBuilder: (context, index) {
-                                final questionData = _questionsData[index];
-                                return QuestionRowWidget(
-                                  id: questionData['id'],
-                                  question: questionData['question'],
-                                  type: questionData['type'],
-                                  bankId: widget.bankId,
-                                  targetName: widget.bankName,
-                                  questionData: questionData['raw'],
-                                  onDelete: () => _deleteQuestion(questionData['id']),
-                                );
-                              },
-                            ),
-            ),
-          ),
+          child: state.isLoading && state.questions.isEmpty
+              ? Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary))
+              : state.questions.isEmpty
+                  ? Center(
+                      child: Text(
+                        'Tato banka zatím neobsahuje žádné otázky.\nKlikněte na tlačítko "Přidat novou otázku" vpravo nahoře.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Theme.of(context).colorScheme.secondary, fontSize: 16.0),
+                      ),
+                    )
+                  : RefreshIndicator(
+                      onRefresh: () async => notifier.fetchQuestions(widget.bankId),
+                      child: ListView.separated(
+                        padding: const EdgeInsets.all(32.0),
+                        itemCount: state.questions.length,
+                        separatorBuilder: (context, index) => const SizedBox(height: 12.0),
+                        itemBuilder: (context, index) {
+                          final q = state.questions[index];
+                          return QuestionRowWidget(
+                            id: q['id'] as int,
+                            question: q['question'] as String,
+                            type: q['type'] as String,
+                            bankId: widget.bankId,
+                            targetName: widget.bankName,
+                            questionData: q['raw'],
+                            onDelete: () => _deleteQuestion(q['id'] as int, notifier),
+                          );
+                        },
+                      ),
+                    ),
         ),
       ],
     );
+  }
+
+
+
+  String _getTypeLabel(String rawType) {
+    switch (rawType) {
+      case 'SINGLE_CHOICE':
+      case 'MULTI_CHOICE':
+        return 'Výběr možností';
+      case 'OPEN_TEXT':
+        return 'Otevřená otázka';
+      case 'ORDERING':
+        return 'Seřazování';
+      default:
+        return 'Neznámý typ ($rawType)';
+    }
   }
 }

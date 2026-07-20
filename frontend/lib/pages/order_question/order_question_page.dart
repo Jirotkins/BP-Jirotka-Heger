@@ -6,6 +6,7 @@ import '../../components/page_header_widget.dart';
 import '../../components/image_upload_widget.dart';
 import '../../services/api_client.dart';
 import '../../theme/app_themes.dart';
+import '../questions_overview/questions_overview_provider.dart';
 
 class OrderQuestionPage extends ConsumerStatefulWidget {
   const OrderQuestionPage({super.key});
@@ -289,6 +290,7 @@ class _OrderQuestionPageState extends ConsumerState<OrderQuestionPage> {
               onPressed: () async {
                 final success = await _saveQuestion(bankId, questionId: questionId);
                 if (success && context.mounted) {
+                  ref.read(questionsOverviewProvider.notifier).refresh();
                   context.pop();
                 }
               },

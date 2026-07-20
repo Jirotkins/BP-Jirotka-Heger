@@ -143,27 +143,33 @@ class ClassCardWidget extends StatelessWidget {
   }
 
   Widget _buildStatColumn(BuildContext context, String label, String value, Color valueColor) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center, 
-      children: [
-        Text(
-          label,
-          style: GoogleFonts.inter(
-            color: Theme.of(context).colorScheme.secondary,
-            fontSize: 11.0,
-            fontWeight: FontWeight.w500,
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center, 
+        children: [
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.inter(
+              color: Theme.of(context).colorScheme.secondary,
+              fontSize: 11.0,
+              fontWeight: FontWeight.w500,
+            ),
           ),
-        ),
-        const SizedBox(height: 4.0),
-        Text(
-          value,
-          style: GoogleFonts.inter(
-            color: valueColor,
-            fontSize: 18.0,
-            fontWeight: FontWeight.w800,
+          const SizedBox(height: 4.0),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.inter(
+              color: valueColor,
+              fontSize: 18.0,
+              fontWeight: FontWeight.w800,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'student_overview_provider.dart';
 import '../../components/subject_card_widget.dart';
-import '../../services/api_client.dart';
 
 // Úvodní domovská obrazovka studenta (Dashboard).
 // Slouží jako rozcestník pro probíhající testy a přehled zapsaných předmětů.
@@ -16,75 +16,19 @@ class StudentOverviewPage extends ConsumerStatefulWidget {
 
 class _StudentOverviewPageState extends ConsumerState<StudentOverviewPage> {
   final scaffoldKey = GlobalKey<ScaffoldState>();
-  
-  bool _isLoading = true;
-  String? _errorMessage;
-
-  List<Map<String, dynamic>> _activeTests = [];
-  List<Map<String, dynamic>> _mySubjects = [];
 
   @override
   void initState() {
     super.initState();
-    _fetchDashboardData();
-  }
-
-  Future<void> _fetchDashboardData() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
-    try {
-      final apiClient = ref.read(apiClientProvider);
-      
-      // Pokus o stažení dat z backendu (endpoint momentálně neexistuje, viz requirement 8)
-      final response = await apiClient.get('/student/dashboard');
-      
-      // Pokud by endpoint někdy ožil a vrátil data:
-      setState(() {
-        _activeTests = List<Map<String, dynamic>>.from(response['active_tests'] ?? []);
-        _mySubjects = List<Map<String, dynamic>>.from(response['subjects'] ?? []);
-        _isLoading = false;
-      });
-    } catch (e) {
-      // Backend to zatím neumí -> spadneme do fallbacku (mock data)
-      _useFallbackMockData();
-    }
-  }
-
-  void _useFallbackMockData() {
-    setState(() {
-      _activeTests = [
-        {
-          'id': 999, // ID přiřazení (assignmentId)
-          'title': 'Matematika – Funkce',
-          'deadline': 'Dnes 23:59',
-          'expiresIn': '45 min',
-        }
-      ];
-
-      _mySubjects = [
-        {
-          'id': 'sub_1', 'code': 'MA', 'name': 'Matematika', 'teacher': 'Ing. Petr Svoboda', 
-          'color': const Color(0xFF4285F4), 'testCount': 3, 'status': 'active', 'timeText': 'Vyprší 45 min'
-        },
-        {
-          'id': 'sub_2', 'code': 'FY', 'name': 'Fyzika', 'teacher': 'doc. Jana Horáková', 
-          'color': const Color(0xFF34A853), 'testCount': 2, 'status': 'upcoming', 'timeText': 'Za 2 dny'
-        },
-        {
-          'id': 'sub_3', 'code': 'CH', 'name': 'Chemie', 'teacher': 'Mgr. Tomáš Blažek', 
-          'color': const Color(0xFFAB47DB), 'testCount': 4, 'status': 'none', 'timeText': 'Vše ohodnoceno'
-        },
-      ];
-      _isLoading = false;
-      _errorMessage = 'Nepodařilo se načíst data z API, používám ukázková data.';
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(studentOverviewProvider.notifier).fetchDashboardData();
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final state = ref.watch(studentOverviewProvider);
+
     return Scaffold(
       key: scaffoldKey,
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -109,7 +53,7 @@ class _StudentOverviewPageState extends ConsumerState<StudentOverviewPage> {
       ),
       
       // --- TĚLO STRÁNKY ---
-      body: _isLoading 
+      body: state.isLoading 
         ? Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary))
         : SafeArea(
             child: SingleChildScrollView(
@@ -117,12 +61,20 @@ class _StudentOverviewPageState extends ConsumerState<StudentOverviewPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              
+              if (state.errorMessage != null) ...[
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(color: Theme.of(context).colorScheme.errorContainer, borderRadius: BorderRadius.circular(8)),
+                  child: Text(state.errorMessage!, style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer, fontSize: 13)),
+                ),
+                const SizedBox(height: 16.0),
+              ],
+
               // 1. SEKCE: AKTIVNÍ TESTY (Prioritní, vyžadují akci)
-              _buildSectionHeader('Aktivní testy', _activeTests.length, Theme.of(context).colorScheme.error),
+              _buildSectionHeader('Aktivní testy', state.activeTests.length, Theme.of(context).colorScheme.error),
               const SizedBox(height: 16),
               // Vykreslí všechny probíhající testy jako velké červené karty
-              ..._activeTests.map((test) => _buildActiveTestCard(test)).toList(),
+              ...state.activeTests.map((test) => _buildActiveTestCard(test)).toList(),
 
               const SizedBox(height: 32),
 
@@ -131,15 +83,15 @@ class _StudentOverviewPageState extends ConsumerState<StudentOverviewPage> {
               const SizedBox(height: 16),
               
               // Mapování pole předmětů z API na naši univerzální komponentu
-              ..._mySubjects.map((sub) => SubjectCardWidget(
-                id: sub['id'],
-                code: sub['code'],
-                name: sub['name'],
-                teacher: sub['teacher'],
-                color: sub['color'],
-                testCount: sub['testCount'],
-                status: sub['status'],
-                timeText: sub['timeText'],
+              ...state.mySubjects.map((sub) => SubjectCardWidget(
+                id: sub['id'].toString(),
+                code: sub['code']?.toString() ?? '',
+                name: sub['name']?.toString() ?? '',
+                teacher: sub['teacher']?.toString() ?? '',
+                color: sub['color'] as Color? ?? Colors.blue,
+                testCount: (sub['testCount'] as int?) ?? 0,
+                status: sub['status']?.toString() ?? '',
+                timeText: sub['timeText']?.toString() ?? '',
               )).toList(),
               
               const SizedBox(height: 20),
@@ -199,7 +151,7 @@ class _StudentOverviewPageState extends ConsumerState<StudentOverviewPage> {
               children: [
                 Text('Probíhá', style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
                 const SizedBox(height: 2),
-                Text(test['title'], style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16, color: Theme.of(context).colorScheme.onSurface)),
+                Text(test['title'] ?? '', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16, color: Theme.of(context).colorScheme.onSurface)),
                 const SizedBox(height: 2),
                 Text('Dostupný do: ${test['deadline']}', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontSize: 12)),
               ],
@@ -213,7 +165,7 @@ class _StudentOverviewPageState extends ConsumerState<StudentOverviewPage> {
                 children: [
                   Icon(Icons.schedule, color: Theme.of(context).colorScheme.error, size: 14),
                   const SizedBox(width: 4),
-                  Text(test['expiresIn'], style: GoogleFonts.inter(color: Theme.of(context).colorScheme.error, fontSize: 12, fontWeight: FontWeight.bold)),
+                  Text(test['expiresIn'] ?? '', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.error, fontSize: 12, fontWeight: FontWeight.bold)),
                 ],
               ),
               const SizedBox(height: 12),

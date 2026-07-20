@@ -1,12 +1,11 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'bank_overview_provider.dart';
 import '../../components/page_header_widget.dart';
 import '../../components/add_new_bank_popup_widget.dart';
 import '../../components/bank_card_widget.dart';
-import '../../services/api_client.dart';
 
 class BankOverviewPage extends ConsumerStatefulWidget {
   const BankOverviewPage({super.key});
@@ -16,79 +15,31 @@ class BankOverviewPage extends ConsumerStatefulWidget {
 }
 
 class _BankOverviewPageState extends ConsumerState<BankOverviewPage> {
-  List<Map<String, dynamic>> _banksData = [];
-  bool _isLoading = true;
-  String? _errorMessage;
-
-  final List<IconData> _availableIcons = [
-    Icons.menu_book_outlined,
-    Icons.calculate_outlined,
-    Icons.science_outlined,
-    Icons.history_edu_outlined,
-    Icons.public_outlined,
-  ];
-
   @override
   void initState() {
     super.initState();
-    _fetchBanks();
-  }
-
-  Future<void> _fetchBanks() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(bankOverviewProvider.notifier).fetchBanks();
     });
-
-    try {
-      final apiClient = ref.read(apiClientProvider);
-      final data = await apiClient.get('/banks');
-      
-      if (mounted) {
-        final banks = data['banks'] as List;
-        setState(() {
-          final banksData = <Map<String, dynamic>>[];
-          
-          for (var b in banks) {
-            String subject = 'Neznámý předmět';
-            int iconIndex = 0;
-            try {
-              final desc = json.decode(b['description'] ?? '{}');
-              subject = desc['subject'] ?? 'Neznámý předmět';
-              iconIndex = desc['iconIndex'] ?? 0;
-            } catch (_) {
-              subject = b['description'] ?? 'Neznámý předmět';
-            }
-            
-            if (iconIndex < 0 || iconIndex >= _availableIcons.length) {
-              iconIndex = 0;
-            }
-
-            banksData.add({
-              'id': b['bank_id'],
-              'title': b['name'] ?? 'Neznámý název',
-              'subject': subject,
-              'icon': _availableIcons[iconIndex],
-              'questionCount': 0, // Čekáme na backend, až bude vracet počet otázek
-            });
-          }
-
-          _banksData = banksData;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _errorMessage = 'Chyba při načítání bank: $e';
-          _isLoading = false;
-        });
-      }
-    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final state = ref.watch(bankOverviewProvider);
+    final notifier = ref.read(bankOverviewProvider.notifier);
+
+    ref.listen<BankOverviewState>(bankOverviewProvider, (previous, next) {
+      if (next.errorMessage != null && next.errorMessage != previous?.errorMessage) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(next.errorMessage!),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+        notifier.clearError();
+      }
+    });
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -101,13 +52,11 @@ class _BankOverviewPageState extends ConsumerState<BankOverviewPage> {
                 showDialog(
                   context: context,
                   barrierColor: Colors.black54,
-                  builder: (_) => Dialog(
+                  builder: (dialogContext) => Dialog(
                     elevation: 0,
                     backgroundColor: Colors.transparent,
                     insetPadding: EdgeInsets.zero,
-                    child: AddNewBankPopupWidget(
-                      onSuccess: () => _fetchBanks(),
-                    ),
+                    child: const AddNewBankPopupWidget(),
                   ),
                 );
               },
@@ -127,65 +76,42 @@ class _BankOverviewPageState extends ConsumerState<BankOverviewPage> {
             ),
           ],
         ),
-        
+
         // --- SEKCE S KARTAMI ---
         Expanded(
-          child: _isLoading
+          child: state.isLoading && state.banks.isEmpty
               ? Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary))
-              : _errorMessage != null
-                  ? Center(child: Text(_errorMessage!, style: const TextStyle(color: Colors.red)))
-                  : _banksData.isEmpty
-                      ? Center(
-                          child: Text(
-                            'Zatím nemáte vytvořené žádné banky otázek.',
-                            style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontSize: 16),
-                          ),
-                        )
-                      : SingleChildScrollView(
-                          padding: const EdgeInsets.all(24.0),
-                          child: LayoutBuilder(
-                            builder: (context, constraints) {
-                              double cardWidth;
-                              if (constraints.maxWidth >= 1200) {
-                                cardWidth = (constraints.maxWidth - (2 * 24.0)) / 3;
-                              } else if (constraints.maxWidth >= 700) {
-                                cardWidth = (constraints.maxWidth - 24.0) / 2;
-                              } else {
-                                cardWidth = constraints.maxWidth;
-                              }
-
-                              return Wrap(
-                                spacing: 24.0,
-                                runSpacing: 24.0,
-                                children: List.generate(_banksData.length, (index) {
-                                  final bankData = _banksData[index];
-                                  return SizedBox(
-                                    width: cardWidth,
-                                    child: InkWell(
-                                      borderRadius: BorderRadius.circular(16.0),
-                                      onTap: () {
-                                        context.push(
-                                          '/questionsOverview',
-                                          extra: {
-                                            'bankId': bankData['id'],
-                                            'bankName': bankData['title'],
-                                          },
-                                        );
-                                      },
-                                      child: BankCardWidget(
-                                        id: bankData['id'],
-                                        title: bankData['title'] as String,
-                                        subject: bankData['subject'] as String,
-                                        questionCount: bankData['questionCount'] as int,
-                                        icon: Icon(bankData['icon'] as IconData, color: Theme.of(context).colorScheme.primary, size: 28),
-                                      ),
-                                    ),
-                                  );
-                                }),
-                              );
-                            },
-                          ),
+              : state.banks.isEmpty
+                  ? Center(
+                      child: Text(
+                        'Zatím nemáte vytvořenou žádnou banku.\nKlikněte na tlačítko "Přidat novou banku" vpravo nahoře.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Theme.of(context).colorScheme.secondary, fontSize: 16.0),
+                      ),
+                    )
+                  : RefreshIndicator(
+                      onRefresh: () async => notifier.fetchBanks(),
+                      child: GridView.builder(
+                        padding: const EdgeInsets.all(32.0),
+                        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                          maxCrossAxisExtent: 400.0,
+                          mainAxisExtent: 210.0,
+                          crossAxisSpacing: 24.0,
+                          mainAxisSpacing: 24.0,
                         ),
+                        itemCount: state.banks.length,
+                        itemBuilder: (context, index) {
+                          final bank = state.banks[index];
+                          return BankCardWidget(
+                            id: bank['id'],
+                            title: bank['title'],
+                            subject: bank['subject'],
+                            icon: Icon(bank['icon'], color: Theme.of(context).colorScheme.primary, size: 28),
+                            questionCount: bank['questionCount'],
+                          );
+                        },
+                      ),
+                    ),
         ),
       ],
     );

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../components/page_header_widget.dart';
 import '../../components/image_upload_widget.dart';
 import '../../services/api_client.dart';
+import '../questions_overview/questions_overview_provider.dart';
 
 class ShortAnswerQuestionPage extends ConsumerStatefulWidget {
   const ShortAnswerQuestionPage({super.key});
@@ -254,6 +255,7 @@ class _ShortAnswerQuestionPageState extends ConsumerState<ShortAnswerQuestionPag
               onPressed: () async {
                 final success = await _saveQuestion(bankId, questionId: questionId);
                 if (success && context.mounted) {
+                  ref.read(questionsOverviewProvider.notifier).refresh();
                   context.pop();
                 }
               },
