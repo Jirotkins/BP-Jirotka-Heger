@@ -4,14 +4,14 @@ import '../../components/page_header_widget.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
 
-class SettingsTeacherWidget extends ConsumerStatefulWidget {
-  const SettingsTeacherWidget({super.key});
+class SettingsTeacherPage extends ConsumerStatefulWidget {
+  const SettingsTeacherPage({super.key});
 
   @override
-  ConsumerState<SettingsTeacherWidget> createState() => _SettingsTeacherWidgetState();
+  ConsumerState<SettingsTeacherPage> createState() => _SettingsTeacherPageState();
 }
 
-class _SettingsTeacherWidgetState extends ConsumerState<SettingsTeacherWidget> {
+class _SettingsTeacherPageState extends ConsumerState<SettingsTeacherPage> {
   // Lokální stavy pro přepínače
   bool _isEmailNotificationsEnabled = false;
 

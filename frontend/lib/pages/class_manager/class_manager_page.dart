@@ -4,21 +4,21 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../services/api_client.dart';
-import '../test_evaluation/test_evaluation_widget.dart';
+import '../test_evaluation/test_evaluation_page.dart';
 import '../../components/active_test_card_widget.dart';
 import '../../components/control_test_card_widget.dart';
 import '../../components/page_header_widget.dart';
 import '../../components/add_new_students_popup_widget.dart';
 import '../../components/student_row_widget.dart';
 
-class ClassManagerWidget extends ConsumerStatefulWidget {
-  const ClassManagerWidget({super.key});
+class ClassManagerPage extends ConsumerStatefulWidget {
+  const ClassManagerPage({super.key});
 
   @override
-  ConsumerState<ClassManagerWidget> createState() => _ClassManagerWidgetState();
+  ConsumerState<ClassManagerPage> createState() => _ClassManagerPageState();
 }
 
-class _ClassManagerWidgetState extends ConsumerState<ClassManagerWidget> {
+class _ClassManagerPageState extends ConsumerState<ClassManagerPage> {
   bool _isLoading = true;
   String? _errorMessage;
   Map<String, dynamic>? _overviewData;

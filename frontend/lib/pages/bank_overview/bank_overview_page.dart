@@ -8,14 +8,14 @@ import '../../components/add_new_bank_popup_widget.dart';
 import '../../components/bank_card_widget.dart';
 import '../../services/api_client.dart';
 
-class BankOverviewWidget extends ConsumerStatefulWidget {
-  const BankOverviewWidget({super.key});
+class BankOverviewPage extends ConsumerStatefulWidget {
+  const BankOverviewPage({super.key});
 
   @override
-  ConsumerState<BankOverviewWidget> createState() => _BankOverviewWidgetState();
+  ConsumerState<BankOverviewPage> createState() => _BankOverviewPageState();
 }
 
-class _BankOverviewWidgetState extends ConsumerState<BankOverviewWidget> {
+class _BankOverviewPageState extends ConsumerState<BankOverviewPage> {
   List<Map<String, dynamic>> _banksData = [];
   bool _isLoading = true;
   String? _errorMessage;

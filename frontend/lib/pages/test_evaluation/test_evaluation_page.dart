@@ -7,21 +7,21 @@ import '../../theme/app_themes.dart';
 
 // Obrazovka pro kontrolu a hodnocení odevzdaného testu učitelem.
 // Přijímá (zatím z mock dat, později přes API) detaily o testu a odpovědích studenta.
-class TestEvaluationWidget extends ConsumerStatefulWidget {
+class TestEvaluationPage extends ConsumerStatefulWidget {
   final int? assignmentId;
   final int? attemptId;
 
-  const TestEvaluationWidget({
+  const TestEvaluationPage({
     super.key,
     this.assignmentId,
     this.attemptId,
   });
 
   @override
-  ConsumerState<TestEvaluationWidget> createState() => _TestEvaluationWidgetState();
+  ConsumerState<TestEvaluationPage> createState() => _TestEvaluationPageState();
 }
 
-class _TestEvaluationWidgetState extends ConsumerState<TestEvaluationWidget> {
+class _TestEvaluationPageState extends ConsumerState<TestEvaluationPage> {
   bool _isLoading = true;
   String? _errorMessage;
 

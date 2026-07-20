@@ -45,7 +45,7 @@ class ApiClient {
       return _processResponse(response);
     } catch (e) {
       if (e is ApiException) rethrow;
-      throw ApiException('Chyba síťového připojení k API', 0);
+      throw ApiException('Chyba síťového připojení k API: $e', 0);
     }
   }
 
@@ -61,7 +61,7 @@ class ApiClient {
       return _processResponse(response);
     } catch (e) {
       if (e is ApiException) rethrow;
-      throw ApiException('Chyba síťového připojení k API', 0);
+      throw ApiException('Chyba síťového připojení k API: $e', 0);
     }
   }
 
@@ -73,7 +73,7 @@ class ApiClient {
       return _processResponse(response);
     } catch (e) {
       if (e is ApiException) rethrow;
-      throw ApiException('Chyba síťového připojení k API', 0);
+      throw ApiException('Chyba síťového připojení k API: $e', 0);
     }
   }
 
@@ -85,7 +85,7 @@ class ApiClient {
       return _processResponse(response);
     } catch (e) {
       if (e is ApiException) rethrow;
-      throw ApiException('Chyba síťového připojení k API', 0);
+      throw ApiException('Chyba síťového připojení k API: $e', 0);
     }
   }
 

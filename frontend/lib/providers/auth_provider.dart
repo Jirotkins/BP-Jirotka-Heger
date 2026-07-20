@@ -75,15 +75,16 @@ class AuthNotifier extends Notifier<AuthState> {
     // Vytvoříme instanci klienta bez tokenu (protože ho ještě nemáme)
     final apiClient = ApiClient();
     
-    // Tělo requestu očekávané v Python FastAPI (/login)
+    // Tělo requestu očekávané v Python API
     final payload = {
       "username": username,
       "password": password,
-      "is_teacher": !isStudent // is_teacher očekává bool
     };
 
+    final endpoint = isStudent ? '/login/student' : '/login/teacher';
+
     // Pokud request selže, ApiClient vyhodí ApiException, kterou chytíme v UI
-    final response = await apiClient.post('/login', payload);
+    final response = await apiClient.post(endpoint, payload);
 
     // Úspěch - vytažení tokenu
     final token = response['access_token'];

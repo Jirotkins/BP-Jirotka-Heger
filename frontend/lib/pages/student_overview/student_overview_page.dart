@@ -7,14 +7,14 @@ import '../../services/api_client.dart';
 
 // Úvodní domovská obrazovka studenta (Dashboard).
 // Slouží jako rozcestník pro probíhající testy a přehled zapsaných předmětů.
-class StudentOverviewWidget extends ConsumerStatefulWidget {
-  const StudentOverviewWidget({super.key});
+class StudentOverviewPage extends ConsumerStatefulWidget {
+  const StudentOverviewPage({super.key});
 
   @override
-  ConsumerState<StudentOverviewWidget> createState() => _StudentOverviewWidgetState();
+  ConsumerState<StudentOverviewPage> createState() => _StudentOverviewPageState();
 }
 
-class _StudentOverviewWidgetState extends ConsumerState<StudentOverviewWidget> {
+class _StudentOverviewPageState extends ConsumerState<StudentOverviewPage> {
   final scaffoldKey = GlobalKey<ScaffoldState>();
   
   bool _isLoading = true;

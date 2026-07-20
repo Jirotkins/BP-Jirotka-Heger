@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../pages/student_overview/student_overview_widget.dart';
-import '../pages/settings_student/settings_student_widget.dart';
+import '../pages/student_overview/student_overview_page.dart';
+import '../pages/settings_student/settings_student_page.dart';
 
 class StudentMainLayout extends StatefulWidget {
   const StudentMainLayout({super.key});
@@ -17,8 +17,8 @@ class _StudentMainLayoutState extends State<StudentMainLayout> {
 
   // Seznam stránek, mezi kterými lišta přepíná
   final List<Widget> _pages = const [
-    StudentOverviewWidget(),
-    SettingsStudentWidget(),
+    StudentOverviewPage(),
+    SettingsStudentPage(),
   ];
 
   @override

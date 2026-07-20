@@ -5,14 +5,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../components/role_toggle_widget.dart';
 import '../../providers/auth_provider.dart';
 
-class LoginPageWidget extends ConsumerStatefulWidget {
-  const LoginPageWidget({super.key});
+class LoginPage extends ConsumerStatefulWidget {
+  const LoginPage({super.key});
 
   @override
-  ConsumerState<LoginPageWidget> createState() => _LoginPageWidgetState();
+  ConsumerState<LoginPage> createState() => _LoginPageState();
 }
 
-class _LoginPageWidgetState extends ConsumerState<LoginPageWidget> {
+class _LoginPageState extends ConsumerState<LoginPage> {
   late TextEditingController _emailController;
   late FocusNode _emailFocusNode;
   late TextEditingController _passwordController;

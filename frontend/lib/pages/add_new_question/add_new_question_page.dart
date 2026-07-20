@@ -3,14 +3,14 @@ import 'package:go_router/go_router.dart';
 import '../../components/page_header_widget.dart';
 import '../../components/question_type_menu_widget.dart';
 
-class AddNewQuestionWidget extends StatefulWidget {
-  const AddNewQuestionWidget({super.key});
+class AddNewQuestionPage extends StatefulWidget {
+  const AddNewQuestionPage({super.key});
 
   @override
-  State<AddNewQuestionWidget> createState() => _AddNewQuestionWidgetState();
+  State<AddNewQuestionPage> createState() => _AddNewQuestionPageState();
 }
 
-class _AddNewQuestionWidgetState extends State<AddNewQuestionWidget> {
+class _AddNewQuestionPageState extends State<AddNewQuestionPage> {
   @override
   Widget build(BuildContext context) {
     // ZÍSKÁNÍ DAT Z PŘEDCHOZÍ STRÁNKY 

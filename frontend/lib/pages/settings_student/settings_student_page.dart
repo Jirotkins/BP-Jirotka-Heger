@@ -8,14 +8,14 @@ import '../../theme/app_themes.dart';
 
 // Obrazovka nastavení studentského účtu a aplikace.
 // Umožňuje správu profilu, notifikací, vzhledu a odhlášení.
-class SettingsStudentWidget extends ConsumerStatefulWidget {
-  const SettingsStudentWidget({super.key});
+class SettingsStudentPage extends ConsumerStatefulWidget {
+  const SettingsStudentPage({super.key});
 
   @override
-  ConsumerState<SettingsStudentWidget> createState() => _SettingsStudentWidgetState();
+  ConsumerState<SettingsStudentPage> createState() => _SettingsStudentPageState();
 }
 
-class _SettingsStudentWidgetState extends ConsumerState<SettingsStudentWidget> {
+class _SettingsStudentPageState extends ConsumerState<SettingsStudentPage> {
   final scaffoldKey = GlobalKey<ScaffoldState>();
 
   bool _isEmailNotificationsEnabled = false;

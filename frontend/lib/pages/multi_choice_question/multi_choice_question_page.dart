@@ -6,14 +6,14 @@ import '../../components/page_header_widget.dart';
 import '../../components/image_upload_widget.dart';
 import '../../services/api_client.dart';
 
-class MultiChoiceQuestionWidget extends ConsumerStatefulWidget {
-  const MultiChoiceQuestionWidget({super.key});
+class MultiChoiceQuestionPage extends ConsumerStatefulWidget {
+  const MultiChoiceQuestionPage({super.key});
 
   @override
-  ConsumerState<MultiChoiceQuestionWidget> createState() => _MultiChoiceQuestionWidgetState();
+  ConsumerState<MultiChoiceQuestionPage> createState() => _MultiChoiceQuestionPageState();
 }
 
-class _MultiChoiceQuestionWidgetState extends ConsumerState<MultiChoiceQuestionWidget> {
+class _MultiChoiceQuestionPageState extends ConsumerState<MultiChoiceQuestionPage> {
   // Stav pro hlavní znění otázky
   late TextEditingController _questionTextController;
   late FocusNode _questionFocusNode;

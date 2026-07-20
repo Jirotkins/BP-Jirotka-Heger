@@ -7,14 +7,14 @@ import '../../components/page_header_widget.dart';
 import '../../components/add_new_class_popup_widget.dart';
 import '../../components/class_card_widget.dart';
 
-class ClassOverviewWidget extends ConsumerStatefulWidget {
-  const ClassOverviewWidget({super.key});
+class ClassOverviewPage extends ConsumerStatefulWidget {
+  const ClassOverviewPage({super.key});
 
   @override
-  ConsumerState<ClassOverviewWidget> createState() => _ClassOverviewWidgetState();
+  ConsumerState<ClassOverviewPage> createState() => _ClassOverviewPageState();
 }
 
-class _ClassOverviewWidgetState extends ConsumerState<ClassOverviewWidget> {
+class _ClassOverviewPageState extends ConsumerState<ClassOverviewPage> {
   bool _isLoading = true;
   String? _errorMessage;
   List<dynamic> _groups = [];

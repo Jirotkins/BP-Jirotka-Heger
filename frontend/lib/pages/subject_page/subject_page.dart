@@ -5,14 +5,14 @@ import '../../theme/app_themes.dart';
 
 // Stránka s detailem konkrétního předmětu (např. Matematika).
 // Zobrazuje statistiky, právě probíhající test, budoucí termíny a historii.
-class SubjectPageWidget extends StatefulWidget {
-  const SubjectPageWidget({super.key});
+class SubjectPage extends StatefulWidget {
+  const SubjectPage({super.key});
 
   @override
-  State<SubjectPageWidget> createState() => _SubjectPageWidgetState();
+  State<SubjectPage> createState() => _SubjectPageState();
 }
 
-class _SubjectPageWidgetState extends State<SubjectPageWidget> {
+class _SubjectPageState extends State<SubjectPage> {
   final scaffoldKey = GlobalKey<ScaffoldState>();
 
   // Právě probíhající test (pokud existuje). Pokud ne, hodnota je null.

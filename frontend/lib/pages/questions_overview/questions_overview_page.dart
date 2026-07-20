@@ -6,21 +6,21 @@ import '../../components/page_header_widget.dart';
 import '../../components/question_row_widget.dart';
 import '../../services/api_client.dart';
 
-class QuestionsOverviewWidget extends ConsumerStatefulWidget {
+class QuestionsOverviewPage extends ConsumerStatefulWidget {
   final int bankId;
   final String bankName;
 
-  const QuestionsOverviewWidget({
+  const QuestionsOverviewPage({
     super.key,
     this.bankId = 0,
     this.bankName = 'Neznámá banka',
   });
 
   @override
-  ConsumerState<QuestionsOverviewWidget> createState() => _QuestionsOverviewWidgetState();
+  ConsumerState<QuestionsOverviewPage> createState() => _QuestionsOverviewPageState();
 }
 
-class _QuestionsOverviewWidgetState extends ConsumerState<QuestionsOverviewWidget> {
+class _QuestionsOverviewPageState extends ConsumerState<QuestionsOverviewPage> {
   List<Map<String, dynamic>> _questionsData = [];
   bool _isLoading = true;
   String? _errorMessage;

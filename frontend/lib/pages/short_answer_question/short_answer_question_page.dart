@@ -5,19 +5,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../components/page_header_widget.dart';
 import '../../components/image_upload_widget.dart';
 import '../../services/api_client.dart';
-import '../../theme/app_themes.dart';
 
-class OpenQuestionWidget extends ConsumerStatefulWidget {
-  const OpenQuestionWidget({super.key});
+class ShortAnswerQuestionPage extends ConsumerStatefulWidget {
+  const ShortAnswerQuestionPage({super.key});
 
   @override
-  ConsumerState<OpenQuestionWidget> createState() => _OpenQuestionWidgetState();
+  ConsumerState<ShortAnswerQuestionPage> createState() => _ShortAnswerQuestionPageState();
 }
 
-class _OpenQuestionWidgetState extends ConsumerState<OpenQuestionWidget> {
-  // Stavy pro textové pole znění otázky
+class _ShortAnswerQuestionPageState extends ConsumerState<ShortAnswerQuestionPage> {
   late TextEditingController _questionTextController;
   late FocusNode _questionFocusNode;
+
+  final List<TextEditingController> _answerControllers = [];
   bool _isInitialized = false;
 
   @override
@@ -25,6 +25,7 @@ class _OpenQuestionWidgetState extends ConsumerState<OpenQuestionWidget> {
     super.initState();
     _questionTextController = TextEditingController();
     _questionFocusNode = FocusNode();
+    _answerControllers.add(TextEditingController());
   }
 
   @override
@@ -36,6 +37,18 @@ class _OpenQuestionWidgetState extends ConsumerState<OpenQuestionWidget> {
       
       if (questionData != null) {
         _questionTextController.text = questionData['text'] ?? '';
+        
+        final answers = questionData['answers'] as List?;
+        if (answers != null && answers.isNotEmpty) {
+          for (var c in _answerControllers) {
+            c.dispose();
+          }
+          _answerControllers.clear();
+          
+          for (var ans in answers) {
+            _answerControllers.add(TextEditingController(text: ans['text'] ?? ''));
+          }
+        }
       }
       _isInitialized = true;
     }
@@ -45,7 +58,25 @@ class _OpenQuestionWidgetState extends ConsumerState<OpenQuestionWidget> {
   void dispose() {
     _questionTextController.dispose();
     _questionFocusNode.dispose();
+    for (var controller in _answerControllers) {
+      controller.dispose();
+    }
     super.dispose();
+  }
+
+  void _addAnswerField() {
+    setState(() {
+      _answerControllers.add(TextEditingController());
+    });
+  }
+
+  void _removeAnswerField(int index) {
+    setState(() {
+      if (_answerControllers.length > 1) {
+        _answerControllers[index].dispose();
+        _answerControllers.removeAt(index);
+      }
+    });
   }
 
   Future<bool> _saveQuestion(int bankId, {int? questionId}) async {
@@ -54,17 +85,30 @@ class _OpenQuestionWidgetState extends ConsumerState<OpenQuestionWidget> {
       return false;
     }
 
+    final validAnswers = _answerControllers.map((c) => c.text.trim()).where((text) => text.isNotEmpty).toList();
+
+    if (validAnswers.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Zadejte alespoň jednu správnou odpověď'), backgroundColor: Theme.of(context).colorScheme.error));
+      return false;
+    }
+
     try {
       final apiClient = ref.read(apiClientProvider);
       
+      final answers = validAnswers.map((ans) => {
+        "text": ans,
+        "is_correct": true,
+      }).toList();
+
       final requestData = {
         "text": _questionTextController.text.trim(),
-        "type": "OPEN_TEXT",
+        "type": "OPEN_TEXT", // Upraveno zpět na OPEN_TEXT kvůli backendu
         "default_points": 1,
-        "answers": [],
+        "answers": answers,
       };
 
       if (questionId != null) {
+        // Zavoláme PUT endpoint (ačkoliv zatím neexistuje)
         await apiClient.put('/banks/$bankId/questions/$questionId', requestData);
       } else {
         await apiClient.post('/banks/$bankId/questions', requestData);
@@ -92,16 +136,19 @@ class _OpenQuestionWidgetState extends ConsumerState<OpenQuestionWidget> {
           elevation: 0,
           child: Center(
             child: Container(
+              // Rozměry mobilního telefonu
               width: 375.0,
               height: 700.0,
               decoration: BoxDecoration(
-                color: Theme.of(context).scaffoldBackgroundColor, 
+                color: Theme.of(context).scaffoldBackgroundColor, // Pozadí studentské aplikace
                 borderRadius: BorderRadius.circular(36.0),
-                border: Border.all(color: Theme.of(context).colorScheme.onSurface, width: 10.0), 
-                boxShadow: [BoxShadow(color: Theme.of(context).shadowColor.withValues(alpha: 0.1), blurRadius: 20.0, offset: const Offset(0, 10))],
+                border: Border.all(color: Theme.of(context).colorScheme.onSurface, width: 10.0), // Rámeček mobilu
+                boxShadow: [
+                  BoxShadow(color: Theme.of(context).shadowColor.withValues(alpha: 0.1), blurRadius: 20.0, offset: const Offset(0, 10))
+                ],
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(26.0),
+                borderRadius: BorderRadius.circular(26.0), // Vnitřní zaoblení displeje
                 child: Scaffold(
                   backgroundColor: Theme.of(context).scaffoldBackgroundColor,
                   appBar: AppBar(
@@ -109,9 +156,12 @@ class _OpenQuestionWidgetState extends ConsumerState<OpenQuestionWidget> {
                     elevation: 0,
                     centerTitle: true,
                     title: Text('Ukázka testu', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurface, fontSize: 16, fontWeight: FontWeight.bold)),
-                    automaticallyImplyLeading: false,
+                    automaticallyImplyLeading: false, // Skryje šipku zpět
                     actions: [
-                      IconButton(icon: Icon(Icons.close, color: Theme.of(context).colorScheme.onSurface), onPressed: () => Navigator.pop(context))
+                      IconButton(
+                        icon: Icon(Icons.close, color: Theme.of(context).colorScheme.onSurface),
+                        onPressed: () => Navigator.pop(context),
+                      )
                     ],
                   ),
                   body: Padding(
@@ -119,35 +169,29 @@ class _OpenQuestionWidgetState extends ConsumerState<OpenQuestionWidget> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
+                        // Dynamicky zobrazený text zadaný učitelem
                         Text(
-                          _questionTextController.text.isEmpty ? '[Zde bude znění otázky...]' : _questionTextController.text,
+                          _questionTextController.text.isEmpty 
+                              ? '[Zde bude znění otázky...]' 
+                              : _questionTextController.text,
                           style: GoogleFonts.inter(fontSize: 18.0, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface),
                         ),
-                        const SizedBox(height: 24.0),
+                        const SizedBox(height: 32.0),
                         
-                        // Simulace velkého textového pole pro dlouhou odpověď
-                        Expanded(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.surface,
-                              borderRadius: BorderRadius.circular(12.0),
-                              border: Border.all(color: Theme.of(context).colorScheme.outline),
-                              boxShadow: [
-                                BoxShadow(color: Theme.of(context).shadowColor.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2))
-                              ]
-                            ),
-                            alignment: Alignment.topLeft,
-                            child: Text(
-                              'Zde bude mít student k dispozici velké textové pole, kam může napsat několik odstavců textu...', 
-                              style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, height: 1.5)
-                            ),
+                        // Simulace políčka, do kterého bude psát student
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.surface,
+                            borderRadius: BorderRadius.circular(12.0),
+                            border: Border.all(color: Theme.of(context).colorScheme.outline),
                           ),
+                          child: Text('Tvoje odpověď...', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary)),
                         ),
                         
-                        const SizedBox(height: 24.0),
+                        const Spacer(),
 
-                        // Falešné tlačítko
+                        // Falešné tlačítko pro odevzdání
                         ElevatedButton(
                           onPressed: () {},
                           style: ElevatedButton.styleFrom(
@@ -171,7 +215,6 @@ class _OpenQuestionWidgetState extends ConsumerState<OpenQuestionWidget> {
 
   @override
   Widget build(BuildContext context) {
-    // CHYTÁNÍ DAT Z MENU
     final args = GoRouterState.of(context).extra as Map<String, dynamic>?;
     final String targetName = args?['targetName'] ?? 'Neznámá banka';
     final int bankId = args?['bankId'] ?? 0;
@@ -187,8 +230,9 @@ class _OpenQuestionWidgetState extends ConsumerState<OpenQuestionWidget> {
         PageHeaderWidget(
           title: isEdit ? 'Úprava otázky' : 'Tvorba: $targetName',
           actions: [
+            // TLAČÍTKO 1: Pohled studenta
             ElevatedButton.icon(
-              onPressed: _showStudentPreview, 
+              onPressed: _showStudentPreview, // Otevře mobilní simulátor
               icon: const Icon(Icons.visibility_outlined, size: 18),
               label: Text('Pohled studenta', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14)),
               style: ElevatedButton.styleFrom(
@@ -205,6 +249,7 @@ class _OpenQuestionWidgetState extends ConsumerState<OpenQuestionWidget> {
             ),
             const SizedBox(width: 12.0),
 
+            // TLAČÍTKO 2: Uložit
             ElevatedButton.icon(
               onPressed: () async {
                 final success = await _saveQuestion(bankId, questionId: questionId);
@@ -235,12 +280,11 @@ class _OpenQuestionWidgetState extends ConsumerState<OpenQuestionWidget> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   
-                  // ŠTÍTEK TYPU OTÁZKY
                   Text('TYP OTÁZKY', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, letterSpacing: 1.2, fontSize: 12, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8.0),
                   Container(
                     decoration: BoxDecoration(
-                      color: Theme.of(context).extension<CustomColors>()?.greenBg ?? Theme.of(context).colorScheme.primaryContainer,
+                      color: Theme.of(context).colorScheme.errorContainer, 
                       borderRadius: BorderRadius.circular(20.0),
                       border: Border.all(color: Theme.of(context).colorScheme.outline, width: 1.0),
                     ),
@@ -248,9 +292,9 @@ class _OpenQuestionWidgetState extends ConsumerState<OpenQuestionWidget> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.notes_rounded, color: Theme.of(context).extension<CustomColors>()?.greenText ?? Theme.of(context).colorScheme.primary, size: 16),
+                        Icon(Icons.edit_outlined, color: Theme.of(context).colorScheme.error, size: 16),
                         const SizedBox(width: 8),
-                        Text('Otevřená otázka', style: GoogleFonts.inter(color: Theme.of(context).extension<CustomColors>()?.greenText ?? Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w600, fontSize: 13)),
+                        Text('Krátká odpověď', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.w600, fontSize: 13)),
                       ],
                     ),
                   ),
@@ -272,9 +316,18 @@ class _OpenQuestionWidgetState extends ConsumerState<OpenQuestionWidget> {
                       filled: true,
                       fillColor: Theme.of(context).colorScheme.surface,
                       contentPadding: const EdgeInsets.all(20.0),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0), borderSide: BorderSide(color: Theme.of(context).colorScheme.outline)),
-                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0), borderSide: BorderSide(color: Theme.of(context).colorScheme.outline)),
-                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0), borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12.0),
+                        borderSide: BorderSide(color: Theme.of(context).colorScheme.outline),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12.0),
+                        borderSide: BorderSide(color: Theme.of(context).colorScheme.outline),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12.0),
+                        borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5),
+                      ),
                     ),
                   ),
                   
@@ -291,37 +344,75 @@ class _OpenQuestionWidgetState extends ConsumerState<OpenQuestionWidget> {
                   Divider(color: Theme.of(context).colorScheme.outline, height: 1),
                   const SizedBox(height: 32.0),
 
-                  // INFORMAČNÍ BOX
-                  Container(
-                    padding: const EdgeInsets.all(16.0),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(12.0),
-                      border: Border.all(color: Theme.of(context).colorScheme.outline, width: 1.0),
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Icon(Icons.info_outline_rounded, color: Theme.of(context).colorScheme.primary, size: 24),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Vyhodnocení otevřené otázky', style: GoogleFonts.inter(fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.onSurface, fontSize: 14)),
-                              const SizedBox(height: 4),
-                              Text(
-                                'U otevřených otázek student odpovídá volným textem. Protože systém nedokáže automaticky posoudit správnost eseje či rozsáhlého textu, bude vyžadována vaše manuální kontrola a obodování po odevzdání testu.', 
-                                style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurface, fontSize: 13, height: 1.5)
+                  // DYNAMICKÁ SEKCE SPRÁVNÝCH ODPOVĚDÍ
+                  Text('UZNÁVANÉ SPRÁVNÉ ODPOVĚDI', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, letterSpacing: 1.2, fontSize: 12, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 4.0),
+                  Text('Zadejte všechny varianty, které systém studentovi uzná jako správné (např. "10", "deset", "10,0").', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontSize: 12)),
+                  const SizedBox(height: 16.0),
+                  
+                  Column(
+                    children: _answerControllers.asMap().entries.map((entry) {
+                      int index = entry.key;
+                      TextEditingController controller = entry.value;
+
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12.0),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(color: Theme.of(context).colorScheme.primaryContainer, shape: BoxShape.circle),
+                              alignment: Alignment.center,
+                              child: Text('${index + 1}', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold)),
+                            ),
+                            const SizedBox(width: 16.0),
+                            Expanded(
+                              child: TextFormField(
+                                controller: controller,
+                                style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface),
+                                decoration: InputDecoration(
+                                  hintText: 'Zadejte správnou odpověď...',
+                                  hintStyle: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontWeight: FontWeight.normal),
+                                  filled: true,
+                                  fillColor: Theme.of(context).colorScheme.surface,
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10.0), borderSide: BorderSide(color: Theme.of(context).colorScheme.outline)),
+                                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10.0), borderSide: BorderSide(color: Theme.of(context).colorScheme.outline)),
+                                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10.0), borderSide: BorderSide(color: Theme.of(context).colorScheme.primary)),
+                                ),
                               ),
-                            ],
-                          ),
+                            ),
+                            if (_answerControllers.length > 1) ...[
+                              const SizedBox(width: 12.0),
+                              IconButton(
+                                onPressed: () => _removeAnswerField(index),
+                                icon: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error),
+                                tooltip: 'Odebrat odpověď',
+                                splashRadius: 24.0,
+                              ),
+                            ] else ...[
+                              const SizedBox(width: 60.0), 
+                            ]
+                          ],
                         ),
-                      ],
-                    ),
+                      );
+                    }).toList(),
                   ),
 
-                  const SizedBox(height: 40.0),
+                  const SizedBox(height: 12.0),
+                  
+                  TextButton.icon(
+                    onPressed: _addAnswerField,
+                    icon: Icon(Icons.add_circle_outline, size: 18.0, color: Theme.of(context).colorScheme.primary),
+                    label: Text('Přidat další variantu odpovědi', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w600)),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 12.0),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 64.0),
                 ],
               ),
             ),

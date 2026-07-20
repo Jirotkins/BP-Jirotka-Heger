@@ -82,7 +82,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
-      GoRoute(path: '/', builder: (context, state) => const LoginPageWidget()),
+      GoRoute(path: '/', builder: (context, state) => const LoginPage()),
       GoRoute(
         path: '/loading',
         builder: (context, state) => Scaffold(
@@ -110,15 +110,15 @@ final routerProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(
             path: '/classOverview',
-            builder: (context, state) => const ClassOverviewWidget(),
+            builder: (context, state) => const ClassOverviewPage(),
           ),
           GoRoute(
             path: '/classManager',
-            builder: (context, state) => const ClassManagerWidget(),
+            builder: (context, state) => const ClassManagerPage(),
           ),
           GoRoute(
             path: '/bankOverview',
-            builder: (context, state) => BankOverviewWidget(),
+            builder: (context, state) => BankOverviewPage(),
           ),
           GoRoute(
             path: '/testEditor',
@@ -128,7 +128,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/testEvaluation',
             builder: (context, state) {
               final extra = state.extra as Map<String, dynamic>? ?? {};
-              return TestEvaluationWidget(
+              return TestEvaluationPage(
                 assignmentId: extra['assignmentId'] as int?,
                 attemptId: extra['attemptId'] as int?,
               );
@@ -136,13 +136,13 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/settingsTeacher',
-            builder: (context, state) => const SettingsTeacherWidget(),
+            builder: (context, state) => const SettingsTeacherPage(),
           ),
           GoRoute(
             path: '/questionsOverview',
             builder: (context, state) {
               final extra = state.extra as Map<String, dynamic>? ?? {};
-              return QuestionsOverviewWidget(
+              return QuestionsOverviewPage(
                 bankId: extra['bankId'] as int? ?? 0,
                 bankName: extra['bankName'] as String? ?? 'Neznámá banka',
               );
@@ -150,27 +150,27 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/addNewQuestion',
-            builder: (context, state) => const AddNewQuestionWidget(),
+            builder: (context, state) => const AddNewQuestionPage(),
           ),
           GoRoute(
             path: '/multiChoiceQuestion',
-            builder: (context, state) => const MultiChoiceQuestionWidget(),
+            builder: (context, state) => const MultiChoiceQuestionPage(),
           ),
           GoRoute(
             path: '/openQuestion',
-            builder: (context, state) => const OpenQuestionWidget(),
+            builder: (context, state) => const OpenQuestionPage(),
           ),
           GoRoute(
             path: '/shortAnswerQuestion',
-            builder: (context, state) => const ShortAnswerQuestionWidget(),
+            builder: (context, state) => const ShortAnswerQuestionPage(),
           ),
           GoRoute(
             path: '/connectQuestion',
-            builder: (context, state) => const ConnectQuestionWidget(),
+            builder: (context, state) => const ConnectQuestionPage(),
           ),
           GoRoute(
             path: '/orderQuestion',
-            builder: (context, state) => const OrderQuestionWidget(),
+            builder: (context, state) => const OrderQuestionPage(),
           ),
         ],
       ),
@@ -183,7 +183,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/subjectPage',
         builder: (context, state) =>
-            const SubjectPageWidget(), // Případně doplníme předávání parametrů
+            const SubjectPage(), // Případně doplníme předávání parametrů
       ),
       GoRoute(
         path: '/testActive',

@@ -7,14 +7,14 @@ import '../../components/image_upload_widget.dart';
 import '../../services/api_client.dart';
 import '../../theme/app_themes.dart';
 
-class ConnectQuestionWidget extends ConsumerStatefulWidget {
-  const ConnectQuestionWidget({super.key});
+class ConnectQuestionPage extends ConsumerStatefulWidget {
+  const ConnectQuestionPage({super.key});
 
   @override
-  ConsumerState<ConnectQuestionWidget> createState() => _ConnectQuestionWidgetState();
+  ConsumerState<ConnectQuestionPage> createState() => _ConnectQuestionPageState();
 }
 
-class _ConnectQuestionWidgetState extends ConsumerState<ConnectQuestionWidget> {
+class _ConnectQuestionPageState extends ConsumerState<ConnectQuestionPage> {
   // Stav pro hlavní znění otázky
   late TextEditingController _questionTextController;
   late FocusNode _questionFocusNode;
