@@ -112,6 +112,50 @@ def get_teacher_groups(db: Session, teacher_id: int):
     groups = db.query(Group).filter(Group.teacher_id == teacher_id).all()
     return groups
 
+def remove_student_from_group(db: Session, group_id: int, student_id: int, teacher_id: int):
+    group = db.query(Group).filter(Group.group_id == group_id, Group.teacher_id == teacher_id).first()
+    if not group:
+        raise ValueError("Skupina neexistuje nebo nemáte oprávnění")
+    
+    from models import StudentGroup
+    sg = db.query(StudentGroup).filter(StudentGroup.group_id == group_id, StudentGroup.student_id == student_id).first()
+    if not sg:
+        raise ValueError("Student není v této skupině")
+        
+    db.delete(sg)
+    db.commit()
+
+def delete_group(db: Session, group_id: int, teacher_id: int):
+    group = db.query(Group).filter(Group.group_id == group_id, Group.teacher_id == teacher_id).first()
+    if not group:
+        raise ValueError("Skupina neexistuje nebo nemáte oprávnění")
+        
+    from models import ExamAssignment, StudentAttempt
+    assignments = db.query(ExamAssignment).filter(ExamAssignment.group_id == group_id).all()
+    for assignment in assignments:
+        has_attempts = db.query(StudentAttempt).filter(StudentAttempt.assignment_id == assignment.assignment_id).count() > 0
+        if not has_attempts:
+            db.delete(assignment)
+        else:
+            assignment.group_id = None
+            
+    db.delete(group)
+    db.commit()
+
+def update_group(db: Session, group_id: int, group_data: dict, teacher_id: int):
+    group = db.query(Group).filter(Group.group_id == group_id, Group.teacher_id == teacher_id).first()
+    if not group:
+        raise ValueError("Skupina neexistuje nebo nemáte oprávnění")
+    
+    if 'name' in group_data and group_data['name'] is not None: 
+        group.name = group_data['name']
+    if 'description' in group_data: 
+        group.description = group_data['description']
+        
+    db.commit()
+    db.refresh(group)
+    return group
+
 
 def create_student_in_group(db: Session, group_id: int, login_code: str, password: str, email: str = None):
     """Vytvoří studenta v konkrétní skupině
@@ -242,10 +286,57 @@ def create_bank(db: Session, teacher_id: int, name: str, description: str = None
 
 
 def get_teacher_banks(db: Session, teacher_id: int):
-    """Získá všechny banky otázek učitele"""
-    banks = db.query(Bank).filter(Bank.teacher_id == teacher_id).all()
+    """Získá všechny banky otázek učitele včetně počtu otázek"""
+    from sqlalchemy import func
+    from models import Question, Bank
+    
+    results = db.query(
+        Bank,
+        func.count(Question.question_id).label("question_count")
+    ).outerjoin(
+        Question, Bank.bank_id == Question.bank_id
+    ).filter(
+        Bank.teacher_id == teacher_id
+    ).group_by(
+        Bank.bank_id
+    ).all()
+    
+    banks = []
+    for bank, count in results:
+        bank.question_count = count
+        banks.append(bank)
+        
     return banks
 
+def delete_bank(db: Session, bank_id: int, teacher_id: int):
+    from models import Bank, Question, TestTemplateQuestion
+    bank = db.query(Bank).filter(Bank.bank_id == bank_id, Bank.teacher_id == teacher_id).first()
+    if not bank:
+        raise ValueError("Banka neexistuje nebo nemáte oprávnění")
+        
+    questions = db.query(Question).filter(Question.bank_id == bank_id).all()
+    q_ids = [q.question_id for q in questions]
+    if q_ids:
+        in_templates = db.query(TestTemplateQuestion).filter(TestTemplateQuestion.question_id.in_(q_ids)).count()
+        if in_templates > 0:
+            raise ValueError("IN_USE")
+            
+    db.delete(bank)
+    db.commit()
+
+def update_bank(db: Session, bank_id: int, bank_data: dict, teacher_id: int):
+    from models import Bank
+    bank = db.query(Bank).filter(Bank.bank_id == bank_id, Bank.teacher_id == teacher_id).first()
+    if not bank:
+        raise ValueError("Banka neexistuje nebo nemáte oprávnění")
+        
+    if 'name' in bank_data: bank.name = bank_data['name']
+    if 'description' in bank_data: bank.description = bank_data['description']
+    if 'is_public' in bank_data: bank.is_public = bank_data['is_public']
+    
+    db.commit()
+    db.refresh(bank)
+    return bank
 
 def create_question(db: Session, bank_id: int, question_data: dict, teacher_id: int):
     """Vytvoří novou otázku v bance otázek učitele
@@ -335,6 +426,67 @@ def get_bank_questions(db: Session, bank_id: int, teacher_id: int):
     ).all()
     
     return questions
+
+
+def delete_question(db: Session, question_id: int, bank_id: int, teacher_id: int, force: bool = False):
+    """Smaže otázku. Pokud je v testech a force=False, vyhodí chybu."""
+    bank = db.query(Bank).filter(Bank.bank_id == bank_id, Bank.teacher_id == teacher_id).first()
+    if not bank:
+        raise ValueError(f"Banka s ID {bank_id} neexistuje nebo jí nevlastníte")
+        
+    from models import Question, TestTemplateQuestion
+    question = db.query(Question).filter(Question.question_id == question_id, Question.bank_id == bank_id).first()
+    if not question:
+        raise ValueError("Otázka nenalezena v této bance")
+        
+    in_templates = db.query(TestTemplateQuestion).filter(TestTemplateQuestion.question_id == question_id).all()
+    
+    if in_templates and not force:
+        raise ValueError("IN_USE")
+        
+    if in_templates and force:
+        for tq in in_templates:
+            later_tqs = db.query(TestTemplateQuestion).filter(
+                TestTemplateQuestion.template_id == tq.template_id,
+                TestTemplateQuestion.position > tq.position
+            ).all()
+            for ltq in later_tqs:
+                ltq.position -= 1
+            db.delete(tq)
+            
+    db.delete(question)
+    db.commit()
+
+def update_question(db: Session, question_id: int, bank_id: int, question_data: dict, teacher_id: int):
+    bank = db.query(Bank).filter(Bank.bank_id == bank_id, Bank.teacher_id == teacher_id).first()
+    if not bank:
+        raise ValueError(f"Banka s ID {bank_id} neexistuje nebo jí nevlastníte")
+        
+    from models import Question, Answer
+    question = db.query(Question).filter(Question.question_id == question_id, Question.bank_id == bank_id).first()
+    if not question:
+        raise ValueError("Otázka nenalezena v této bance")
+        
+    if 'text' in question_data: question.text = question_data['text']
+    if 'type' in question_data: question.type = question_data['type']
+    if 'tags' in question_data: question.tags = question_data['tags']
+    if 'image_url' in question_data: question.image_url = question_data['image_url']
+    if 'default_points' in question_data: question.default_points = question_data['default_points']
+    
+    if 'answers' in question_data:
+        db.query(Answer).filter(Answer.question_id == question_id).delete()
+        for answer_data in question_data['answers']:
+            new_answer = Answer(
+                question_id=question.question_id,
+                text=answer_data.get('text'),
+                is_correct=answer_data.get('is_correct', False),
+                order_index=answer_data.get('order_index') or 0
+            )
+            db.add(new_answer)
+            
+    db.commit()
+    db.refresh(question)
+    return question
 
 
 def create_test_template(db: Session, teacher_id: int, template_data: dict):

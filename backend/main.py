@@ -371,6 +371,45 @@ def add_bulk_students(
         )
 
 
+@app.delete("/groups/{group_id}/students/{student_id}", tags=["Skupiny a studenti"])
+def remove_student_from_group_endpoint(
+    group_id: int,
+    student_id: int,
+    current_teacher: dict = Depends(require_teacher),
+    db: Session = Depends(get_db)
+):
+    try:
+        db_layer.remove_student_from_group(db, group_id, student_id, current_teacher["user_id"])
+        return {"status": "success", "message": "Student byl odebrán ze skupiny"}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.delete("/groups/{group_id}", tags=["Skupiny a studenti"])
+def delete_group_endpoint(
+    group_id: int,
+    current_teacher: dict = Depends(require_teacher),
+    db: Session = Depends(get_db)
+):
+    try:
+        db_layer.delete_group(db, group_id, current_teacher["user_id"])
+        return {"status": "success", "message": "Skupina byla smazána"}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.put("/groups/{group_id}", tags=["Skupiny a studenti"])
+def update_group_endpoint(
+    group_id: int,
+    group_data: CreateGroupRequest,
+    current_teacher: dict = Depends(require_teacher),
+    db: Session = Depends(get_db)
+):
+    try:
+        updated = db_layer.update_group(db, group_id, group_data.dict(), current_teacher["user_id"])
+        return {"status": "success", "group_id": updated.group_id}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
 # ============================================================
 # 📚 BANKY OTÁZEK
 # ============================================================
@@ -413,11 +452,48 @@ def get_banks(
 ):
     """Vrátí všechny banky otázek přihlášeného učitele."""
     banks = db_layer.get_teacher_banks(db, current_teacher["user_id"])
+    banks_out = []
+    for b in banks:
+        banks_out.append({
+            "bank_id": b.bank_id,
+            "name": b.name,
+            "description": b.description,
+            "is_public": b.is_public,
+            "questionCount": getattr(b, "question_count", 0)
+        })
     return {
         "teacher_id": current_teacher["user_id"],
         "bank_count": len(banks),
-        "banks": banks
+        "banks": banks_out
     }
+
+@app.delete("/banks/{bank_id}", tags=["Banky otázek"])
+def delete_bank_endpoint(
+    bank_id: int,
+    current_teacher: dict = Depends(require_teacher),
+    db: Session = Depends(get_db)
+):
+    try:
+        db_layer.delete_bank(db, bank_id, current_teacher["user_id"])
+        return {"status": "success"}
+    except ValueError as e:
+        if str(e) == "IN_USE":
+            raise HTTPException(status_code=409, detail="Některé otázky z této banky jsou použity v testech. Banku nelze smazat.")
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.put("/banks/{bank_id}", tags=["Banky otázek"])
+def update_bank_endpoint(
+    bank_id: int,
+    bank_data: CreateBankRequest,
+    current_teacher: dict = Depends(require_teacher),
+    db: Session = Depends(get_db)
+):
+    try:
+        db_layer.update_bank(db, bank_id, bank_data.dict(), current_teacher["user_id"])
+        return {"status": "success"}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
 
 
 @app.post("/banks/{bank_id}/questions", tags=["Banky otázek"])
@@ -579,6 +655,39 @@ def get_questions(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Chyba při získávání otázek: {str(e)}"
         )
+
+
+@app.delete("/banks/{bank_id}/questions/{question_id}", tags=["Banky otázek"])
+def delete_question_endpoint(
+    bank_id: int,
+    question_id: int,
+    force: bool = False,
+    current_teacher: dict = Depends(require_teacher),
+    db: Session = Depends(get_db)
+):
+    try:
+        db_layer.delete_question(db, question_id, bank_id, current_teacher["user_id"], force)
+        return {"status": "success", "message": "Otázka smazána"}
+    except ValueError as e:
+        if str(e) == "IN_USE":
+            raise HTTPException(status_code=409, detail="Otázka je použita v návrhu testu. Potvrďte smazání (force=true).")
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.put("/banks/{bank_id}/questions/{question_id}", tags=["Banky otázek"])
+def update_question_endpoint(
+    bank_id: int,
+    question_id: int,
+    question_data: QuestionCreateRequest,
+    current_teacher: dict = Depends(require_teacher),
+    db: Session = Depends(get_db)
+):
+    try:
+        updated = db_layer.update_question(
+            db, question_id, bank_id, question_data.dict(), current_teacher["user_id"]
+        )
+        return {"status": "success", "question_id": updated.question_id}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 # ============================================================
