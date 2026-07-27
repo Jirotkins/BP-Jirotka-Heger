@@ -72,9 +72,12 @@ class BankOverviewNotifier extends Notifier<BankOverviewState> {
           'title': b['name'] ?? 'Neznámý název',
           'subject': subject,
           'icon': availableIcons[iconIndex],
-          'questionCount': 0, // Backend zatím nevrací počet otázek v tomto endpointu
+          'iconIndex': iconIndex,
+          'questionCount': b['questionCount'] ?? 0,
         });
       }
+
+      banksData.sort((a, b) => (a['id'] as int).compareTo(b['id'] as int));
 
       state = state.copyWith(
         banks: banksData,
@@ -110,6 +113,52 @@ class BankOverviewNotifier extends Notifier<BankOverviewState> {
     } catch (e) {
       state = state.copyWith(
         errorMessage: 'Chyba při přidávání banky: $e',
+        isLoading: false,
+      );
+    }
+  }
+
+  Future<String?> deleteBank(int bankId) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      await apiClient.delete('/banks/$bankId');
+      
+      await fetchBanks();
+      return null;
+    } catch (e) {
+      state = state.copyWith(isLoading: false);
+      
+      if (e is ApiException && e.statusCode == 409) {
+        return 'IN_USE';
+      }
+      
+      state = state.copyWith(errorMessage: 'Chyba při mazání banky: $e');
+      return e.toString();
+    }
+  }
+
+  Future<void> updateBank(int bankId, String name, String subject, int iconIndex) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      final descriptionData = {
+        'subject': subject,
+        'iconIndex': iconIndex,
+      };
+
+      await apiClient.put('/banks/$bankId', {
+        'name': name.trim(),
+        'description': jsonEncode(descriptionData),
+        'is_public': false
+      });
+
+      await fetchBanks();
+    } catch (e) {
+      state = state.copyWith(
+        errorMessage: 'Chyba při úpravě banky: $e',
         isLoading: false,
       );
     }

@@ -11,6 +11,8 @@ class ClassCardWidget extends StatelessWidget {
   final int activeTestCount;
   final int testsToControl;
   final Widget icon;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
 
   const ClassCardWidget({
     super.key,
@@ -21,6 +23,8 @@ class ClassCardWidget extends StatelessWidget {
     required this.activeTestCount,
     required this.testsToControl,
     required this.icon,
+    this.onEdit,
+    this.onDelete,
   });
 
   @override
@@ -91,6 +95,38 @@ class ClassCardWidget extends StatelessWidget {
                   ],
                 ),
               ),
+              if (onEdit != null || onDelete != null)
+                PopupMenuButton<String>(
+                  icon: Icon(Icons.more_horiz, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  onSelected: (value) {
+                    if (value == 'edit' && onEdit != null) onEdit!();
+                    if (value == 'delete' && onDelete != null) onDelete!();
+                  },
+                  itemBuilder: (BuildContext context) => [
+                    if (onEdit != null)
+                      PopupMenuItem<String>(
+                        value: 'edit',
+                        child: Row(
+                          children: [
+                            Icon(Icons.edit_outlined, size: 18, color: Theme.of(context).colorScheme.onSurface),
+                            const SizedBox(width: 12),
+                            const Text('Upravit'),
+                          ],
+                        ),
+                      ),
+                    if (onDelete != null)
+                      PopupMenuItem<String>(
+                        value: 'delete',
+                        child: Row(
+                          children: [
+                            Icon(Icons.delete_outline, size: 18, color: Theme.of(context).colorScheme.error),
+                            const SizedBox(width: 12),
+                            Text('Smazat', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
             ],
           ),
           

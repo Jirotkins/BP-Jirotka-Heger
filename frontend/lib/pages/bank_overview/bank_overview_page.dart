@@ -23,6 +23,44 @@ class _BankOverviewPageState extends ConsumerState<BankOverviewPage> {
     });
   }
 
+  Future<void> _deleteBank(int bankId, BankOverviewNotifier notifier) async {
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Smazat banku?'),
+        content: const Text('Opravdu chcete tuto banku otázek smazat? Přijdete o všechny otázky v ní uložené.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Zrušit')),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
+            child: const Text('Smazat'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      final error = await notifier.deleteBank(bankId);
+      if (error == 'IN_USE') {
+        if (!mounted) return;
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Nelze smazat banku'),
+            content: const Text('Tuto banku nelze smazat, protože obsahuje otázky, které jsou aktuálně použity v některém z testů. Nejprve smažte příslušné otázky nebo je odeberte z testů.'),
+            actions: [
+              TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Rozumím')),
+            ],
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(bankOverviewProvider);
@@ -95,7 +133,7 @@ class _BankOverviewPageState extends ConsumerState<BankOverviewPage> {
                         padding: const EdgeInsets.all(32.0),
                         gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
                           maxCrossAxisExtent: 400.0,
-                          mainAxisExtent: 210.0,
+                          mainAxisExtent: 230.0,
                           crossAxisSpacing: 24.0,
                           mainAxisSpacing: 24.0,
                         ),
@@ -106,8 +144,26 @@ class _BankOverviewPageState extends ConsumerState<BankOverviewPage> {
                             id: bank['id'],
                             title: bank['title'],
                             subject: bank['subject'],
-                            icon: Icon(bank['icon'], color: Theme.of(context).colorScheme.primary, size: 28),
+                            icon: Icon(bank['icon'] as IconData? ?? Icons.help_outline, color: Theme.of(context).colorScheme.primary, size: 28),
                             questionCount: bank['questionCount'],
+                            onEdit: () {
+                              showDialog(
+                                context: context,
+                                barrierColor: Colors.black54,
+                                builder: (dialogContext) => Dialog(
+                                  elevation: 0,
+                                  backgroundColor: Colors.transparent,
+                                  insetPadding: EdgeInsets.zero,
+                                  child: AddNewBankPopupWidget(
+                                    bankId: bank['id'],
+                                    initialName: bank['title'],
+                                    initialSubject: bank['subject'],
+                                    initialIconIndex: bank['iconIndex'],
+                                  ),
+                                ),
+                              );
+                            },
+                            onDelete: () => _deleteBank(bank['id'], notifier),
                           );
                         },
                       ),

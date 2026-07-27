@@ -40,8 +40,11 @@ class ClassOverviewNotifier extends Notifier<ClassOverviewState> {
     try {
       final apiClient = ref.read(apiClientProvider);
       final response = await apiClient.get('/groups');
+      final List<dynamic> fetchedGroups = response['groups'] ?? [];
+      fetchedGroups.sort((a, b) => (a['group_id'] as int).compareTo(b['group_id'] as int));
+
       state = state.copyWith(
-        groups: response['groups'] ?? [],
+        groups: fetchedGroups,
         isLoading: false,
       );
     } catch (e) {
@@ -73,6 +76,43 @@ class ClassOverviewNotifier extends Notifier<ClassOverviewState> {
     } catch (e) {
       state = state.copyWith(
         errorMessage: 'Chyba při přidávání třídy: $e',
+        isLoading: false,
+      );
+    }
+  }
+
+  Future<void> deleteGroup(int groupId) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      await apiClient.delete('/groups/$groupId');
+      await fetchGroups();
+    } catch (e) {
+      state = state.copyWith(
+        errorMessage: 'Chyba při mazání třídy: $e',
+        isLoading: false,
+      );
+    }
+  }
+
+  Future<void> updateGroup(int groupId, String name, String subject, IconData icon) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      final descriptionData = {
+        "subject": subject.trim().isEmpty ? 'Předmět neuveden' : subject.trim(),
+        "icon": icon.codePoint.toString(),
+      };
+      
+      await apiClient.put('/groups/$groupId', {
+        'name': name.trim(),
+        'description': jsonEncode(descriptionData),
+      });
+
+      await fetchGroups();
+    } catch (e) {
+      state = state.copyWith(
+        errorMessage: 'Chyba při úpravě třídy: $e',
         isLoading: false,
       );
     }

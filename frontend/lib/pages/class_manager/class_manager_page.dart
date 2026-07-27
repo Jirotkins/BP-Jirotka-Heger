@@ -166,6 +166,31 @@ class _ClassManagerPageState extends ConsumerState<ClassManagerPage> {
     );
   }
 
+  Future<void> _removeStudent(int studentId, String studentEmail, ClassManagerNotifier notifier) async {
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Odebrat studenta?'),
+        content: Text('Opravdu chcete odebrat studenta $studentEmail z této třídy?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Zrušit')),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
+            child: const Text('Odebrat'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await notifier.removeStudent(studentId);
+    }
+  }
+
   Widget _buildContent(ClassManagerState state, ClassManagerNotifier notifier) {
     final activeTests = (state.overviewData?['active'] as List?) ?? [];
     final upcomingTests = (state.overviewData?['upcoming'] as List?) ?? [];
@@ -226,6 +251,11 @@ class _ClassManagerPageState extends ConsumerState<ClassManagerPage> {
                               child: StudentRowWidget(
                                 id: student['student_id'] ?? 0,
                                 studentName: student['email'] ?? 'Neznámý student',
+                                onDelete: () => _removeStudent(
+                                  student['student_id'] ?? 0,
+                                  student['email'] ?? 'Neznámý student',
+                                  notifier,
+                                ),
                               ),
                             ),
                             if (index < state.studentsData.length - 1)

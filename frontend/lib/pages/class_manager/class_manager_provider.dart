@@ -80,6 +80,22 @@ class ClassManagerNotifier extends Notifier<ClassManagerState> {
     }
   }
 
+  Future<void> removeStudent(int studentId) async {
+    if (state.groupId == null) return;
+    
+    state = state.copyWith(isLoading: true, clearError: true);
+    
+    try {
+      await ref.read(apiClientProvider).delete('/groups/${state.groupId}/students/$studentId');
+      await fetchData(state.groupId!);
+    } catch (e) {
+      state = state.copyWith(
+        errorMessage: 'Chyba při odebírání studenta ze třídy: $e',
+        isLoading: false,
+      );
+    }
+  }
+
   void setGroupMissingError() {
     state = state.copyWith(
       isLoading: false,

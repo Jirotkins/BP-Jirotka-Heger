@@ -8,6 +8,8 @@ class BankCardWidget extends StatelessWidget {
   final String subject;
   final int questionCount;
   final Widget icon;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
 
   const BankCardWidget({
     super.key,
@@ -16,6 +18,8 @@ class BankCardWidget extends StatelessWidget {
     required this.subject,
     required this.questionCount,
     required this.icon,
+    this.onEdit,
+    this.onDelete,
   });
 
   @override
@@ -61,20 +65,58 @@ class BankCardWidget extends StatelessWidget {
                   children: [
                     Text(
                       title,
+                      style: GoogleFonts.inter(
+                        fontSize: 18.0,
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurface, fontSize: 16.0, fontWeight: FontWeight.w700, height: 1.2),
                     ),
                     const SizedBox(height: 4.0),
                     Text(
                       subject,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontSize: 13.0, fontWeight: FontWeight.w500),
+                      style: GoogleFonts.inter(
+                        fontSize: 13.0,
+                        fontWeight: FontWeight.w500,
+                        color: Theme.of(context).colorScheme.secondary,
+                      ),
                     ),
                   ],
                 ),
               ),
+              if (onEdit != null || onDelete != null)
+                PopupMenuButton<String>(
+                  icon: Icon(Icons.more_horiz, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  onSelected: (value) {
+                    if (value == 'edit' && onEdit != null) onEdit!();
+                    if (value == 'delete' && onDelete != null) onDelete!();
+                  },
+                  itemBuilder: (BuildContext context) => [
+                    if (onEdit != null)
+                      PopupMenuItem<String>(
+                        value: 'edit',
+                        child: Row(
+                          children: [
+                            Icon(Icons.edit_outlined, size: 18, color: Theme.of(context).colorScheme.onSurface),
+                            const SizedBox(width: 12),
+                            const Text('Upravit'),
+                          ],
+                        ),
+                      ),
+                    if (onDelete != null)
+                      PopupMenuItem<String>(
+                        value: 'delete',
+                        child: Row(
+                          children: [
+                            Icon(Icons.delete_outline, size: 18, color: Theme.of(context).colorScheme.error),
+                            const SizedBox(width: 12),
+                            Text('Smazat', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
             ],
           ),
           

@@ -24,6 +24,31 @@ class _ClassOverviewPageState extends ConsumerState<ClassOverviewPage> {
     });
   }
 
+  Future<void> _deleteGroup(int groupId, ClassOverviewNotifier notifier) async {
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Smazat třídu?'),
+        content: const Text('Opravdu chcete tuto třídu smazat? Smazáním přijdete o všechny přiřazené studenty a historii testů v této třídě.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Zrušit')),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
+            child: const Text('Smazat'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await notifier.deleteGroup(groupId);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(classOverviewProvider);
@@ -97,7 +122,7 @@ class _ClassOverviewPageState extends ConsumerState<ClassOverviewPage> {
                         padding: const EdgeInsets.all(32.0),
                         gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
                           maxCrossAxisExtent: 400.0,
-                          mainAxisExtent: 210.0,
+                          mainAxisExtent: 230.0,
                           crossAxisSpacing: 24.0,
                           mainAxisSpacing: 24.0,
                         ),
@@ -136,6 +161,27 @@ class _ClassOverviewPageState extends ConsumerState<ClassOverviewPage> {
                             studentCount: g['student_count'] ?? 0,
                             activeTestCount: g['active_assignment_count'] ?? 0,
                             testsToControl: g['pending_grade_count'] ?? 0,
+                            onEdit: () {
+                              int iconIndex = AddNewClassPopupWidget.availableIcons.indexWhere((icon) => icon.codePoint == displayIcon.codePoint);
+                              if (iconIndex == -1) iconIndex = 0;
+                              
+                              showDialog(
+                                context: context,
+                                barrierColor: Colors.black54,
+                                builder: (dialogContext) => Dialog(
+                                  elevation: 0,
+                                  backgroundColor: Colors.transparent,
+                                  insetPadding: EdgeInsets.zero,
+                                  child: AddNewClassPopupWidget(
+                                    groupId: g['group_id'],
+                                    initialName: g['name'] ?? '',
+                                    initialSubject: subject,
+                                    initialIconIndex: iconIndex,
+                                  ),
+                                ),
+                              );
+                            },
+                            onDelete: () => _deleteGroup(g['group_id'], notifier),
                           );
                         },
                       ),

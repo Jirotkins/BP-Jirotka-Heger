@@ -3,7 +3,26 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../pages/class_overview/class_overview_provider.dart';
 
 class AddNewClassPopupWidget extends ConsumerStatefulWidget {
-  const AddNewClassPopupWidget({super.key});
+  final int? groupId;
+  final String? initialName;
+  final String? initialSubject;
+  final int? initialIconIndex;
+
+  static const List<IconData> availableIcons = [
+    Icons.menu_book_outlined,
+    Icons.calculate_outlined,
+    Icons.science_outlined,
+    Icons.history_edu_outlined,
+    Icons.public_outlined,
+  ];
+
+  const AddNewClassPopupWidget({
+    super.key,
+    this.groupId,
+    this.initialName,
+    this.initialSubject,
+    this.initialIconIndex,
+  });
 
   @override
   ConsumerState<AddNewClassPopupWidget> createState() => _AddNewClassPopupWidgetState();
@@ -15,24 +34,19 @@ class _AddNewClassPopupWidgetState extends ConsumerState<AddNewClassPopupWidget>
   late TextEditingController _subjectController;
   late FocusNode _subjectFocusNode;
 
-  int _selectedIconIndex = 0;
+  late int _selectedIconIndex;
   String? _localError;
 
-  final List<IconData> _availableIcons = [
-    Icons.menu_book_outlined,
-    Icons.calculate_outlined,
-    Icons.science_outlined,
-    Icons.history_edu_outlined,
-    Icons.public_outlined,
-  ];
+  bool get _isEditing => widget.groupId != null;
 
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController();
+    _nameController = TextEditingController(text: widget.initialName ?? '');
     _nameFocusNode = FocusNode();
-    _subjectController = TextEditingController();
+    _subjectController = TextEditingController(text: widget.initialSubject ?? '');
     _subjectFocusNode = FocusNode();
+    _selectedIconIndex = widget.initialIconIndex ?? 0;
   }
 
   @override
@@ -52,12 +66,22 @@ class _AddNewClassPopupWidgetState extends ConsumerState<AddNewClassPopupWidget>
 
     setState(() => _localError = null);
     
-    // Uložit přes provider
-    await ref.read(classOverviewProvider.notifier).addGroup(
-      _nameController.text.trim(),
-      _subjectController.text.trim(),
-      _availableIcons[_selectedIconIndex],
-    );
+    final notifier = ref.read(classOverviewProvider.notifier);
+    
+    if (_isEditing) {
+      await notifier.updateGroup(
+        widget.groupId!,
+        _nameController.text.trim(),
+        _subjectController.text.trim(),
+        AddNewClassPopupWidget.availableIcons[_selectedIconIndex],
+      );
+    } else {
+      await notifier.addGroup(
+        _nameController.text.trim(),
+        _subjectController.text.trim(),
+        AddNewClassPopupWidget.availableIcons[_selectedIconIndex],
+      );
+    }
     
     // Pokud nenastala žádná chyba, zavřít okno
     if (mounted && ref.read(classOverviewProvider).errorMessage == null) {
@@ -82,7 +106,7 @@ class _AddNewClassPopupWidgetState extends ConsumerState<AddNewClassPopupWidget>
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'Vytvořit novou třídu',
+            _isEditing ? 'Upravit třídu' : 'Vytvořit novou třídu',
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 20.0, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.onSurface),
           ),
@@ -113,7 +137,7 @@ class _AddNewClassPopupWidgetState extends ConsumerState<AddNewClassPopupWidget>
           const SizedBox(height: 10.0),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: List.generate(_availableIcons.length, (index) {
+            children: List.generate(AddNewClassPopupWidget.availableIcons.length, (index) {
               final isSelected = _selectedIconIndex == index;
               return InkWell(
                 borderRadius: BorderRadius.circular(10.0),
@@ -131,7 +155,7 @@ class _AddNewClassPopupWidgetState extends ConsumerState<AddNewClassPopupWidget>
                   ),
                   alignment: Alignment.center,
                   child: Icon(
-                    _availableIcons[index],
+                    AddNewClassPopupWidget.availableIcons[index],
                     color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.secondary,
                     size: 26.0,
                   ),

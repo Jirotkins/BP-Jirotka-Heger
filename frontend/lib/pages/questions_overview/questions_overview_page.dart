@@ -56,7 +56,37 @@ class _QuestionsOverviewPageState extends ConsumerState<QuestionsOverviewPage> {
     );
 
     if (confirm == true) {
-      notifier.deleteQuestion(questionId);
+      final error = await notifier.deleteQuestion(questionId);
+      
+      if (error == 'IN_USE') {
+        if (!mounted) return;
+        // Dialog pro vynucené smazání
+        final bool? forceConfirm = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Otázka je použita v testu'),
+            content: const Text('Tato otázka je již přiřazena v nějakém existujícím návrhu testu. Pokud ji smažete, bude z těchto testů odebrána. Opravdu ji chcete smazat?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Zrušit'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.error,
+                  foregroundColor: Theme.of(context).colorScheme.onError,
+                ),
+                child: const Text('Přesto smazat'),
+              ),
+            ],
+          ),
+        );
+        
+        if (forceConfirm == true) {
+          await notifier.deleteQuestion(questionId, force: true);
+        }
+      }
     }
   }
 

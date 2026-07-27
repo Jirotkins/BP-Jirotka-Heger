@@ -70,22 +70,27 @@ class QuestionsOverviewNotifier extends Notifier<QuestionsOverviewState> {
     }
   }
 
-  Future<void> deleteQuestion(int questionId) async {
-    if (state.bankId == 0) return;
+  Future<String?> deleteQuestion(int questionId, {bool force = false}) async {
+    if (state.bankId == 0) return 'Banka nenalezena';
     
     state = state.copyWith(isLoading: true, clearError: true);
 
     try {
       final apiClient = ref.read(apiClientProvider);
-      await apiClient.delete('/banks/${state.bankId}/questions/$questionId');
+      await apiClient.delete('/banks/${state.bankId}/questions/$questionId${force ? '?force=true' : ''}');
       
       // Znovu načíst seznam
       await fetchQuestions(state.bankId);
+      return null;
     } catch (e) {
-      state = state.copyWith(
-        errorMessage: 'Chyba při mazání otázky: $e',
-        isLoading: false,
-      );
+      state = state.copyWith(isLoading: false);
+      
+      if (e is ApiException && e.statusCode == 409) {
+        return 'IN_USE';
+      }
+      
+      state = state.copyWith(errorMessage: 'Chyba při mazání otázky: $e');
+      return e.toString();
     }
   }
 

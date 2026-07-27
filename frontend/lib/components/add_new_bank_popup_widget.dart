@@ -3,7 +3,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../pages/bank_overview/bank_overview_provider.dart';
 
 class AddNewBankPopupWidget extends ConsumerStatefulWidget {
-  const AddNewBankPopupWidget({super.key});
+  final int? bankId;
+  final String? initialName;
+  final String? initialSubject;
+  final int? initialIconIndex;
+
+  const AddNewBankPopupWidget({
+    super.key,
+    this.bankId,
+    this.initialName,
+    this.initialSubject,
+    this.initialIconIndex,
+  });
 
   @override
   ConsumerState<AddNewBankPopupWidget> createState() => _AddNewBankPopupWidgetState();
@@ -15,16 +26,19 @@ class _AddNewBankPopupWidgetState extends ConsumerState<AddNewBankPopupWidget> {
   late TextEditingController _subjectController;
   late FocusNode _subjectFocusNode;
 
-  int _selectedIconIndex = 0;
+  late int _selectedIconIndex;
   String? _localError;
+
+  bool get _isEditing => widget.bankId != null;
 
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController();
+    _nameController = TextEditingController(text: widget.initialName ?? '');
     _nameFocusNode = FocusNode();
-    _subjectController = TextEditingController();
+    _subjectController = TextEditingController(text: widget.initialSubject ?? '');
     _subjectFocusNode = FocusNode();
+    _selectedIconIndex = widget.initialIconIndex ?? 0;
   }
 
   @override
@@ -44,12 +58,22 @@ class _AddNewBankPopupWidgetState extends ConsumerState<AddNewBankPopupWidget> {
 
     setState(() => _localError = null);
     
-    // Uložit přes provider
-    await ref.read(bankOverviewProvider.notifier).addBank(
-      _nameController.text.trim(),
-      _subjectController.text.trim(),
-      _selectedIconIndex,
-    );
+    final notifier = ref.read(bankOverviewProvider.notifier);
+    
+    if (_isEditing) {
+      await notifier.updateBank(
+        widget.bankId!,
+        _nameController.text.trim(),
+        _subjectController.text.trim(),
+        _selectedIconIndex,
+      );
+    } else {
+      await notifier.addBank(
+        _nameController.text.trim(),
+        _subjectController.text.trim(),
+        _selectedIconIndex,
+      );
+    }
     
     if (mounted && ref.read(bankOverviewProvider).errorMessage == null) {
       Navigator.of(context).pop();
@@ -75,7 +99,7 @@ class _AddNewBankPopupWidgetState extends ConsumerState<AddNewBankPopupWidget> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'Vytvořit novou banku',
+            _isEditing ? 'Upravit banku' : 'Vytvořit novou banku',
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 20.0, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.onSurface),
           ),

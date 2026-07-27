@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 class StudentRowWidget extends StatelessWidget {
   final int id;
   final String studentName;
+  final VoidCallback? onDelete;
 
   const StudentRowWidget({
     super.key,
     required this.id,
     required this.studentName,
+    this.onDelete,
   });
 
   @override
@@ -65,7 +67,7 @@ class StudentRowWidget extends StatelessWidget {
                 // Tlačítko Smazat
                 IconButton(
                   icon: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error, size: 18.0),
-                  onPressed: () => print('Smazat studenta: $id'),
+                  onPressed: onDelete,
                   constraints: const BoxConstraints(),
                   padding: const EdgeInsets.all(8.0),
                   tooltip: 'Odebrat ze třídy',
