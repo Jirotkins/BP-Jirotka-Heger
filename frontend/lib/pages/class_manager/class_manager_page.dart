@@ -130,7 +130,7 @@ class _ClassManagerPageState extends ConsumerState<ClassManagerPage> {
   String _formatDate(String? isoDate) {
     if (isoDate == null) return 'Neurčito';
     try {
-      final date = DateTime.parse(isoDate).toLocal();
+      final date = DateTime.parse(isoDate.endsWith('Z') ? isoDate : '${isoDate}Z').toLocal();
       return DateFormat('dd. MM. yyyy HH:mm').format(date);
     } catch (e) {
       return isoDate;

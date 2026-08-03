@@ -1536,6 +1536,14 @@ from schemas import (
     SaveAnswersRequest, SubmitAttemptResponse
 )
 
+@app.get("/api/student/groups", tags=["Studentské Rozhraní"])
+def get_student_groups_endpoint(
+    current_student: dict = Depends(require_student),
+    db: Session = Depends(get_db)
+):
+    """Získat seznam tříd (skupin), ve kterých je student přiřazen."""
+    return db_layer.get_student_groups(db, current_student["user_id"])
+
 @app.get("/api/student/assignments", response_model=list[StudentAssignmentResponse], tags=["Studentské Rozhraní"])
 def get_student_assignments_endpoint(
     current_student: dict = Depends(require_student),

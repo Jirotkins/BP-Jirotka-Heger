@@ -79,9 +79,10 @@ class AuthNotifier extends Notifier<AuthState> {
     final payload = {
       "username": username,
       "password": password,
+      "is_teacher": !isStudent,
     };
 
-    final endpoint = isStudent ? '/login/student' : '/login/teacher';
+    final endpoint = '/login';
 
     // Pokud request selže, ApiClient vyhodí ApiException, kterou chytíme v UI
     final response = await apiClient.post(endpoint, payload);

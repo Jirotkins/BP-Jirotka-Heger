@@ -28,6 +28,27 @@ class _StudentOverviewPageState extends ConsumerState<StudentOverviewPage> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(studentOverviewProvider);
+    
+    // Filtrujeme pouze skutečně aktivní testy (začaté, nebo dostupné)
+    final now = DateTime.now();
+    final trulyActiveTests = state.activeTests.where((test) {
+      final String? activateTo = test['rawActivateTo'];
+      final String? activateFrom = test['rawActivateFrom'];
+      
+      if (activateFrom != null) {
+        final fromDate = DateTime.parse(activateFrom.endsWith('Z') ? activateFrom : '${activateFrom}Z').toLocal();
+        if (now.isBefore(fromDate)) return false;
+      }
+      if (activateTo != null) {
+        final toDate = DateTime.parse(activateTo.endsWith('Z') ? activateTo : '${activateTo}Z').toLocal();
+        if (now.isAfter(toDate)) return false;
+      }
+
+      if (test['status'] == 'STARTED') return true;
+      if (test['status'] != null) return false; // Odevzdané nebo ohodnocené nepatří do aktivních
+      
+      return true;
+    }).toList();
 
     return Scaffold(
       key: scaffoldKey,
@@ -71,12 +92,13 @@ class _StudentOverviewPageState extends ConsumerState<StudentOverviewPage> {
               ],
 
               // 1. SEKCE: AKTIVNÍ TESTY (Prioritní, vyžadují akci)
-              _buildSectionHeader('Aktivní testy', state.activeTests.length, Theme.of(context).colorScheme.error),
-              const SizedBox(height: 16),
-              // Vykreslí všechny probíhající testy jako velké červené karty
-              ...state.activeTests.map((test) => _buildActiveTestCard(test)).toList(),
-
-              const SizedBox(height: 32),
+              if (trulyActiveTests.isNotEmpty) ...[
+                _buildSectionHeader('Aktivní testy', trulyActiveTests.length, Theme.of(context).colorScheme.error),
+                const SizedBox(height: 16),
+                // Vykreslí všechny probíhající testy jako velké červené karty
+                ...trulyActiveTests.map((test) => _buildActiveTestCard(test)).toList(),
+                const SizedBox(height: 32),
+              ],
 
               // 2. SEKCE: MOJE PŘEDMĚTY
               _buildSectionHeader('Moje předměty', null, null),

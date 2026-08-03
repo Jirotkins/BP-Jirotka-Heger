@@ -1,5 +1,5 @@
 from pydantic import BaseModel, field_validator
-
+from datetime import datetime
 
 class LoginRequest(BaseModel):
     username: str  # email pro učitele, login_code pro studenta
@@ -304,8 +304,8 @@ class StudentAttemptResponse(BaseModel):
     attempt_id: int
     assignment_id: int
     student_id: int
-    started_at: str
-    finished_at: str = None
+    started_at: datetime
+    finished_at: datetime | None = None
     status: str  # STARTED, SUBMITTED, GRADED
     total_points: float = None
     max_points: float = None
@@ -321,8 +321,8 @@ class StudentAttemptDetailedResponse(BaseModel):
     attempt_id: int
     assignment_id: int
     student_id: int
-    started_at: str
-    finished_at: str = None
+    started_at: datetime
+    finished_at: datetime | None = None
     status: str
     total_points: float = None
     max_points: float = None
@@ -420,6 +420,9 @@ class StudentAssignmentResponse(BaseModel):
     time_limit_minutes: int | None = None
     requires_password: bool
     status: str | None = None  # None, STARTED, SUBMITTED, GRADED
+    group_id: int | None = None
+    group_name: str | None = None
+    question_count: int | None = None
     
     class Config:
         from_attributes = True
@@ -431,7 +434,7 @@ class StartAttemptRequest(BaseModel):
 
 class StartAttemptResponse(BaseModel):
     attempt_id: int
-    started_at: str
+    started_at: datetime
     time_limit_minutes: int | None = None
     questions_snapshot: list[dict]
     

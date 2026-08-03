@@ -1308,6 +1308,21 @@ def get_group_assignments_overview(db: Session, group_id: int, teacher_id: int) 
 # --- Student Test Taking API ---
 from datetime import datetime, timezone
 
+def get_student_groups(db: Session, student_id: int):
+    student = db.query(Student).filter(Student.student_id == student_id).first()
+    if not student:
+        return []
+        
+    result = []
+    for g in student.groups:
+        result.append({
+            "group_id": g.group_id,
+            "name": g.name,
+            "teacher_name": g.teacher.name,
+            "description": g.description
+        })
+    return result
+
 def get_student_assignments(db: Session, student_id: int):
     # Najít všechny skupiny, ve kterých student je
     student = db.query(Student).filter(Student.student_id == student_id).first()
@@ -1342,7 +1357,10 @@ def get_student_assignments(db: Session, student_id: int):
             "activate_to": a.activate_to.isoformat() if a.activate_to else None,
             "time_limit_minutes": a.time_limit_minutes,
             "requires_password": requires_password,
-            "status": status
+            "status": status,
+            "group_id": a.group_id,
+            "group_name": a.group.name if a.group else None,
+            "question_count": len(a.template.question_associations) if a.template else 0
         })
     return result
 
@@ -1354,7 +1372,7 @@ def start_student_attempt(db: Session, student_id: int, assignment_id: int, pass
     if not assignment.is_active:
         raise Exception("Test momentálně není aktivní.")
         
-    now = datetime.now(timezone.utc)
+    now = datetime.utcnow()
     if assignment.activate_from and now < assignment.activate_from:
         raise Exception("Čas pro test ještě nenastal.")
     if assignment.activate_to and now > assignment.activate_to:
@@ -1370,6 +1388,7 @@ def start_student_attempt(db: Session, student_id: int, assignment_id: int, pass
     ).first()
     
     if existing_attempt:
+        existing_attempt.time_limit_minutes = assignment.time_limit_minutes
         return existing_attempt  # Můžeme vrátit existující, pokud už začal
         
     # Vytvořit snapshot otázek
@@ -1418,6 +1437,7 @@ def start_student_attempt(db: Session, student_id: int, assignment_id: int, pass
     db.commit()
     db.refresh(new_attempt)
     
+    new_attempt.time_limit_minutes = assignment.time_limit_minutes
     return new_attempt
 
 
@@ -1469,19 +1489,23 @@ def save_student_answers(db: Session, student_id: int, attempt_id: int, answers_
             is_correct = False
             
             if q_type == "SINGLE_CHOICE":
-                if len(correct_answers) > 0 and correct_answers[0]["answer_id"] == ans_data:
+                if len(correct_answers) > 0 and str(correct_answers[0]["answer_id"]) == str(ans_data):
                     is_correct = True
             elif q_type == "MULTI_CHOICE":
                 if isinstance(ans_data, list):
-                    correct_ids = set(a["answer_id"] for a in correct_answers)
-                    selected_ids = set(ans_data)
+                    correct_ids = set(str(a["answer_id"]) for a in correct_answers)
+                    selected_ids = set(str(ans) for ans in ans_data)
                     if correct_ids == selected_ids:
                         is_correct = True
             elif q_type == "ORDERING":
                 if isinstance(ans_data, list):
                     sorted_correct = sorted(q_snap["answers"], key=lambda x: x.get("order_index", 0))
-                    correct_ids_ordered = [a["answer_id"] for a in sorted_correct]
-                    if correct_ids_ordered == ans_data:
+                    if len(ans_data) > 0 and isinstance(ans_data[0], str) and not ans_data[0].isdigit():
+                        correct_ordered = [a["text"] for a in sorted_correct]
+                    else:
+                        correct_ordered = [str(a["answer_id"]) for a in sorted_correct]
+                    selected_ordered = [str(ans) if isinstance(ans, int) or str(ans).isdigit() else ans for ans in ans_data]
+                    if correct_ordered == selected_ordered:
                         is_correct = True
                         
             feedback_detail[q_id] = "correct" if is_correct else "incorrect"
@@ -1518,28 +1542,30 @@ def auto_grade(questions_snapshot: list, student_answers: dict):
         correct_answers = [a for a in q_snap["answers"] if a.get("is_correct", False)]
         
         if q_type == "SINGLE_CHOICE":
-            # ans_data by mělo být answer_id (int)
-            if len(correct_answers) > 0 and correct_answers[0]["answer_id"] == ans_data:
+            # ans_data by mohl být answer_id (int) nebo string
+            if len(correct_answers) > 0 and str(correct_answers[0]["answer_id"]) == str(ans_data):
                 total_points += points
                 
         elif q_type == "MULTI_CHOICE":
-            # ans_data by měl být list[int]
             if isinstance(ans_data, list):
-                correct_ids = set(a["answer_id"] for a in correct_answers)
-                selected_ids = set(ans_data)
+                correct_ids = set(str(a["answer_id"]) for a in correct_answers)
+                selected_ids = set(str(ans) for ans in ans_data)
                 # Vše nebo nic
                 if correct_ids == selected_ids:
                     total_points += points
                     
         elif q_type == "ORDERING":
-            # ans_data by měl být list[int]
             if isinstance(ans_data, list):
                 # Seřadit správné odpovědi podle order_index
                 sorted_correct = sorted(q_snap["answers"], key=lambda x: x.get("order_index", 0))
-                correct_ids_ordered = [a["answer_id"] for a in sorted_correct]
+                if len(ans_data) > 0 and isinstance(ans_data[0], str) and not ans_data[0].isdigit():
+                    correct_ordered = [a["text"] for a in sorted_correct]
+                else:
+                    correct_ordered = [str(a["answer_id"]) for a in sorted_correct]
+                selected_ordered = [str(ans) if isinstance(ans, int) or str(ans).isdigit() else ans for ans in ans_data]
                 
                 # Vše nebo nic
-                if correct_ids_ordered == ans_data:
+                if correct_ordered == selected_ordered:
                     total_points += points
                     
     return total_points, has_open_text
@@ -1561,7 +1587,7 @@ def submit_student_attempt(db: Session, student_id: int, attempt_id: int, final_
         attempt.student_answers = final_answers
         
     # Zastavení času
-    now = datetime.now(timezone.utc)
+    now = datetime.utcnow()
     
     # Auto grade
     total_points, has_open_text = auto_grade(attempt.questions_snapshot, attempt.student_answers)

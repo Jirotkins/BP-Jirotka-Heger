@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart' hide Notifier;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import '../../services/api_client.dart';
 
 class StudentOverviewState {
@@ -42,47 +43,65 @@ class StudentOverviewNotifier extends Notifier<StudentOverviewState> {
     try {
       final apiClient = ref.read(apiClientProvider);
       
-      // Pokus o stažení dat z backendu (endpoint momentálně neexistuje)
-      final response = await apiClient.get('/student/dashboard');
+      // Pokus o stažení dat z backendu
+      final response = await apiClient.get('/api/student/assignments');
+      final groupsResponse = await apiClient.get('/api/student/groups');
       
+      // Backend vrací list objektů
+      final List<dynamic> assignmentList = response;
+      final List<dynamic> groupsList = groupsResponse;
+      
+      final activeTestsList = assignmentList.map((assignment) {
+        return {
+          'id': assignment['assignment_id'],
+          'title': assignment['template_name'] ?? 'Neznámý test',
+          'deadline': assignment['activate_to'] != null 
+              ? DateFormat('dd. MM. yyyy HH:mm').format(DateTime.parse(assignment['activate_to'].endsWith('Z') ? assignment['activate_to'] : '${assignment['activate_to']}Z').toLocal())
+              : 'Bez termínu',
+          'rawActivateFrom': assignment['activate_from'],
+          'rawActivateTo': assignment['activate_to'],
+          'expiresIn': '${assignment['time_limit_minutes'] ?? 0} min',
+          'status': assignment['status'],
+          'groupName': assignment['group_name'] ?? '',
+          'groupId': assignment['group_id']?.toString() ?? '',
+          'questions': assignment['question_count'] ?? 0,
+        };
+      }).toList();
+
+      final colors = [const Color(0xFF4285F4), const Color(0xFF34A853), const Color(0xFFAB47DB), const Color(0xFFF4B400)];
+      final mySubjectsList = groupsList.asMap().entries.map((entry) {
+        final idx = entry.key;
+        final group = entry.value;
+        final name = group['name'] as String? ?? 'Neznámá třída';
+        final groupId = group['group_id'].toString();
+        
+        final testCount = activeTestsList.where((t) => t['groupId'] == groupId).length;
+        
+        return {
+          'id': groupId,
+          'code': name.length >= 2 ? name.substring(0, 2).toUpperCase() : name.toUpperCase(),
+          'name': name,
+          'teacher': group['teacher_name'] ?? 'Neznámý učitel',
+          'color': colors[idx % colors.length],
+          'testCount': testCount,
+          'status': 'active',
+          'timeText': '',
+        };
+      }).toList();
+
       state = state.copyWith(
-        activeTests: List<Map<String, dynamic>>.from(response['active_tests'] ?? []),
-        mySubjects: List<Map<String, dynamic>>.from(response['subjects'] ?? []),
+        activeTests: activeTestsList,
+        mySubjects: mySubjectsList,
         isLoading: false,
       );
     } catch (e) {
-      // Fallback
-      _useFallbackMockData();
+      state = state.copyWith(
+        activeTests: [],
+        mySubjects: [],
+        isLoading: false,
+        errorMessage: 'Nepodařilo se načíst data z API: $e',
+      );
     }
-  }
-
-  void _useFallbackMockData() {
-    state = state.copyWith(
-      activeTests: [
-        {
-          'id': 999, // ID přiřazení (assignmentId)
-          'title': 'Matematika – Funkce',
-          'deadline': 'Dnes 23:59',
-          'expiresIn': '45 min',
-        }
-      ],
-      mySubjects: [
-        {
-          'id': 'sub_1', 'code': 'MA', 'name': 'Matematika', 'teacher': 'Ing. Petr Svoboda', 
-          'color': const Color(0xFF4285F4), 'testCount': 3, 'status': 'active', 'timeText': 'Vyprší 45 min'
-        },
-        {
-          'id': 'sub_2', 'code': 'FY', 'name': 'Fyzika', 'teacher': 'doc. Jana Horáková', 
-          'color': const Color(0xFF34A853), 'testCount': 2, 'status': 'upcoming', 'timeText': 'Za 2 dny'
-        },
-        {
-          'id': 'sub_3', 'code': 'CH', 'name': 'Chemie', 'teacher': 'Mgr. Tomáš Blažek', 
-          'color': const Color(0xFFAB47DB), 'testCount': 4, 'status': 'none', 'timeText': 'Vše ohodnoceno'
-        },
-      ],
-      isLoading: false,
-      errorMessage: 'Nepodařilo se načíst data z API, používám ukázková data.',
-    );
   }
 }
 

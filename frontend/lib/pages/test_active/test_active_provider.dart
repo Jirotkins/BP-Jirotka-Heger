@@ -54,44 +54,7 @@ class TestActiveNotifier extends Notifier<TestActiveState> {
   Timer? _timer;
   int? _assignmentId;
 
-  // Mock fallback
-  final List<Map<String, dynamic>> _mockQuestions = [
-    {
-      "id": "q1",
-      "type": "choice",
-      "text": "Co je energetickým centrem buňky?",
-      "options": [
-        {"letter": "A", "text": "Jádro"},
-        {"letter": "B", "text": "Mitochondrie"},
-        {"letter": "C", "text": "Ribozom"},
-        {"letter": "D", "text": "Chloroplast"}
-      ]
-    },
-    {
-      "id": "q2",
-      "type": "open",
-      "text": "Stručně popište funkci buněčné membrány.",
-    },
-    {
-      "id": "q3",
-      "type": "short_answer",
-      "text": "Jak se nazývá proces dělení tělních buněk?",
-    },
-    {
-      "id": "q4",
-      "type": "order",
-      "text": "Seřaďte fáze buněčného cyklu (mitózy) ve správném pořadí.",
-      "items": ["Telofáze", "Profáze", "Anafáze", "Metafáze"],
-    },
-    {
-      "id": "q5",
-      "type": "match",
-      "text": "Přiřaďte buněčné organely k jejich správným funkcím.",
-      "leftItems": ["Ribozom", "Chloroplast", "Jádro"],
-      "rightItems": ["Uchování DNA", "Syntéza bílkovin", "Fotosyntéza"],
-    }
-  ];
-
+  int? _attemptId;
   @override
   TestActiveState build() {
     ref.onDispose(() {
@@ -103,7 +66,7 @@ class TestActiveNotifier extends Notifier<TestActiveState> {
   Future<void> fetchTest(int? assignmentId) async {
     _assignmentId = assignmentId;
     if (assignmentId == null) {
-      _useFallbackMockData('Chybí ID přiřazení testu.');
+      _showError('Chybí ID přiřazení testu.');
       return;
     }
 
@@ -111,31 +74,64 @@ class TestActiveNotifier extends Notifier<TestActiveState> {
 
     try {
       final apiClient = ref.read(apiClientProvider);
-      final response = await apiClient.get('/exam-assignments/$assignmentId/take');
+      final response = await apiClient.post('/api/student/assignments/$assignmentId/start', {});
       
-      final questions = List<Map<String, dynamic>>.from(response['questions'] ?? []);
+      _attemptId = response['attempt_id'];
+      final rawQuestions = List<Map<String, dynamic>>.from(response['questions_snapshot'] ?? []);
+      final questions = rawQuestions.map((q) {
+        var mapped = Map<String, dynamic>.from(q);
+        var answers = List<Map<String, dynamic>>.from(mapped['answers'] ?? []);
+        
+        if (mapped['type'] == 'SINGLE_CHOICE' || mapped['type'] == 'MULTI_CHOICE') {
+          mapped['options'] = answers.map((a) => {
+            'letter': a['answer_id'].toString(), // Use answer_id as the letter/value
+            'text': a['text'],
+          }).toList();
+        } else if (mapped['type'] == 'ORDERING') {
+          mapped['items'] = answers.map((a) => a['text'].toString()).toList();
+          (mapped['items'] as List).shuffle();
+        } else if (mapped['type'] == 'MATCHING' || mapped['type'] == 'match') {
+          mapped['leftItems'] = [];
+          mapped['rightItems'] = [];
+        }
+        
+        return mapped;
+      }).toList();
+      
+      // Pokusí se najít časový limit z původního assignmentu
+      // Pokud ho backend v 'response' neposílá, tak tu dá fallback
       int limitMinutes = response['time_limit_minutes'] ?? 0;
+      int remaining = limitMinutes > 0 ? limitMinutes * 60 : 0;
+      
+      if (limitMinutes > 0 && response['started_at'] != null) {
+        String startedStr = response['started_at'];
+        if (!startedStr.endsWith('Z')) startedStr += 'Z';
+        final startedAt = DateTime.parse(startedStr).toLocal();
+        final now = DateTime.now();
+        final elapsed = now.difference(startedAt).inSeconds;
+        remaining = remaining - elapsed;
+        if (remaining < 0) remaining = 0;
+      }
       
       state = state.copyWith(
         questions: questions,
-        remainingSeconds: limitMinutes > 0 ? limitMinutes * 60 : 0,
+        remainingSeconds: remaining,
         isLoading: false,
       );
 
       _startTimer();
     } catch (e) {
-      _useFallbackMockData('Nepodařilo se načíst test ze serveru ($e). Používám ukázková data.');
+      _showError('Nepodařilo se načíst test ze serveru: $e');
     }
   }
 
-  void _useFallbackMockData(String message) {
+  void _showError(String message) {
     state = state.copyWith(
-      questions: List<Map<String, dynamic>>.from(_mockQuestions),
-      remainingSeconds: 5 * 60, // 5 minut fallback
+      questions: [],
+      remainingSeconds: 0,
       isLoading: false,
       errorMessage: message,
     );
-    _startTimer();
   }
 
   void _startTimer() {
@@ -181,7 +177,7 @@ class TestActiveNotifier extends Notifier<TestActiveState> {
   Future<void> submitTest({bool autoSubmit = false}) async {
     state = state.copyWith(isLoading: true); 
     
-    if (_assignmentId != null) {
+    if (_attemptId != null) {
       try {
         final apiClient = ref.read(apiClientProvider);
         
@@ -194,9 +190,15 @@ class TestActiveNotifier extends Notifier<TestActiveState> {
           });
         });
 
-        await apiClient.post('/exam-assignments/$_assignmentId/attempts', {
-          "answers": answersPayload
-        });
+        // Uloží odpovědi
+        if (answersPayload.isNotEmpty) {
+          await apiClient.put('/api/student/attempts/$_attemptId/answers', {
+            "answers": answersPayload
+          });
+        }
+        
+        // Odevzdá test
+        await apiClient.post('/api/student/attempts/$_attemptId/submit', {});
 
         state = state.copyWith(
           isExiting: true, 
@@ -206,12 +208,12 @@ class TestActiveNotifier extends Notifier<TestActiveState> {
       } catch (e) {
         state = state.copyWith(
           isExiting: true,
-          errorMessage: 'Endpoint pro odevzdání chybí. Odpovědi: ${state.selectedAnswers}',
+          errorMessage: 'Chyba při odevzdání: $e',
           isLoading: false,
         );
       }
     } else {
-      state = state.copyWith(isExiting: true, isLoading: false);
+      state = state.copyWith(isExiting: true, isLoading: false, errorMessage: 'Není známo ID pokusu.');
     }
   }
 }

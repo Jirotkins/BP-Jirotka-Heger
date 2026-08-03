@@ -3,60 +3,56 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../theme/app_themes.dart';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../student_overview/student_overview_provider.dart';
+
 // Stránka s detailem konkrétního předmětu (např. Matematika).
 // Zobrazuje statistiky, právě probíhající test, budoucí termíny a historii.
-class SubjectPage extends StatefulWidget {
+class SubjectPage extends ConsumerStatefulWidget {
   const SubjectPage({super.key});
 
   @override
-  State<SubjectPage> createState() => _SubjectPageState();
+  ConsumerState<SubjectPage> createState() => _SubjectPageState();
 }
 
-class _SubjectPageState extends State<SubjectPage> {
+class _SubjectPageState extends ConsumerState<SubjectPage> {
   final scaffoldKey = GlobalKey<ScaffoldState>();
-
-  // Právě probíhající test (pokud existuje). Pokud ne, hodnota je null.
-  final Map<String, dynamic>? _activeTest = {
-    'id': 999,
-    'title': 'Funkce',
-    'info': 'Termín: 15. 1. 2025 • 20 otázek',
-  };
-
-  // Seznam budoucích testů
-  final List<Map<String, dynamic>> _upcomingTests = [
-    {
-      'id': 'test_789', 
-      'title': 'Rovnice a nerovnice',
-      'deadline': '28. 1. 2025',
-      'questions': 15,
-    }
-  ];
-
-  // Seznam dokončených a opravených testů
-  final List<Map<String, dynamic>> _pastTests = [
-    {
-      'id': 'test_700',
-      'title': 'Geometrie – obvod a obsah',
-      'date': '10. 12. 2024',
-      'questions': 18,
-      'score': '85%',
-    },
-    {
-      'id': 'test_701',
-      'title': 'Přirozená čísla a operace',
-      'date': '20. 11. 2024',
-      'questions': 25,
-      'score': '60%',
-      'isWarning': true, // Slouží k obarvení skóre na oranžovo/červeno
-    }
-  ];
 
   @override
   Widget build(BuildContext context) {
     // Načtení argumentů předaných přes navigaci (např. z domovské stránky)
-    // Předáváme id a název předmětu, aby se nemusel název tahat z API jen kvůli hlavičce
     final args = GoRouterState.of(context).extra as Map<String, dynamic>?;
-    final String subjectName = args?['subjectName'] ?? 'Matematika';
+    final String subjectName = args?['subjectName'] ?? 'Předmět';
+    final String subjectId = args?['subjectId']?.toString() ?? '';
+
+    final overviewState = ref.watch(studentOverviewProvider);
+    final subjectAssignments = overviewState.activeTests.where((test) => test['groupId'] == subjectId).toList();
+
+    Map<String, dynamic>? activeTest;
+    List<Map<String, dynamic>> upcomingTests = [];
+    List<Map<String, dynamic>> pastTests = [];
+
+    for (var test in subjectAssignments) {
+      final status = test['status'];
+      final uiTest = {
+        'id': test['id'],
+        'title': test['title'],
+        'deadline': test['deadline'],
+        'info': 'Termín: ${test['deadline']} • ${test['questions']} otázek',
+        'date': test['deadline'],
+        'questions': test['questions'] ?? 0,
+        'score': status == 'GRADED' ? 'Ohodnoceno' : 'Čeká na hodnocení',
+        'isWarning': false,
+      };
+
+      if (status == 'STARTED') {
+        activeTest = uiTest; // Pro zjednodušení bere první spuštěný
+      } else if (status == 'SUBMITTED' || status == 'GRADED') {
+        pastTests.add(uiTest);
+      } else {
+        upcomingTests.add(uiTest);
+      }
+    }
 
     return Scaffold(
       key: scaffoldKey,
@@ -131,13 +127,13 @@ class _SubjectPageState extends State<SubjectPage> {
               const SizedBox(height: 32.0),
 
               // 2. AKTIVNÍ TEST (Zobrazí se POUZE, pokud nějaký aktuálně probíhá)
-              if (_activeTest != null) ...[
+              if (activeTest != null) ...[
                 _buildSectionHeader('Aktivní testy', 1, Theme.of(context).colorScheme.error),
                 const SizedBox(height: 16.0),
                 InkWell(
                   onTap: () {
                     // Navigace do ostrého testu s předáním ID testu
-                    context.push('/testActive', extra: {'assignmentId': _activeTest!['id'], 'testTitle': _activeTest!['title']});
+                    context.push('/testActive', extra: {'assignmentId': activeTest!['id'], 'testTitle': activeTest!['title']});
                   },
                   borderRadius: BorderRadius.circular(12.0),
                   child: Container(
@@ -161,9 +157,9 @@ class _SubjectPageState extends State<SubjectPage> {
                                 ],
                               ),
                               const SizedBox(height: 6),
-                              Text(_activeTest!['title'], style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16.0, color: Theme.of(context).colorScheme.onSurface)),
+                              Text(activeTest!['title'], style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16.0, color: Theme.of(context).colorScheme.onSurface)),
                               const SizedBox(height: 2),
-                              Text(_activeTest!['info'], style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontSize: 12.0)),
+                              Text(activeTest!['info'], style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontSize: 12.0)),
                             ],
                           ),
                         ),
@@ -176,55 +172,62 @@ class _SubjectPageState extends State<SubjectPage> {
               ],
 
               // 3. NADCHÁZEJÍCÍ TESTY
-              _buildSectionHeader('Nadcházející testy', null, null),
+              _buildSectionHeader('Nadcházející testy', upcomingTests.isEmpty ? null : upcomingTests.length, null),
               const SizedBox(height: 12.0),
-              Container(
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
-                  borderRadius: BorderRadius.circular(16.0),
-                  border: Border.all(color: Theme.of(context).colorScheme.outline),
+              if (upcomingTests.isEmpty)
+                Text('Zatím nejsou naplánovány žádné testy.', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontSize: 14))
+              else
+                Container(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface,
+                    borderRadius: BorderRadius.circular(16.0),
+                    border: Border.all(color: Theme.of(context).colorScheme.outline),
+                  ),
+                  child: Column(
+                    children: upcomingTests.asMap().entries.map((entry) {
+                      int index = entry.key;
+                      Map<String, dynamic> test = entry.value;
+                      return Column(
+                        children: [
+                          _buildUpcomingTestCard(test),
+                          // Vykreslí jemnou oddělovací čáru mezi položkami (kromě poslední)
+                          if (index != upcomingTests.length - 1)
+                            Divider(height: 1, thickness: 1, color: Theme.of(context).colorScheme.outline, indent: 20, endIndent: 20),
+                        ],
+                      );
+                    }).toList(),
+                  ),
                 ),
-                child: Column(
-                  children: _upcomingTests.asMap().entries.map((entry) {
-                    int index = entry.key;
-                    Map<String, dynamic> test = entry.value;
-                    return Column(
-                      children: [
-                        _buildUpcomingTestCard(test),
-                        // Vykreslí jemnou oddělovací čáru mezi položkami (kromě poslední)
-                        if (index != _upcomingTests.length - 1)
-                          Divider(height: 1, thickness: 1, color: Theme.of(context).colorScheme.outline, indent: 20, endIndent: 20),
-                      ],
-                    );
-                  }).toList(),
-                ),
-              ),
 
               const SizedBox(height: 32.0),
 
-              // 4. HISTORIE (PŘEDCHOZÍ TESTY)
-              _buildSectionHeader('Předchozí testy', null, null),
+              // 4. HISTORIE (Minulé testy)
+              _buildSectionHeader('Historie testů', pastTests.isEmpty ? null : pastTests.length, null),
               const SizedBox(height: 12.0),
-              Container(
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
-                  borderRadius: BorderRadius.circular(16.0),
-                  border: Border.all(color: Theme.of(context).colorScheme.outline),
+              if (pastTests.isEmpty)
+                Text('Zatím nemáš žádnou historii testů.', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontSize: 14))
+              else
+                Container(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface,
+                    borderRadius: BorderRadius.circular(16.0),
+                    border: Border.all(color: Theme.of(context).colorScheme.outline),
+                  ),
+                  child: Column(
+                    children: pastTests.asMap().entries.map((entry) {
+                      int index = entry.key;
+                      Map<String, dynamic> test = entry.value;
+                      return Column(
+                        children: [
+                          _buildPastTestCard(test),
+                          // Čára
+                          if (index != pastTests.length - 1)
+                            Divider(height: 1, thickness: 1, color: Theme.of(context).colorScheme.outline, indent: 20, endIndent: 20),
+                        ],
+                      );
+                    }).toList(),
+                  ),
                 ),
-                child: Column(
-                  children: _pastTests.asMap().entries.map((entry) {
-                    int index = entry.key;
-                    Map<String, dynamic> test = entry.value;
-                    return Column(
-                      children: [
-                        _buildPastTestCard(test),
-                        if (index != _pastTests.length - 1)
-                          Divider(height: 1, thickness: 1, color: Theme.of(context).colorScheme.outline, indent: 20, endIndent: 20),
-                      ],
-                    );
-                  }).toList(),
-                ),
-              ),
               
               const SizedBox(height: 40.0), // Místo pro plynulý scroll dolů
             ],
