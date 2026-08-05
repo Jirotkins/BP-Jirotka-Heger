@@ -16,3 +16,4 @@ export 'order_question/order_question_page.dart';
 export 'open_question/open_question_page.dart';
 export 'multi_choice_question/multi_choice_question_page.dart';
 export 'connect_question/connect_question_page.dart';
+export 'class_manager/test_attempts/test_attempts_page.dart';

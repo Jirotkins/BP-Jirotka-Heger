@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../services/api_client.dart';
+import '../../../services/api_client.dart';
+import 'package:intl/intl.dart';
 
 class TestEvaluationState {
   final bool isLoading;
@@ -8,7 +9,6 @@ class TestEvaluationState {
   final Map<String, String> teacherFeedbacks;
   final Map<String, String> awardedPoints;
   final Set<String> expandedQuestions;
-  
   final bool isSubmitting;
   final bool submitSuccess;
 
@@ -67,15 +67,18 @@ class TestEvaluationState {
 class TestEvaluationNotifier extends Notifier<TestEvaluationState> {
   int? _assignmentId;
   int? _attemptId;
+  bool _isStudent = false;
+  Map<String, dynamic> _rawStudentAnswers = {};
 
   @override
   TestEvaluationState build() {
     return TestEvaluationState();
   }
 
-  Future<void> fetchEvaluationData(int? assignmentId, int? attemptId) async {
+  Future<void> fetchEvaluationData(int? assignmentId, int? attemptId, {bool isStudent = false}) async {
     _assignmentId = assignmentId;
     _attemptId = attemptId;
+    _isStudent = isStudent;
     
     state = state.copyWith(isLoading: true, clearError: true);
 
@@ -84,11 +87,18 @@ class TestEvaluationNotifier extends Notifier<TestEvaluationState> {
       final aId = _assignmentId ?? 999;
       final attId = _attemptId ?? 1;
       
-      final response = await apiClient.get('/exam-assignments/$aId/attempts/$attId');
+      final url = _isStudent 
+          ? '/api/student/attempts/$attId' 
+          : '/exam-assignments/$aId/attempts/$attId';
+          
+      final response = await apiClient.get(url);
       
       _initializeStateFromData(response);
     } catch (e) {
-      _useFallbackMockData();
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: 'Chyba pri nacitani dat: $e'
+      );
     }
   }
 
@@ -97,27 +107,100 @@ class TestEvaluationNotifier extends Notifier<TestEvaluationState> {
     Map<String, String> points = {};
     Set<String> expanded = {};
     
-    if (data['questions'] != null) {
-      for (var question in data['questions']) {
-        String qId = question['id'];
-        
-        if (question['isExpanded'] == true) {
-          expanded.add(qId);
+    List<dynamic> snapshot = data['questions_snapshot'] ?? [];
+    _rawStudentAnswers = data['student_answers'] ?? {};
+    
+    List<Map<String, dynamic>> mappedQuestions = [];
+    int index = 1;
+    
+    for (var snap in snapshot) {
+      String qId = snap['question_id'].toString();
+      String rawType = snap['type']?.toString().toUpperCase() ?? 'OPEN_TEXT';
+      double maxPoints = (snap['points'] ?? 1).toDouble();
+      
+      dynamic ansData = _rawStudentAnswers[qId] ?? _rawStudentAnswers[int.tryParse(qId) ?? -1];
+      
+      dynamic studentAnswerValue = ansData;
+      double? awardedPoints;
+      String? teacherFeedback;
+      
+      if (ansData is Map<String, dynamic> && ansData.containsKey('value')) {
+        studentAnswerValue = ansData['value'];
+        if (ansData['awarded_points'] != null) {
+          awardedPoints = (ansData['awarded_points'] as num).toDouble();
         }
-        
-        if (question['type'] == 'open') {
-          if (question['teacherFeedback'] != null) {
-            feedbacks[qId] = question['teacherFeedback'];
-          }
-          if (question['awardedPoints'] != null) {
-            points[qId] = question['awardedPoints'].toString();
-          }
-        }
+        teacherFeedback = ansData['teacher_feedback'];
       }
+
+      String type = 'open';
+      if (rawType == 'SINGLE_CHOICE' || rawType == 'MULTI_CHOICE') type = 'choice';
+      if (rawType == 'SHORT_ANSWER') type = 'short_answer';
+      if (rawType == 'ORDERING') type = 'order';
+      if (rawType == 'MATCHING') type = 'match';
+      
+      bool isAutoGraded = (type != 'open');
+      
+      if (!isAutoGraded) {
+        expanded.add(qId);
+        if (teacherFeedback != null) feedbacks[qId] = teacherFeedback;
+        if (awardedPoints != null) points[qId] = awardedPoints.toString();
+      }
+
+      // Convert student answer to displayable string
+      dynamic displayStudentAnswer = studentAnswerValue;
+      if (type == 'choice') {
+         if (studentAnswerValue is List) {
+            displayStudentAnswer = studentAnswerValue.map((id) => _getAnswerText(snap, id)).join(", ");
+         } else if (studentAnswerValue != null) {
+            displayStudentAnswer = _getAnswerText(snap, studentAnswerValue);
+         }
+      } else if (type == 'order') {
+         if (studentAnswerValue is List) {
+            displayStudentAnswer = studentAnswerValue.map((id) => _getAnswerText(snap, id)).toList();
+         }
+      }
+
+      mappedQuestions.add({
+        "id": qId,
+        "number": index.toString(),
+        "type": type,
+        "text": snap['text'] ?? '',
+        "studentAnswer": displayStudentAnswer ?? '-',
+        "isCorrect": (awardedPoints ?? 0) > 0, 
+        "awardedPoints": awardedPoints ?? 0.0,
+        "maxPoints": maxPoints,
+        "isAutoGraded": isAutoGraded,
+        "isExpanded": !isAutoGraded,
+        "teacherFeedback": teacherFeedback,
+      });
+      index++;
     }
 
+    String status = data['status'] ?? 'UNKNOWN';
+    String statusText = status;
+    if (status == 'STARTED') statusText = 'Probíhá';
+    if (status == 'SUBMITTED') statusText = 'Odevzdáno';
+    if (status == 'GRADED') statusText = 'Ohodnoceno';
+
+    String submittedAtText = '-';
+    if (data['finished_at'] != null) {
+      String dateStr = data['finished_at'];
+      if (!dateStr.endsWith('Z')) dateStr += 'Z';
+      final date = DateTime.parse(dateStr).toLocal();
+      submittedAtText = DateFormat('dd. MM. yyyy HH:mm').format(date);
+    }
+
+    final mappedData = {
+      "studentName": "Student ID: ${data['student_id']}",
+      "subject": "Pokus #${data['attempt_id']}",
+      "classGroup": statusText,
+      "submittedAt": submittedAtText,
+      "maxScore": data['max_points'] ?? 0,
+      "questions": mappedQuestions,
+    };
+
     state = state.copyWith(
-      testData: data,
+      testData: mappedData,
       teacherFeedbacks: feedbacks,
       awardedPoints: points,
       expandedQuestions: expanded,
@@ -125,96 +208,15 @@ class TestEvaluationNotifier extends Notifier<TestEvaluationState> {
     );
   }
 
-  void _useFallbackMockData() {
-    final mockData = {
-      "studentName": "Jan Zápotocký",
-      "subject": "Biologie - Buňka 1",
-      "classGroup": "3.C bio",
-      "submittedAt": "12.05.2026",
-      "maxScore": 15,
-      "questions": [
-        {
-          "id": "q1",
-          "number": "1",
-          "type": "choice",
-          "text": "Co je energetickým centrem buňky?",
-          "studentAnswer": "Mitochondrie",
-          "isCorrect": true,
-          "awardedPoints": 1,
-          "maxPoints": 1,
-          "isAutoGraded": true,
-          "isExpanded": false,
-        },
-        {
-          "id": "q2",
-          "number": "2",
-          "type": "open",
-          "text": "Stručně popište funkci buněčné membrány.",
-          "studentAnswer": "Buněčná membrána funguje jako bariéra, která kontroluje vstup a výstup látek do buňky. Zároveň ji chrání.",
-          "teacherFeedback": "Skvělý popis! Zkuste příště zahrnout termín 'selektivní propustnost'.",
-          "awardedPoints": null,
-          "maxPoints": 5,
-          "isAutoGraded": false,
-          "isExpanded": true,
-        },
-        {
-          "id": "q3",
-          "number": "3",
-          "type": "short_answer",
-          "text": "Jak se nazývá proces dělení tělních buněk?",
-          "studentAnswer": "Meióza",
-          "isCorrect": false,
-          "awardedPoints": 0,
-          "maxPoints": 2,
-          "isAutoGraded": true,
-          "isExpanded": false,
-        },
-        {
-          "id": "q4",
-          "number": "4",
-          "type": "order",
-          "text": "Seřaďte fáze buněčného cyklu (mitózy) ve správném pořadí.",
-          "studentAnswer": ["Profáze", "Metafáze", "Anafáze", "Telofáze"],
-          "correctOrder": ["Profáze", "Metafáze", "Anafáze", "Telofáze"],
-          "isCorrect": true,
-          "awardedPoints": 4,
-          "maxPoints": 4,
-          "isAutoGraded": true,
-          "isExpanded": true,
-        },
-        {
-          "id": "q5",
-          "number": "5",
-          "type": "match",
-          "text": "Přiřaďte buněčné organely k jejich správným funkcím.",
-          "studentPairs": [
-            {
-              "left": "Ribozom",
-              "right": "Uchování DNA",
-              "isCorrect": false,
-              "correctRight": "Syntéza bílkovin",
-            },
-            {"left": "Chloroplast", "right": "Fotosyntéza", "isCorrect": true},
-            {
-              "left": "Jádro",
-              "right": "Syntéza bílkovin",
-              "isCorrect": false,
-              "correctRight": "Uchování DNA",
-            },
-          ],
-          "isCorrect": false,
-          "awardedPoints": 1,
-          "maxPoints": 3,
-          "isAutoGraded": true,
-          "isExpanded": true,
-        },
-      ],
-    };
-
-    _initializeStateFromData(mockData);
-    state = state.copyWith(
-      errorMessage: "Nepodařilo se stáhnout data ze serveru. Používám ukázková data."
-    );
+  String _getAnswerText(Map<String, dynamic> snap, dynamic id) {
+    if (snap['answers'] != null) {
+      for (var a in snap['answers']) {
+        if (a['answer_id'].toString() == id.toString()) {
+          return a['text'] ?? '';
+        }
+      }
+    }
+    return id.toString();
   }
 
   void toggleExpanded(String questionId) {
@@ -246,21 +248,38 @@ class TestEvaluationNotifier extends Notifier<TestEvaluationState> {
   Future<void> submitEvaluation() async {
     state = state.copyWith(isSubmitting: true, clearError: true);
     
-    // Zde připravíme data k odeslání
-    List<Map<String, dynamic>> evaluations = [];
-    state.teacherFeedbacks.forEach((qId, feedback) {
-      evaluations.add({
-        "question_id": qId,
-        "teacher_feedback": feedback,
-        "awarded_points": double.tryParse(state.awardedPoints[qId]?.replaceAll(',', '.') ?? '') ?? 0.0,
-      });
-    });
+    // Zde připravíme data k odeslání do dict `student_answers`
+    Map<String, dynamic> updatedAnswers = Map.from(_rawStudentAnswers);
+    
+    Set<String> allEvaluatedQuestionIds = {
+      ...state.teacherFeedbacks.keys,
+      ...state.awardedPoints.keys,
+    };
+
+    for (String qId in allEvaluatedQuestionIds) {
+       String feedback = state.teacherFeedbacks[qId] ?? "";
+       double pts = double.tryParse(state.awardedPoints[qId]?.replaceAll(',', '.') ?? '') ?? 0.0;
+       
+       dynamic existing = updatedAnswers[qId] ?? updatedAnswers[int.tryParse(qId) ?? -1];
+       if (existing is Map) {
+          existing['teacher_feedback'] = feedback;
+          existing['awarded_points'] = pts;
+       } else {
+          updatedAnswers[qId] = {
+             "value": existing,
+             "teacher_feedback": feedback,
+             "awarded_points": pts
+          };
+       }
+    }
 
     try {
       if (_assignmentId != null && _attemptId != null) {
         final apiClient = ref.read(apiClientProvider);
-        await apiClient.post('/exam-assignments/$_assignmentId/attempts/$_attemptId/evaluate', {
-          "evaluations": evaluations
+        await apiClient.put('/exam-assignments/$_assignmentId/attempts/$_attemptId/grade', {
+          "total_points": state.currentTotalScore,
+          "student_answers": updatedAnswers,
+          "teacher_note": "", // Optional global note
         });
       }
       
@@ -270,7 +289,7 @@ class TestEvaluationNotifier extends Notifier<TestEvaluationState> {
       );
     } catch (e) {
       state = state.copyWith(
-        errorMessage: 'Endpoint pro odevzdání chybí. Payload: $evaluations',
+        errorMessage: 'Chyba při odesílání hodnocení: $e',
         isSubmitting: false,
       );
     }

@@ -125,12 +125,23 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const TestEditorWidget(),
           ),
           GoRoute(
+            path: '/testAttempts',
+            builder: (context, state) {
+              final extra = state.extra as Map<String, dynamic>? ?? {};
+              return TestAttemptsPage(
+                assignmentId: extra['assignmentId'] as int? ?? 999,
+                testTitle: extra['testTitle'] as String? ?? 'Seznam odevzdání',
+              );
+            },
+          ),
+          GoRoute(
             path: '/testEvaluation',
             builder: (context, state) {
               final extra = state.extra as Map<String, dynamic>? ?? {};
               return TestEvaluationPage(
                 assignmentId: extra['assignmentId'] as int?,
                 attemptId: extra['attemptId'] as int?,
+                isStudent: extra['isStudent'] as bool? ?? false,
               );
             },
           ),

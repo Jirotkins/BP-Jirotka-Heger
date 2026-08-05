@@ -3,16 +3,19 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'test_evaluation_provider.dart';
+import '../class_manager/test_attempts/test_attempts_provider.dart';
 import '../../theme/app_themes.dart';
 
 class TestEvaluationPage extends ConsumerStatefulWidget {
   final int? assignmentId;
   final int? attemptId;
+  final bool isStudent;
 
   const TestEvaluationPage({
     super.key,
     this.assignmentId,
     this.attemptId,
+    this.isStudent = false,
   });
 
   @override
@@ -26,10 +29,11 @@ class _TestEvaluationPageState extends ConsumerState<TestEvaluationPage> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    Future.microtask(() {
       ref.read(testEvaluationProvider.notifier).fetchEvaluationData(
             widget.assignmentId,
             widget.attemptId,
+            isStudent: widget.isStudent,
           );
     });
   }
@@ -95,6 +99,14 @@ class _TestEvaluationPageState extends ConsumerState<TestEvaluationPage> {
             backgroundColor: Color(0xFF16A34A),
           ),
         );
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (context.mounted) {
+            if (widget.assignmentId != null) {
+              ref.read(testAttemptsProvider.notifier).fetchAttempts(widget.assignmentId!);
+            }
+            Navigator.of(context).pop();
+          }
+        });
       }
     });
 
@@ -143,27 +155,28 @@ class _TestEvaluationPageState extends ConsumerState<TestEvaluationPage> {
           ),
         ),
         actions: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Center(
-              child: state.isSubmitting
-                  ? SizedBox(
-                      width: 24, height: 24,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.primary),
-                    )
-                  : ElevatedButton.icon(
-                      onPressed: () => notifier.submitEvaluation(),
-                      icon: const Icon(Icons.save_rounded, size: 20),
-                      label: const Text('Uložit hodnocení'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(context).colorScheme.primary,
-                        foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          if (!widget.isStudent)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Center(
+                child: state.isSubmitting
+                    ? SizedBox(
+                        width: 24, height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.primary),
+                      )
+                    : ElevatedButton.icon(
+                        onPressed: () => notifier.submitEvaluation(),
+                        icon: const Icon(Icons.save_rounded, size: 20),
+                        label: const Text('Uložit hodnocení'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Theme.of(context).colorScheme.primary,
+                          foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
                       ),
-                    ),
+              ),
             ),
-          ),
         ],
       ),
       body: SingleChildScrollView(
@@ -262,12 +275,23 @@ class _TestEvaluationPageState extends ConsumerState<TestEvaluationPage> {
             style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
           ),
           const SizedBox(height: 20),
-          ...questions.asMap().entries.map((entry) {
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 20.0),
-              child: _buildDynamicEvaluationCard(entry.value, entry.key, state, notifier),
-            );
-          }),
+          if (questions.isEmpty)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 40.0),
+                child: Text(
+                  'Tento test neobsahuje žádné otázky.',
+                  style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                ),
+              ),
+            )
+          else
+            ...questions.asMap().entries.map((entry) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 20.0),
+                child: _buildDynamicEvaluationCard(entry.value, entry.key, state, notifier),
+              );
+            }),
         ],
       ),
     );
@@ -641,6 +665,8 @@ class _TestEvaluationPageState extends ConsumerState<TestEvaluationPage> {
   Widget _buildOpenQuestionEvaluation(Map<String, dynamic> question, TestEvaluationNotifier notifier) {
     String qId = question['id'] ?? '';
     if (!_pointsControllers.containsKey(qId)) return const SizedBox();
+    
+    double maxPoints = (question['maxPoints'] ?? 0).toDouble();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -673,32 +699,12 @@ class _TestEvaluationPageState extends ConsumerState<TestEvaluationPage> {
               flex: 4,
               child: TextFormField(
                 controller: _feedbackControllers[qId],
+                readOnly: widget.isStudent,
                 maxLines: 3,
                 style: GoogleFonts.inter(fontSize: 14, color: Theme.of(context).colorScheme.onSurface),
-                onChanged: (val) => notifier.updateFeedback(qId, val),
                 decoration: InputDecoration(
-                  labelText: 'Slovní hodnocení (formativní)',
-                  hintText: 'Napište zpětnou vazbu...',
-                  filled: true,
-                  fillColor: Theme.of(context).colorScheme.surface,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Theme.of(context).colorScheme.outline)),
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Theme.of(context).colorScheme.outline)),
-                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Theme.of(context).colorScheme.primary)),
-                ),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              flex: 1,
-              child: TextFormField(
-                controller: _pointsControllers[qId],
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*([.,]\d{0,2})?'))],
-                textAlign: TextAlign.center,
-                style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 18, color: Theme.of(context).colorScheme.onSurface),
-                decoration: InputDecoration(
-                  labelText: 'Udělené body',
-                  hintText: '0',
+                  labelText: 'Zpětná vazba pro studenta (volitelné)',
+                  labelStyle: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurfaceVariant),
                   filled: true,
                   fillColor: Theme.of(context).colorScheme.surface,
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Theme.of(context).colorScheme.outline)),
@@ -706,7 +712,35 @@ class _TestEvaluationPageState extends ConsumerState<TestEvaluationPage> {
                   focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Theme.of(context).colorScheme.primary)),
                 ),
                 onChanged: (val) {
-                  double maxPoints = (question['maxPoints'] ?? 0).toDouble();
+                  if (!widget.isStudent) {
+                    notifier.updateFeedback(qId, val);
+                  }
+                },
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              flex: 1,
+              child: TextFormField(
+                controller: _pointsControllers[qId],
+                readOnly: widget.isStudent,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*([.,]\d{0,2})?'))],
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface),
+                decoration: InputDecoration(
+                  labelText: 'Body',
+                  labelStyle: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  suffixText: '/ $maxPoints',
+                  suffixStyle: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  filled: true,
+                  fillColor: Theme.of(context).colorScheme.surface,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Theme.of(context).colorScheme.outline)),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Theme.of(context).colorScheme.outline)),
+                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Theme.of(context).colorScheme.primary)),
+                ),
+                onChanged: (val) {
+                  if (widget.isStudent) return;
                   double? enteredPoints = double.tryParse(val.replaceAll(',', '.'));
                   if (enteredPoints != null) {
                     if (enteredPoints > maxPoints) {

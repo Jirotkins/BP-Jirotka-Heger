@@ -316,7 +316,10 @@ class _ClassManagerPageState extends ConsumerState<ClassManagerPage> {
                   title: test['template_name'] ?? 'Neznámý test',
                   subtitle: '${test['submitted_count'] ?? 0}/${test['total_students'] ?? 0} odevzdalo',
                   onTap: () {
-                    context.push('/testEvaluation', extra: {'assignmentId': test['id'] ?? 999, 'attemptId': 1});
+                    context.push('/testAttempts', extra: {
+                      'assignmentId': test['assignment_id'] ?? 999,
+                      'testTitle': test['template_name'] ?? 'Neznámý test'
+                    });
                   },
                 ),
               );

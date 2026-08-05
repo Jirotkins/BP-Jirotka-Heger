@@ -292,7 +292,11 @@ class _SubjectPageState extends ConsumerState<SubjectPage> {
 
     return InkWell(
       onTap: () {
-        print('Otevřít výsledky pro test ID: ${test['id']}');
+        context.push('/testEvaluation', extra: {
+          'assignmentId': test['id'] ?? 999,
+          'attemptId': test['attempt_id'] ?? 1, // Fallback dokud backend nepřidá attempt_id
+          'isStudent': true,
+        });
       },
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 20.0),

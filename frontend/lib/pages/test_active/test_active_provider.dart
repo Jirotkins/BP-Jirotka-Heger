@@ -181,13 +181,10 @@ class TestActiveNotifier extends Notifier<TestActiveState> {
       try {
         final apiClient = ref.read(apiClientProvider);
         
-        List<Map<String, dynamic>> answersPayload = [];
+        Map<String, dynamic> answersPayload = {};
         state.selectedAnswers.forEach((index, answerData) {
           final questionId = state.questions[index]['id'] ?? state.questions[index]['question_id'];
-          answersPayload.add({
-            "question_id": questionId,
-            "answer_data": answerData,
-          });
+          answersPayload[questionId.toString()] = answerData;
         });
 
         // Uloží odpovědi
@@ -198,7 +195,9 @@ class TestActiveNotifier extends Notifier<TestActiveState> {
         }
         
         // Odevzdá test
-        await apiClient.post('/api/student/attempts/$_attemptId/submit', {});
+        await apiClient.post('/api/student/attempts/$_attemptId/submit', {
+          "answers": answersPayload
+        });
 
         state = state.copyWith(
           isExiting: true, 
