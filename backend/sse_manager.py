@@ -11,9 +11,13 @@ class SSEManager:
         self.loop = None
 
     def _get_loop(self):
-        if self.loop is None:
+        if self.loop is not None and not self.loop.is_closed():
+            return self.loop
+        try:
             self.loop = asyncio.get_running_loop()
-        return self.loop
+            return self.loop
+        except RuntimeError:
+            return None
 
     async def subscribe(self, channel_id: str):
         queue = asyncio.Queue()
@@ -44,8 +48,13 @@ class SSEManager:
         Pomocná metoda pro publikování ze synchronních funkcí (def), 
         ve kterých běžně probíhají databázové transakce.
         """
-        loop = self._get_loop()
-        asyncio.run_coroutine_threadsafe(self.publish(channel_id, data), loop)
+        try:
+            loop = self._get_loop()
+            if loop is not None and not loop.is_closed():
+                asyncio.run_coroutine_threadsafe(self.publish(channel_id, data), loop)
+        except Exception as e:
+            import logging
+            logging.getLogger("uvicorn.error").warning(f"SSE publish failed: {e}")
 
 # Globální instance
 sse_manager = SSEManager()

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, model_validator
 from datetime import datetime
 
 class LoginRequest(BaseModel):
@@ -81,6 +81,7 @@ class CreateBankRequest(BaseModel):
 class AnswerCreateRequest(BaseModel):
     """Schema pro vytváření odpovědí na otázky"""
     text: str
+    match_text: str | None = None  # Volitelné pro MATCHING typ (pokud není použito 'Pojem|||Definice')
     is_correct: bool = False
     order_index: int | None = None  # Povinné pro ORDERING typ
 
@@ -99,7 +100,7 @@ class AnswerResponse(BaseModel):
 class QuestionCreateRequest(BaseModel):
     """Schema pro vytváření otázky s validací typu"""
     text: str
-    type: str  # SINGLE_CHOICE, MULTI_CHOICE, OPEN_TEXT, ORDERING
+    type: str  # SINGLE_CHOICE, MULTI_CHOICE, OPEN_TEXT, ORDERING, MATCHING, SHORT_ANSWER
     tags: list[str] | None = None
     image_url: str | None = None
     default_points: int = 1
@@ -108,7 +109,7 @@ class QuestionCreateRequest(BaseModel):
     @field_validator('type')
     @classmethod
     def validate_question_type(cls, v):
-        valid_types = ['SINGLE_CHOICE', 'MULTI_CHOICE', 'OPEN_TEXT', 'ORDERING']
+        valid_types = ['SINGLE_CHOICE', 'MULTI_CHOICE', 'OPEN_TEXT', 'ORDERING', 'MATCHING', 'SHORT_ANSWER']
         if v not in valid_types:
             raise ValueError(f"Typ otázky musí být jeden z: {', '.join(valid_types)}")
         return v
@@ -120,10 +121,10 @@ class QuestionCreateRequest(BaseModel):
             raise ValueError("Počet bodů musí být alespoň 1")
         return v
     
-    @field_validator('answers')
-    @classmethod
-    def validate_answers_by_type(cls, v, info):
-        question_type = info.data.get('type')
+    @model_validator(mode='after')
+    def validate_answers_by_type(self):
+        question_type = self.type
+        v = self.answers
         
         # SINGLE_CHOICE a MULTI_CHOICE musí mít alespoň jednu správnou odpověď
         if question_type in ['SINGLE_CHOICE', 'MULTI_CHOICE']:
@@ -143,12 +144,27 @@ class QuestionCreateRequest(BaseModel):
             if len(order_indices) != len(set(order_indices)):
                 raise ValueError("ORDERING musí mít unikátní order_index pro každou odpověď")
         
+        # MATCHING musí mít alespoň 2 dvojice
+        if question_type == 'MATCHING':
+            if not v or len(v) < 2:
+                raise ValueError("MATCHING musí obsahovat alespoň 2 dvojice pro spojování")
+        
+        # SHORT_ANSWER musí mít alespoň jednu správnou odpověď
+        if question_type == 'SHORT_ANSWER':
+            if not v or len(v) == 0:
+                raise ValueError("SHORT_ANSWER musí obsahovat alespoň jednu správnou odpověď")
+            # Pokud není explicitně označena žádná jako is_correct, považujeme všechny za správné varianty
+            has_correct = any(a.is_correct for a in v)
+            if not has_correct:
+                for a in v:
+                    a.is_correct = True
+        
         # OPEN_TEXT nemá povinné odpovědi (mohou být hints)
         if question_type == 'OPEN_TEXT':
             # Odpovědi nejsou povinné, ale pokud jsou, jsou to jen hinty
             pass
         
-        return v
+        return self
 
 
 class CreateTestTemplateRequest(BaseModel):
@@ -304,6 +320,7 @@ class StudentAttemptResponse(BaseModel):
     attempt_id: int
     assignment_id: int
     student_id: int
+    student_name: str | None = None
     started_at: datetime
     finished_at: datetime | None = None
     status: str  # STARTED, SUBMITTED, GRADED
@@ -337,9 +354,9 @@ class StudentAttemptDetailedResponse(BaseModel):
 
 class GradeAttemptRequest(BaseModel):
     """Schema pro hodnocení pokusu učitelem"""
-    student_answers: dict  # Aktualizované odpovědi s body
+    student_answers: dict | list | None = None  # Aktualizované odpovědi s body
     total_points: float
-    teacher_note: str = None
+    teacher_note: str | None = None
 
 
 class ResultsSummary(BaseModel):
@@ -413,6 +430,7 @@ from typing import Any
 class StudentAssignmentResponse(BaseModel):
     """Schema pro vrácení přiřazených testů studentovi"""
     assignment_id: int
+    attempt_id: int | None = None
     template_name: str
     description: str | None = None
     activate_from: str | None = None

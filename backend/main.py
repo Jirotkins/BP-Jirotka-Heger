@@ -104,6 +104,16 @@ def custom_openapi():
 app.openapi = custom_openapi
 
 
+@app.on_event("startup")
+async def startup_event():
+    import asyncio
+    from sse_manager import sse_manager
+    try:
+        sse_manager.loop = asyncio.get_running_loop()
+    except RuntimeError:
+        pass
+
+
 # ============================================================
 # 🔐 AUTENTIZACE
 # ============================================================
@@ -1310,9 +1320,11 @@ def get_attempts(
 
         attempt_list = []
         for a in attempts:
+            student_name = (a.student.email if a.student and a.student.email else (a.student.login_code if a.student else None))
             attempt_list.append({
                 "attempt_id": a.attempt_id,
                 "student_id": a.student_id,
+                "student_name": student_name,
                 "started_at": a.started_at.isoformat(),
                 "finished_at": a.finished_at.isoformat() if a.finished_at else None,
                 "status": a.status.value,
@@ -1595,6 +1607,37 @@ def submit_student_attempt_endpoint(
         return attempt
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+@app.get("/api/student/attempts/{attempt_id}", tags=["Studentské Rozhraní"])
+def get_student_attempt_endpoint(
+    attempt_id: int,
+    current_student: dict = Depends(require_student),
+    db: Session = Depends(get_db)
+):
+    """Získat detail pokusu pro přihlášeného studenta (včetně výsledků a bodů)."""
+    try:
+        attempt = db_layer.get_student_attempt_details(db, attempt_id, current_student["user_id"])
+        return {
+            "attempt_id": attempt.attempt_id,
+            "assignment_id": attempt.assignment_id,
+            "student_id": attempt.student_id,
+            "started_at": attempt.started_at.isoformat() if attempt.started_at else None,
+            "finished_at": attempt.finished_at.isoformat() if attempt.finished_at else None,
+            "status": attempt.status.value,
+            "total_points": float(attempt.total_points) if attempt.total_points is not None else None,
+            "max_points": float(attempt.max_points) if attempt.max_points is not None else None,
+            "score_percent": float(attempt.score_percent) if attempt.score_percent is not None else None,
+            "teacher_note": attempt.teacher_note,
+            "questions_snapshot": attempt.questions_snapshot,
+            "student_answers": attempt.student_answers or {}
+        }
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN if "oprávnění" in str(e) else status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Chyba: {str(e)}")
 
 # ============================================================
 # SSE (Server-Sent Events) ENDPOINTY

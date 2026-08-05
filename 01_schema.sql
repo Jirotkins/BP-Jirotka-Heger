@@ -17,7 +17,7 @@ DROP TYPE IF EXISTS attempt_status;
 DROP TYPE IF EXISTS difficulty_level;
 
 -- 2. Vytvoření ENUM typů (výčtové typy pro Postgres)
-CREATE TYPE question_type AS ENUM ('SINGLE_CHOICE', 'MULTI_CHOICE', 'OPEN_TEXT', 'ORDERING');
+CREATE TYPE question_type AS ENUM ('SINGLE_CHOICE', 'MULTI_CHOICE', 'OPEN_TEXT', 'ORDERING', 'MATCHING', 'SHORT_ANSWER');
 CREATE TYPE attempt_status AS ENUM ('STARTED', 'SUBMITTED', 'GRADED');
 CREATE TYPE difficulty_level AS ENUM ('EASY', 'MEDIUM', 'HARD');
 

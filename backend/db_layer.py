@@ -790,6 +790,24 @@ def update_assignment(db: Session, assignment_id: int, teacher_id: int, update_d
     return assignment
 
 
+def activate_assignment(db: Session, assignment_id: int, teacher_id: int):
+    """Manuálně aktivuje přiřazení testu (is_active = True)"""
+    assignment = get_assignment_details(db, assignment_id, teacher_id)
+    assignment.is_active = True
+    db.commit()
+    db.refresh(assignment)
+    return assignment
+
+
+def deactivate_assignment(db: Session, assignment_id: int, teacher_id: int):
+    """Manuálně deaktivuje přiřazení testu (is_active = False)"""
+    assignment = get_assignment_details(db, assignment_id, teacher_id)
+    assignment.is_active = False
+    db.commit()
+    db.refresh(assignment)
+    return assignment
+
+
 def delete_assignment(db: Session, assignment_id: int, teacher_id: int):
     """Smaže přiřazení testu
     
@@ -863,6 +881,32 @@ def get_attempt_details(db: Session, attempt_id: int, teacher_id: int = None):
     return attempt
 
 
+def get_student_attempt_details(db: Session, attempt_id: int, student_id: int):
+    """Získá detaily pokusu studenta s ověřením vlastnictví
+    
+    Args:
+        db: Database session
+        attempt_id: ID pokusu
+        student_id: ID přihlášeného studenta
+    
+    Returns:
+        StudentAttempt instance
+    """
+    from models import StudentAttempt
+    
+    attempt = db.query(StudentAttempt).filter(
+        StudentAttempt.attempt_id == attempt_id
+    ).first()
+    
+    if not attempt:
+        raise ValueError("Pokus neexistuje")
+    
+    if attempt.student_id != student_id:
+        raise ValueError("Nemáte oprávnění k zobrazení tohoto pokusu")
+    
+    return attempt
+
+
 def grade_attempt(db: Session, attempt_id: int, teacher_id: int, total_points: float, 
                   student_answers: dict = None, teacher_note: str = None):
     """Ohodnotí pokus studenta (ručně nebo po auto-gradu)
@@ -879,27 +923,24 @@ def grade_attempt(db: Session, attempt_id: int, teacher_id: int, total_points: f
         Updated StudentAttempt
     """
     from models import StudentAttempt, AttemptStatus
+    from sqlalchemy.orm.attributes import flag_modified
     
     # Ověř, že pokus patří přiřazení učitele
     attempt = get_attempt_details(db, attempt_id, teacher_id)
     
-    # Získej přiřazení pro max_points
-    assignment = db.query(type(attempt).__table__.c.assignment_id).filter(
-        type(attempt).__table__.c.attempt_id == attempt_id
-    ).first()
-    
-    # Vypočti score_percent
-    max_points = attempt.max_points or 0
-    score_percent = (total_points / max_points * 100) if max_points > 0 else 0
+    # Vypočti score_percent bezpečně s přetypováním z Decimal na float
+    max_points = float(attempt.max_points) if attempt.max_points else 0.0
+    score_percent = (float(total_points) / max_points * 100.0) if max_points > 0 else 0.0
     
     # Updatuj pokus
-    attempt.total_points = total_points
+    attempt.total_points = float(total_points)
     attempt.score_percent = score_percent
     attempt.status = AttemptStatus.GRADED
     attempt.teacher_note = teacher_note
     
-    if student_answers:
+    if student_answers is not None:
         attempt.student_answers = student_answers
+        flag_modified(attempt, "student_answers")
     
     db.commit()
     db.refresh(attempt)
@@ -1351,6 +1392,7 @@ def get_student_assignments(db: Session, student_id: int):
         
         result.append({
             "assignment_id": a.assignment_id,
+            "attempt_id": attempt.attempt_id if attempt else None,
             "template_name": a.template.name,
             "description": a.template.description,
             "activate_from": a.activate_from.isoformat() if a.activate_from else None,
@@ -1507,6 +1549,43 @@ def save_student_answers(db: Session, student_id: int, attempt_id: int, answers_
                     selected_ordered = [str(ans) if isinstance(ans, int) or str(ans).isdigit() else ans for ans in ans_data]
                     if correct_ordered == selected_ordered:
                         is_correct = True
+            elif q_type == "SHORT_ANSWER":
+                if ans_data is not None and isinstance(ans_data, str):
+                    ans_clean = ans_data.strip().lower()
+                    correct_texts = [a["text"].strip().lower() for a in correct_answers] if correct_answers else [a["text"].strip().lower() for a in q_snap["answers"]]
+                    if ans_clean in correct_texts:
+                        is_correct = True
+            elif q_type == "MATCHING":
+                correct_pairs = {}
+                for a in q_snap["answers"]:
+                    if "|||" in a.get("text", ""):
+                        left, right = a["text"].split("|||", 1)
+                        correct_pairs[left.strip().lower()] = right.strip().lower()
+                    elif a.get("match_text"):
+                        correct_pairs[a["text"].strip().lower()] = a["match_text"].strip().lower()
+                
+                if ans_data and isinstance(ans_data, dict) and correct_pairs:
+                    all_match = True
+                    for k, v in correct_pairs.items():
+                        student_v = None
+                        for sk, sv in ans_data.items():
+                            if str(sk).strip().lower() == k:
+                                student_v = str(sv).strip().lower()
+                                break
+                        if student_v != v:
+                            all_match = False
+                            break
+                    if all_match:
+                        is_correct = True
+                elif ans_data and isinstance(ans_data, list) and correct_pairs:
+                    student_dict = {}
+                    for item in ans_data:
+                        if isinstance(item, (list, tuple)) and len(item) == 2:
+                            student_dict[str(item[0]).strip().lower()] = str(item[1]).strip().lower()
+                        elif isinstance(item, dict) and "left" in item and "right" in item:
+                            student_dict[str(item["left"]).strip().lower()] = str(item["right"]).strip().lower()
+                    if correct_pairs and all(student_dict.get(k) == v for k, v in correct_pairs.items()):
+                        is_correct = True
                         
             feedback_detail[q_id] = "correct" if is_correct else "incorrect"
             
@@ -1566,6 +1645,45 @@ def auto_grade(questions_snapshot: list, student_answers: dict):
                 
                 # Vše nebo nic
                 if correct_ordered == selected_ordered:
+                    total_points += points
+
+        elif q_type == "SHORT_ANSWER":
+            if ans_data is not None and isinstance(ans_data, str):
+                ans_clean = ans_data.strip().lower()
+                correct_texts = [a["text"].strip().lower() for a in correct_answers] if correct_answers else [a["text"].strip().lower() for a in q_snap["answers"]]
+                if ans_clean in correct_texts:
+                    total_points += points
+
+        elif q_type == "MATCHING":
+            correct_pairs = {}
+            for a in q_snap["answers"]:
+                if "|||" in a.get("text", ""):
+                    left, right = a["text"].split("|||", 1)
+                    correct_pairs[left.strip().lower()] = right.strip().lower()
+                elif a.get("match_text"):
+                    correct_pairs[a["text"].strip().lower()] = a["match_text"].strip().lower()
+            
+            if ans_data and isinstance(ans_data, dict) and correct_pairs:
+                all_match = True
+                for k, v in correct_pairs.items():
+                    student_v = None
+                    for sk, sv in ans_data.items():
+                        if str(sk).strip().lower() == k:
+                            student_v = str(sv).strip().lower()
+                            break
+                    if student_v != v:
+                        all_match = False
+                        break
+                if all_match:
+                    total_points += points
+            elif ans_data and isinstance(ans_data, list) and correct_pairs:
+                student_dict = {}
+                for item in ans_data:
+                    if isinstance(item, (list, tuple)) and len(item) == 2:
+                        student_dict[str(item[0]).strip().lower()] = str(item[1]).strip().lower()
+                    elif isinstance(item, dict) and "left" in item and "right" in item:
+                        student_dict[str(item["left"]).strip().lower()] = str(item["right"]).strip().lower()
+                if correct_pairs and all(student_dict.get(k) == v for k, v in correct_pairs.items()):
                     total_points += points
                     
     return total_points, has_open_text

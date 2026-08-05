@@ -11,6 +11,8 @@ class QuestionType(enum.Enum):
     MULTI_CHOICE = "MULTI_CHOICE"
     OPEN_TEXT = "OPEN_TEXT"
     ORDERING = "ORDERING"
+    MATCHING = "MATCHING"
+    SHORT_ANSWER = "SHORT_ANSWER"
 
 class AttemptStatus(enum.Enum):
     STARTED = "STARTED"

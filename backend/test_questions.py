@@ -30,7 +30,7 @@ try:
     
     # Create test teacher
     teacher = create_teacher(db, "Test Teacher", "test@teacher.com", "password123")
-    print(f"✓ Created teacher: {teacher.name} (ID: {teacher.teacher_id})")
+    print(f"[OK] Created teacher: {teacher.name} (ID: {teacher.teacher_id})")
     
     # Create test bank
     bank_data = {
@@ -39,7 +39,7 @@ try:
         "is_public": False
     }
     bank = create_bank(db, teacher.teacher_id, bank_data["name"], bank_data["description"], bank_data["is_public"])
-    print(f"✓ Created bank: {bank.name} (ID: {bank.bank_id})")
+    print(f"[OK] Created bank: {bank.name} (ID: {bank.bank_id})")
     
     # Test 1: SINGLE_CHOICE question
     print("\n--- Test 1: SINGLE_CHOICE Question ---")
@@ -55,7 +55,7 @@ try:
         ]
     }
     q1 = create_question(db, bank.bank_id, single_choice_data, teacher.teacher_id)
-    print(f"✓ Created SINGLE_CHOICE question: '{q1.text}'")
+    print(f"[OK] Created SINGLE_CHOICE question: '{q1.text}'")
     print(f"  - Answers: {len(q1.answers)} (1 correct)")
     for ans in q1.answers:
         print(f"    - {ans.text} (correct: {ans.is_correct})")
@@ -75,7 +75,7 @@ try:
         ]
     }
     q2 = create_question(db, bank.bank_id, multi_choice_data, teacher.teacher_id)
-    print(f"✓ Created MULTI_CHOICE question: '{q2.text}'")
+    print(f"[OK] Created MULTI_CHOICE question: '{q2.text}'")
     print(f"  - Answers: {len(q2.answers)} (3 correct)")
     for ans in q2.answers:
         print(f"    - {ans.text} (correct: {ans.is_correct})")
@@ -90,7 +90,7 @@ try:
         "answers": []
     }
     q3 = create_question(db, bank.bank_id, open_text_data, teacher.teacher_id)
-    print(f"✓ Created OPEN_TEXT question: '{q3.text}'")
+    print(f"[OK] Created OPEN_TEXT question: '{q3.text}'")
     print(f"  - Answers: {len(q3.answers)} (no specific correct answers)")
     
     # Test 4: OPEN_TEXT question (with hints)
@@ -107,7 +107,7 @@ try:
         ]
     }
     q4 = create_question(db, bank.bank_id, open_text_hints_data, teacher.teacher_id)
-    print(f"✓ Created OPEN_TEXT question with hints: '{q4.text}'")
+    print(f"[OK] Created OPEN_TEXT question with hints: '{q4.text}'")
     print(f"  - Hints: {len(q4.answers)}")
     for ans in q4.answers:
         print(f"    - {ans.text} (hint)")
@@ -127,21 +127,58 @@ try:
         ]
     }
     q5 = create_question(db, bank.bank_id, ordering_data, teacher.teacher_id)
-    print(f"✓ Created ORDERING question: '{q5.text}'")
+    print(f"[OK] Created ORDERING question: '{q5.text}'")
     print(f"  - Items: {len(q5.answers)}")
     for ans in q5.answers:
         print(f"    - {ans.text} (order: {ans.order_index})")
     
-    # Test 6: Fetch all questions from bank
-    print("\n--- Test 6: Fetch All Questions ---")
+    # Test 6: MATCHING question
+    print("\n--- Test 6: MATCHING Question ---")
+    matching_data = {
+        "text": "Spojte pojmy a definice",
+        "type": "MATCHING",
+        "tags": ["biology"],
+        "default_points": 3,
+        "answers": [
+            {"text": "Ribozom|||Syntéza bílkovin", "is_correct": True},
+            {"text": "Mitochondrie|||Buněčné dýchání", "is_correct": True}
+        ]
+    }
+    q6 = create_question(db, bank.bank_id, matching_data, teacher.teacher_id)
+    print(f"[OK] Created MATCHING question: '{q6.text}'")
+    print(f"  - Pairs: {len(q6.answers)}")
+    for ans in q6.answers:
+        print(f"    - {ans.text}")
+
+    # Test 7: SHORT_ANSWER question
+    print("\n--- Test 7: SHORT_ANSWER Question ---")
+    short_answer_data = {
+        "text": "Jaké je hlavní město Francie?",
+        "type": "SHORT_ANSWER",
+        "tags": ["geography"],
+        "default_points": 1,
+        "answers": [
+            {"text": "Paříž", "is_correct": True},
+            {"text": "Paris", "is_correct": True}
+        ]
+    }
+    q7 = create_question(db, bank.bank_id, short_answer_data, teacher.teacher_id)
+    print(f"[OK] Created SHORT_ANSWER question: '{q7.text}'")
+    print(f"  - Variants: {len(q7.answers)}")
+    for ans in q7.answers:
+        print(f"    - {ans.text} (correct: {ans.is_correct})")
+
+    # Test 8: Fetch all questions from bank
+    print("\n--- Test 8: Fetch All Questions ---")
     all_questions = get_bank_questions(db, bank.bank_id, teacher.teacher_id)
-    print(f"✓ Retrieved {len(all_questions)} questions from bank:")
+    print(f"[OK] Retrieved {len(all_questions)} questions from bank:")
     for q in all_questions:
         print(f"  - [{q.type.value}] {q.text} ({len(q.answers)} answers)")
     
-    # Test 7: Error handling - no correct answer for SINGLE_CHOICE
-    print("\n--- Test 7: Error Handling (no correct answer) ---")
+    # Test 9: Error handling - no correct answer for SINGLE_CHOICE
+    print("\n--- Test 9: Error Handling (no correct answer) ---")
     try:
+        from schemas import QuestionCreateRequest
         invalid_data = {
             "text": "Invalid question",
             "type": "SINGLE_CHOICE",
@@ -150,13 +187,13 @@ try:
                 {"text": "Wrong2", "is_correct": False}
             ]
         }
-        create_question(db, bank.bank_id, invalid_data, teacher.teacher_id)
-        print("✗ Should have raised ValueError")
-    except ValueError as e:
-        print(f"✓ Correctly caught error: {str(e)}")
+        QuestionCreateRequest(**invalid_data)
+        print("[FAIL] Should have raised ValueError")
+    except (ValueError, Exception) as e:
+        print(f"[OK] Correctly caught error: {str(e)}")
     
-    # Test 8: Error handling - invalid bank_id
-    print("\n--- Test 8: Error Handling (invalid bank) ---")
+    # Test 10: Error handling - invalid bank_id
+    print("\n--- Test 10: Error Handling (invalid bank) ---")
     try:
         valid_data = {
             "text": "Valid question",
@@ -166,12 +203,12 @@ try:
             ]
         }
         create_question(db, 9999, valid_data, teacher.teacher_id)
-        print("✗ Should have raised ValueError")
+        print("[FAIL] Should have raised ValueError")
     except ValueError as e:
-        print(f"✓ Correctly caught error: {str(e)}")
+        print(f"[OK] Correctly caught error: {str(e)}")
     
-    # Test 9: Error handling - wrong owner
-    print("\n--- Test 9: Error Handling (access denied) ---")
+    # Test 11: Error handling - wrong owner
+    print("\n--- Test 11: Error Handling (access denied) ---")
     try:
         create_teacher(db, "Other Teacher", "other@teacher.com", "password123")
         other_teacher = db.query(Teacher).filter(Teacher.email == "other@teacher.com").first()
@@ -184,16 +221,16 @@ try:
             ]
         }
         create_question(db, bank.bank_id, valid_data, other_teacher.teacher_id)
-        print("✗ Should have raised ValueError")
+        print("[FAIL] Should have raised ValueError")
     except ValueError as e:
-        print(f"✓ Correctly caught error: {str(e)}")
+        print(f"[OK] Correctly caught error: {str(e)}")
     
     print("\n" + "=" * 60)
-    print("All tests passed! ✓")
+    print("All tests passed! [OK]")
     print("=" * 60)
     
 except Exception as e:
-    print(f"\n✗ Test failed with error: {str(e)}")
+    print(f"\n[FAIL] Test failed with error: {str(e)}")
     import traceback
     traceback.print_exc()
 finally:

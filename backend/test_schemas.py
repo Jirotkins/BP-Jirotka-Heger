@@ -24,20 +24,20 @@ def test(name, should_pass=True):
             try:
                 result = func()
                 if should_pass:
-                    print(f"  ✓ PASS: Successfully created {result.type} question")
+                    print(f"  [OK] PASS: Successfully created {result.type} question")
                     passed_count += 1
                 else:
-                    print(f"  ✗ FAIL: Should have raised ValidationError")
+                    print(f"  [FAIL] FAIL: Should have raised ValidationError")
             except ValidationError as e:
                 if not should_pass:
-                    print(f"  ✓ PASS: Correctly caught validation error")
+                    print(f"  [OK] PASS: Correctly caught validation error")
                     print(f"    Error: {str(e.errors()[0]['msg'])}")
                     passed_count += 1
                 else:
-                    print(f"  ✗ FAIL: Unexpected ValidationError")
+                    print(f"  [FAIL] FAIL: Unexpected ValidationError")
                     print(f"    Error: {str(e)}")
             except Exception as e:
-                print(f"  ✗ FAIL: Unexpected error: {str(e)}")
+                print(f"  [FAIL] FAIL: Unexpected error: {str(e)}")
         return wrapper
     return decorator
 
@@ -222,12 +222,74 @@ def test_answers_default():
     )
 test_answers_default()
 
+# Test 15: Valid MATCHING with ||| pairs
+@test("MATCHING with delimiter ||| pairs", should_pass=True)
+def test_matching_valid_delimiter():
+    return QuestionCreateRequest(
+        text="Přiřaďte pojmy k definicím",
+        type="MATCHING",
+        answers=[
+            AnswerCreateRequest(text="Rychlost|||v", is_correct=True),
+            AnswerCreateRequest(text="Hmotnost|||m", is_correct=True)
+        ]
+    )
+test_matching_valid_delimiter()
+
+# Test 16: Valid MATCHING with match_text field
+@test("MATCHING with match_text field", should_pass=True)
+def test_matching_valid_match_text():
+    return QuestionCreateRequest(
+        text="Přiřaďte pojmy k definicím",
+        type="MATCHING",
+        answers=[
+            AnswerCreateRequest(text="Rychlost", match_text="v", is_correct=True),
+            AnswerCreateRequest(text="Hmotnost", match_text="m", is_correct=True)
+        ]
+    )
+test_matching_valid_match_text()
+
+# Test 17: MATCHING with less than 2 pairs (should fail)
+@test("MATCHING with only 1 pair (should fail)", should_pass=False)
+def test_matching_invalid_count():
+    return QuestionCreateRequest(
+        text="Přiřaďte",
+        type="MATCHING",
+        answers=[
+            AnswerCreateRequest(text="Rychlost|||v", is_correct=True)
+        ]
+    )
+test_matching_invalid_count()
+
+# Test 18: Valid SHORT_ANSWER
+@test("SHORT_ANSWER with correct variant", should_pass=True)
+def test_short_answer_valid():
+    return QuestionCreateRequest(
+        text="Jaké je hlavní město ČR?",
+        type="SHORT_ANSWER",
+        answers=[
+            AnswerCreateRequest(text="Praha", is_correct=True),
+            AnswerCreateRequest(text="Prague", is_correct=True)
+        ]
+    )
+test_short_answer_valid()
+
+# Test 19: SHORT_ANSWER with no answers (should fail)
+@test("SHORT_ANSWER without answers (should fail)", should_pass=False)
+def test_short_answer_invalid():
+    return QuestionCreateRequest(
+        text="Jaké je hlavní město?",
+        type="SHORT_ANSWER",
+        answers=[]
+    )
+test_short_answer_invalid()
+
 # Summary
 print("\n" + "=" * 70)
 print(f"Test Results: {passed_count}/{test_count} tests passed")
 print("=" * 70)
 
 if passed_count == test_count:
-    print("✓ All validation tests passed!")
+    print("[OK] All validation tests passed!")
 else:
-    print(f"✗ {test_count - passed_count} test(s) failed")
+    print(f"[FAIL] {test_count - passed_count} test(s) failed")
+
