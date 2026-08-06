@@ -281,7 +281,12 @@ class _ClassManagerPageState extends ConsumerState<ClassManagerPage> {
                   subtitle: 'Spuštěno do: ${_formatDate(test['activate_to'] as String?)}',
                   submittedCount: test['submitted_count'] ?? 0,
                   totalStudents: test['total_students'] ?? 0,
-                  onTap: () => print('Otevřít aktivní test'),
+                  onTap: () {
+                    context.push('/testAttempts', extra: {
+                      'assignmentId': test['assignment_id'] ?? 999,
+                      'testTitle': test['template_name'] ?? 'Neznámý test'
+                    });
+                  },
                 ),
               );
             }).toList(),

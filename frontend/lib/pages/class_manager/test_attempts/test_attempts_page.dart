@@ -34,7 +34,24 @@ class _TestAttemptsPageState extends ConsumerState<TestAttemptsPage> {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text(widget.testTitle, style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(widget.testTitle, style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
+            const SizedBox(width: 12),
+            Tooltip(
+              message: 'Data se aktualizují živě',
+              child: Container(
+                width: 8,
+                height: 8,
+                decoration: const BoxDecoration(
+                  color: Colors.green,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+          ],
+        ),
         backgroundColor: Theme.of(context).colorScheme.surface,
         surfaceTintColor: Colors.transparent,
       ),

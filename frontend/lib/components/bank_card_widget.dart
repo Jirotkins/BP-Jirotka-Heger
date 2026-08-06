@@ -10,6 +10,7 @@ class BankCardWidget extends StatelessWidget {
   final Widget icon;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
+  final VoidCallback? onRefresh;
 
   const BankCardWidget({
     super.key,
@@ -20,6 +21,7 @@ class BankCardWidget extends StatelessWidget {
     required this.icon,
     this.onEdit,
     this.onDelete,
+    this.onRefresh,
   });
 
   @override
@@ -134,9 +136,9 @@ class BankCardWidget extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
                 // PŘIDANÁ NAVIGACE S PŘEDÁNÍM DAT
-                context.push(
+                await context.push(
                   '/questionsOverview', // Cesta na přehled otázek
                   extra: {
                     'bankId': id,
@@ -144,6 +146,9 @@ class BankCardWidget extends StatelessWidget {
                     'subject': subject,
                   },
                 );
+                if (onRefresh != null) {
+                  onRefresh!();
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),

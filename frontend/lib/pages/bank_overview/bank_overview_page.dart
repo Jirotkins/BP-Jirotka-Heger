@@ -164,6 +164,7 @@ class _BankOverviewPageState extends ConsumerState<BankOverviewPage> {
                               );
                             },
                             onDelete: () => _deleteBank(bank['id'], notifier),
+                            onRefresh: () => notifier.fetchBanks(),
                           );
                         },
                       ),

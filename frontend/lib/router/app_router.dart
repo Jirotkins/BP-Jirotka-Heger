@@ -56,7 +56,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         '/classManager',
         '/bankOverview',
         '/testEditor',
-        '/testEvaluation',
         '/settingsTeacher',
         '/questionsOverview',
         '/addNewQuestion',

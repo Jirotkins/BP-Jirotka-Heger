@@ -55,9 +55,22 @@ class _ConnectQuestionPageState extends ConsumerState<ConnectQuestionPage> {
           _pairControllers.clear();
           
           for (var ans in answers) {
+            String left = '';
+            String right = '';
+            String text = ans['text'] ?? '';
+            
+            if (text.contains('|||')) {
+              final parts = text.split('|||');
+              left = parts[0];
+              right = parts.length > 1 ? parts[1] : '';
+            } else {
+              left = text;
+              right = ans['match_text'] ?? '';
+            }
+            
             _pairControllers.add({
-              'left': TextEditingController(text: ans['text'] ?? ''),
-              'right': TextEditingController(text: ans['match_text'] ?? ''),
+              'left': TextEditingController(text: left),
+              'right': TextEditingController(text: right),
             });
           }
         }
@@ -126,8 +139,7 @@ class _ConnectQuestionPageState extends ConsumerState<ConnectQuestionPage> {
       
       final answers = validPairs.map((p) {
         return {
-          "text": p['left']!.text.trim(),
-          "match_text": p['right']!.text.trim(), // Speciální pole pro druhou část páru, pokud backend podporuje
+          "text": "${p['left']!.text.trim()}|||${p['right']!.text.trim()}",
           "is_correct": true,
         };
       }).toList();

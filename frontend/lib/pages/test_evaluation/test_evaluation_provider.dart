@@ -148,6 +148,8 @@ class TestEvaluationNotifier extends Notifier<TestEvaluationState> {
 
       // Convert student answer to displayable string
       dynamic displayStudentAnswer = studentAnswerValue;
+      List<Map<String, dynamic>>? displayStudentPairs;
+
       if (type == 'choice') {
          if (studentAnswerValue is List) {
             displayStudentAnswer = studentAnswerValue.map((id) => _getAnswerText(snap, id)).join(", ");
@@ -158,6 +160,16 @@ class TestEvaluationNotifier extends Notifier<TestEvaluationState> {
          if (studentAnswerValue is List) {
             displayStudentAnswer = studentAnswerValue.map((id) => _getAnswerText(snap, id)).toList();
          }
+      } else if (type == 'match') {
+         if (studentAnswerValue is Map) {
+            displayStudentPairs = studentAnswerValue.entries.map((entry) {
+              return {
+                "left": entry.key.toString(),
+                "right": entry.value.toString(),
+                "isCorrect": (awardedPoints ?? 0) > 0, // Zjednodušené hodnocení (pro teď záleží na backend awardedPoints)
+              };
+            }).toList();
+         }
       }
 
       mappedQuestions.add({
@@ -166,6 +178,7 @@ class TestEvaluationNotifier extends Notifier<TestEvaluationState> {
         "type": type,
         "text": snap['text'] ?? '',
         "studentAnswer": displayStudentAnswer ?? '-',
+        "studentPairs": displayStudentPairs,
         "isCorrect": (awardedPoints ?? 0) > 0, 
         "awardedPoints": awardedPoints ?? 0.0,
         "maxPoints": maxPoints,
@@ -191,8 +204,8 @@ class TestEvaluationNotifier extends Notifier<TestEvaluationState> {
     }
 
     final mappedData = {
-      "studentName": "Student ID: ${data['student_id']}",
-      "subject": "Pokus #${data['attempt_id']}",
+        "studentName": data['student_name'] != null ? data['student_name'] : "Student ID: ${data['student_id']}",
+        "subject": "Pokus #${data['attempt_id']}",
       "classGroup": statusText,
       "submittedAt": submittedAtText,
       "maxScore": data['max_points'] ?? 0,

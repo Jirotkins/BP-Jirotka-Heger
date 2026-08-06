@@ -83,16 +83,36 @@ class TestActiveNotifier extends Notifier<TestActiveState> {
         var answers = List<Map<String, dynamic>>.from(mapped['answers'] ?? []);
         
         if (mapped['type'] == 'SINGLE_CHOICE' || mapped['type'] == 'MULTI_CHOICE') {
-          mapped['options'] = answers.map((a) => {
-            'letter': a['answer_id'].toString(), // Use answer_id as the letter/value
-            'text': a['text'],
+          int letterCode = 65; // Začínáme od 'A'
+          mapped['options'] = answers.map((a) {
+            final res = {
+              'id': a['answer_id'].toString(), // ID odpovědi pro uložení
+              'letter': String.fromCharCode(letterCode), // 'A', 'B', 'C' atd.
+              'text': a['text'],
+            };
+            letterCode++;
+            return res;
           }).toList();
         } else if (mapped['type'] == 'ORDERING') {
           mapped['items'] = answers.map((a) => a['text'].toString()).toList();
           (mapped['items'] as List).shuffle();
         } else if (mapped['type'] == 'MATCHING' || mapped['type'] == 'match') {
-          mapped['leftItems'] = [];
-          mapped['rightItems'] = [];
+          List<String> left = [];
+          List<String> right = [];
+          for (var a in answers) {
+            final t = a['text'].toString();
+            if (t.contains('|||')) {
+              final parts = t.split('|||');
+              left.add(parts[0].trim());
+              right.add(parts[1].trim());
+            } else {
+              left.add(t);
+              right.add(t);
+            }
+          }
+          mapped['leftItems'] = left;
+          right.shuffle();
+          mapped['rightItems'] = right;
         }
         
         return mapped;
@@ -183,8 +203,28 @@ class TestActiveNotifier extends Notifier<TestActiveState> {
         
         Map<String, dynamic> answersPayload = {};
         state.selectedAnswers.forEach((index, answerData) {
-          final questionId = state.questions[index]['id'] ?? state.questions[index]['question_id'];
-          answersPayload[questionId.toString()] = answerData;
+          final q = state.questions[index];
+          final questionId = q['id'] ?? q['question_id'];
+          
+          if (q['type'] == 'ORDERING' && answerData is List) {
+             // Map selected texts to answer_ids
+             List<String> idList = [];
+             for (var text in answerData) {
+                 var matchingAnswer = (q['answers'] as List).firstWhere((a) => a['text'].toString() == text.toString(), orElse: () => null);
+                 if (matchingAnswer != null) {
+                     idList.add(matchingAnswer['answer_id'].toString());
+                 } else {
+                     idList.add(text.toString());
+                 }
+             }
+             if (idList.isNotEmpty) {
+                 answersPayload[questionId.toString()] = idList;
+             } else {
+                 answersPayload[questionId.toString()] = answerData;
+             }
+          } else {
+            answersPayload[questionId.toString()] = answerData;
+          }
         });
 
         // Uloží odpovědi

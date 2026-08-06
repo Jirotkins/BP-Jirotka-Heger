@@ -103,7 +103,7 @@ class _ShortAnswerQuestionPageState extends ConsumerState<ShortAnswerQuestionPag
 
       final requestData = {
         "text": _questionTextController.text.trim(),
-        "type": "OPEN_TEXT", // Upraveno zpět na OPEN_TEXT kvůli backendu
+        "type": "SHORT_ANSWER", 
         "default_points": 1,
         "answers": answers,
       };

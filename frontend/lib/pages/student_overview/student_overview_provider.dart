@@ -65,6 +65,7 @@ class StudentOverviewNotifier extends Notifier<StudentOverviewState> {
           'groupName': assignment['group_name'] ?? '',
           'groupId': assignment['group_id']?.toString() ?? '',
           'questions': assignment['question_count'] ?? 0,
+          'attempt_id': assignment['attempt_id'],
         };
       }).toList();
 

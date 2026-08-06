@@ -111,6 +111,36 @@ class ApiClient {
       throw ApiException(errorMessage, response.statusCode);
     }
   }
+
+  /// Otevře SSE (Server-Sent Events) spojení na daný endpoint a vrací Stream JSON objektů.
+  Stream<Map<String, dynamic>> listenSse(String endpoint) async* {
+    final client = http.Client();
+    final request = http.Request('GET', Uri.parse('$baseUrl$endpoint'));
+    request.headers.addAll(_headers);
+    request.headers['Accept'] = 'text/event-stream';
+    
+    try {
+      final response = await client.send(request);
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        await for (var line in response.stream.transform(utf8.decoder).transform(const LineSplitter())) {
+          if (line.startsWith('data: ')) {
+            final dataStr = line.substring(6).trim();
+            if (dataStr.isNotEmpty) {
+              try {
+                yield json.decode(dataStr);
+              } catch (e) {
+                // Ignore parse errors for single events
+              }
+            }
+          }
+        }
+      } else {
+        throw ApiException('Nelze se připojit k SSE', response.statusCode);
+      }
+    } finally {
+      client.close();
+    }
+  }
 }
 
 // Provider pro ApiClienta, který je závislý na AuthProvideru

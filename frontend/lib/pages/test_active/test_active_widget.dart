@@ -317,12 +317,12 @@ class _TestActiveWidgetState extends ConsumerState<TestActiveWidget> {
         const SizedBox(height: 12.0),
         ...List.generate(question['options'].length, (index) {
           var option = question['options'][index];
-          bool isSelected = state.selectedAnswers[state.currentIndex] == option['letter'];
+          bool isSelected = state.selectedAnswers[state.currentIndex] == option['id'];
           
           return Padding(
             padding: const EdgeInsets.only(bottom: 12.0),
             child: InkWell(
-              onTap: () => notifier.updateAnswer(option['letter']),
+              onTap: () => notifier.updateAnswer(option['id']),
               borderRadius: BorderRadius.circular(14.0),
               child: Container(
                 decoration: BoxDecoration(

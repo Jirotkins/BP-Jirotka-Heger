@@ -43,6 +43,7 @@ class _SubjectPageState extends ConsumerState<SubjectPage> {
         'questions': test['questions'] ?? 0,
         'score': status == 'GRADED' ? 'Ohodnoceno' : 'Čeká na hodnocení',
         'isWarning': false,
+        'attempt_id': test['attempt_id'],
       };
 
       if (status == 'STARTED') {

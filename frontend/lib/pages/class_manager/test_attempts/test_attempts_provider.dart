@@ -1,7 +1,7 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../services/api_client.dart';
 import 'package:intl/intl.dart';
-
 class TestAttemptsState {
   final bool isLoading;
   final String? errorMessage;
@@ -28,13 +28,21 @@ class TestAttemptsState {
 }
 
 class TestAttemptsNotifier extends Notifier<TestAttemptsState> {
+  StreamSubscription? _sseSubscription;
+
   @override
   TestAttemptsState build() {
+    ref.onDispose(() {
+      _sseSubscription?.cancel();
+    });
     return TestAttemptsState();
   }
 
-  Future<void> fetchAttempts(int assignmentId) async {
-    state = state.copyWith(isLoading: true, clearError: true);
+  Future<void> fetchAttempts(int assignmentId, {bool silent = false}) async {
+    if (!silent) {
+      state = state.copyWith(isLoading: true, clearError: true);
+    }
+    
     try {
       final apiClient = ref.read(apiClientProvider);
       final response = await apiClient.get('/exam-assignments/$assignmentId/attempts');
@@ -69,12 +77,47 @@ class TestAttemptsNotifier extends Notifier<TestAttemptsState> {
       }).toList();
       
       state = state.copyWith(isLoading: false, attempts: attempts);
+
+      // Pokud jsme ještě nenavázali SSE spojení, uděláme to nyní
+      if (_sseSubscription == null) {
+        _startSseListener(assignmentId);
+      }
     } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        errorMessage: 'Nepodařilo se načíst seznam pokusů: $e'
-      );
+      if (!silent) {
+        state = state.copyWith(
+          isLoading: false,
+          errorMessage: 'Nepodařilo se načíst seznam pokusů: $e'
+        );
+      }
     }
+  }
+
+  void _startSseListener(int assignmentId) {
+    final apiClient = ref.read(apiClientProvider);
+    _sseSubscription = apiClient.listenSse('/api/sse/teacher/assignments/$assignmentId/progress').listen(
+      (eventData) {
+        final event = eventData['event'];
+        if (event == 'ping') return;
+        
+        // Jakmile zachytíme událost o tom, že student něco udělal, 
+        // rovnou tiše načteme celou tabulku znovu
+        if (event == 'attempt_started' || event == 'answer_saved' || event == 'attempt_submitted') {
+          fetchAttempts(assignmentId, silent: true);
+        }
+      },
+      onError: (e) {
+        print('Chyba SSE: $e');
+        // V případě chyby se můžeme pokusit reconnect po chvíli
+        Future.delayed(const Duration(seconds: 5), () {
+          if (ref.exists(testAttemptsProvider)) {
+             _sseSubscription?.cancel();
+             _sseSubscription = null;
+             _startSseListener(assignmentId);
+          }
+        });
+      },
+      cancelOnError: true,
+    );
   }
 }
 
