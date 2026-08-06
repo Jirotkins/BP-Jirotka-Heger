@@ -1613,9 +1613,11 @@ def auto_grade(questions_snapshot: list, student_answers: dict):
         
         if q_type == "OPEN_TEXT":
             has_open_text = True
+            q_snap["awardedPoints"] = 0
             continue
             
         if ans_data is None:
+            q_snap["awardedPoints"] = 0
             continue
             
         correct_answers = [a for a in q_snap["answers"] if a.get("is_correct", False)]
@@ -1624,6 +1626,9 @@ def auto_grade(questions_snapshot: list, student_answers: dict):
             # ans_data by mohl být answer_id (int) nebo string
             if len(correct_answers) > 0 and str(correct_answers[0]["answer_id"]) == str(ans_data):
                 total_points += points
+                q_snap["awardedPoints"] = points
+            else:
+                q_snap["awardedPoints"] = 0
                 
         elif q_type == "MULTI_CHOICE":
             if isinstance(ans_data, list):
@@ -1632,6 +1637,11 @@ def auto_grade(questions_snapshot: list, student_answers: dict):
                 # Vše nebo nic
                 if correct_ids == selected_ids:
                     total_points += points
+                    q_snap["awardedPoints"] = points
+                else:
+                    q_snap["awardedPoints"] = 0
+            else:
+                q_snap["awardedPoints"] = 0
                     
         elif q_type == "ORDERING":
             if isinstance(ans_data, list):
@@ -1646,6 +1656,11 @@ def auto_grade(questions_snapshot: list, student_answers: dict):
                 # Vše nebo nic
                 if correct_ordered == selected_ordered:
                     total_points += points
+                    q_snap["awardedPoints"] = points
+                else:
+                    q_snap["awardedPoints"] = 0
+            else:
+                q_snap["awardedPoints"] = 0
 
         elif q_type == "SHORT_ANSWER":
             if ans_data is not None and isinstance(ans_data, str):
@@ -1653,6 +1668,11 @@ def auto_grade(questions_snapshot: list, student_answers: dict):
                 correct_texts = [a["text"].strip().lower() for a in correct_answers] if correct_answers else [a["text"].strip().lower() for a in q_snap["answers"]]
                 if ans_clean in correct_texts:
                     total_points += points
+                    q_snap["awardedPoints"] = points
+                else:
+                    q_snap["awardedPoints"] = 0
+            else:
+                q_snap["awardedPoints"] = 0
 
         elif q_type == "MATCHING":
             correct_pairs = {}
@@ -1663,6 +1683,7 @@ def auto_grade(questions_snapshot: list, student_answers: dict):
                 elif a.get("match_text"):
                     correct_pairs[a["text"].strip().lower()] = a["match_text"].strip().lower()
             
+            is_matching_correct = False
             if ans_data and isinstance(ans_data, dict) and correct_pairs:
                 all_match = True
                 for k, v in correct_pairs.items():
@@ -1675,7 +1696,7 @@ def auto_grade(questions_snapshot: list, student_answers: dict):
                         all_match = False
                         break
                 if all_match:
-                    total_points += points
+                    is_matching_correct = True
             elif ans_data and isinstance(ans_data, list) and correct_pairs:
                 student_dict = {}
                 for item in ans_data:
@@ -1684,12 +1705,20 @@ def auto_grade(questions_snapshot: list, student_answers: dict):
                     elif isinstance(item, dict) and "left" in item and "right" in item:
                         student_dict[str(item["left"]).strip().lower()] = str(item["right"]).strip().lower()
                 if correct_pairs and all(student_dict.get(k) == v for k, v in correct_pairs.items()):
-                    total_points += points
+                    is_matching_correct = True
+            
+            if is_matching_correct:
+                total_points += points
+                q_snap["awardedPoints"] = points
+            else:
+                q_snap["awardedPoints"] = 0
                     
     return total_points, has_open_text
 
 
 def submit_student_attempt(db: Session, student_id: int, attempt_id: int, final_answers: dict = None):
+    from sqlalchemy.orm.attributes import flag_modified
+
     attempt = db.query(StudentAttempt).filter(
         StudentAttempt.attempt_id == attempt_id,
         StudentAttempt.student_id == student_id
@@ -1709,6 +1738,9 @@ def submit_student_attempt(db: Session, student_id: int, attempt_id: int, final_
     
     # Auto grade
     total_points, has_open_text = auto_grade(attempt.questions_snapshot, attempt.student_answers)
+    flag_modified(attempt, "questions_snapshot")
+    if final_answers is not None:
+        flag_modified(attempt, "student_answers")
     
     attempt.total_points = total_points
     if attempt.max_points and attempt.max_points > 0:
@@ -1725,4 +1757,15 @@ def submit_student_attempt(db: Session, student_id: int, attempt_id: int, final_
     
     db.commit()
     db.refresh(attempt)
+
+    # SSE notifikace pro učitele o odevzdání pokusu
+    teacher_channel = f"teacher_assignment_{attempt.assignment_id}"
+    sse_manager.sync_publish(teacher_channel, {
+        "event": "attempt_submitted",
+        "attempt_id": attempt_id,
+        "student_id": student_id,
+        "status": attempt.status.value,
+        "score_percent": float(attempt.score_percent) if attempt.score_percent is not None else None
+    })
+
     return attempt

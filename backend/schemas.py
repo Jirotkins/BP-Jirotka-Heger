@@ -338,6 +338,7 @@ class StudentAttemptDetailedResponse(BaseModel):
     attempt_id: int
     assignment_id: int
     student_id: int
+    student_name: str | None = None
     started_at: datetime
     finished_at: datetime | None = None
     status: str
@@ -345,7 +346,7 @@ class StudentAttemptDetailedResponse(BaseModel):
     max_points: float = None
     score_percent: float = None
     teacher_note: str = None
-    questions_snapshot: dict  # JSONB - snapshot otázek
+    questions_snapshot: list | dict  # JSONB - snapshot otázek
     student_answers: dict = None  # JSONB - odpovědi studenta
     
     class Config:

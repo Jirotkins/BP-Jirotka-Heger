@@ -1365,10 +1365,16 @@ def get_attempt_detail(
         if attempt.assignment_id != assignment_id:
             raise ValueError("Pokus nepatří do tohoto přiřazení")
 
+        student_name = (
+            attempt.student.email if attempt.student and attempt.student.email 
+            else (attempt.student.login_code if attempt.student else None)
+        )
+
         return {
             "attempt_id": attempt.attempt_id,
             "assignment_id": attempt.assignment_id,
             "student_id": attempt.student_id,
+            "student_name": student_name,
             "started_at": attempt.started_at.isoformat(),
             "finished_at": attempt.finished_at.isoformat() if attempt.finished_at else None,
             "status": attempt.status.value,
@@ -1617,10 +1623,16 @@ def get_student_attempt_endpoint(
     """Získat detail pokusu pro přihlášeného studenta (včetně výsledků a bodů)."""
     try:
         attempt = db_layer.get_student_attempt_details(db, attempt_id, current_student["user_id"])
+        student_name = (
+            attempt.student.email if attempt.student and attempt.student.email 
+            else (attempt.student.login_code if attempt.student else None)
+        )
+
         return {
             "attempt_id": attempt.attempt_id,
             "assignment_id": attempt.assignment_id,
             "student_id": attempt.student_id,
+            "student_name": student_name,
             "started_at": attempt.started_at.isoformat() if attempt.started_at else None,
             "finished_at": attempt.finished_at.isoformat() if attempt.finished_at else None,
             "status": attempt.status.value,
