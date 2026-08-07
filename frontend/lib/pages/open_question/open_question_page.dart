@@ -20,6 +20,7 @@ class _OpenQuestionPageState extends ConsumerState<OpenQuestionPage> {
   late TextEditingController _questionTextController;
   late FocusNode _questionFocusNode;
   bool _isInitialized = false;
+  String? _imageBase64;
 
   @override
   void initState() {
@@ -37,6 +38,7 @@ class _OpenQuestionPageState extends ConsumerState<OpenQuestionPage> {
       
       if (questionData != null) {
         _questionTextController.text = questionData['text'] ?? '';
+        _imageBase64 = questionData['image_url'];
       }
       _isInitialized = true;
     }
@@ -62,6 +64,7 @@ class _OpenQuestionPageState extends ConsumerState<OpenQuestionPage> {
         "text": _questionTextController.text.trim(),
         "type": "OPEN_TEXT",
         "default_points": 1,
+        "image_url": _imageBase64,
         "answers": [],
       };
 
@@ -285,8 +288,11 @@ class _OpenQuestionPageState extends ConsumerState<OpenQuestionPage> {
 
                   // UPLOAD OBRÁZKU
                   ImageUploadWidget(
-                    onImageSelected: (file, bytes) {
-                      print('Image selected: ${file?.name}');
+                    initialImageUrl: _imageBase64,
+                    onImageSelected: (base64DataUrl) {
+                      setState(() {
+                        _imageBase64 = base64DataUrl;
+                      });
                     },
                   ),
                   

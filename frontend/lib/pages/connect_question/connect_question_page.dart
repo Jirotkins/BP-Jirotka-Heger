@@ -23,6 +23,7 @@ class _ConnectQuestionPageState extends ConsumerState<ConnectQuestionPage> {
   // DYNAMICKÝ SEZNAM pro párování (každá položka obsahuje Levý a Pravý kontroler)
   final List<Map<String, TextEditingController>> _pairControllers = [];
   bool _isInitialized = false;
+  String? _imageBase64;
 
   @override
   void initState() {
@@ -45,6 +46,7 @@ class _ConnectQuestionPageState extends ConsumerState<ConnectQuestionPage> {
       
       if (questionData != null) {
         _questionTextController.text = questionData['text'] ?? '';
+        _imageBase64 = questionData['image_url'];
         
         final answers = questionData['answers'] as List?;
         if (answers != null && answers.isNotEmpty) {
@@ -148,6 +150,7 @@ class _ConnectQuestionPageState extends ConsumerState<ConnectQuestionPage> {
         "text": _questionTextController.text.trim(),
         "type": "MATCHING",
         "default_points": 1,
+        "image_url": _imageBase64,
         "answers": answers,
       };
 
@@ -283,25 +286,6 @@ class _ConnectQuestionPageState extends ConsumerState<ConnectQuestionPage> {
     );
   }
 
-  // --- POMOCNÁ METODA PRO TLAČÍTKO NAHRÁNÍ OBRÁZKU ---
-  Widget _buildImagePlaceholder() {
-    return InkWell(
-      onTap: () => print('Nahrát obrázek (zatím jen placeholder)'),
-      borderRadius: BorderRadius.circular(10.0),
-      child: Container(
-        width: 48.0,
-        height: 48.0, // Stejná výška jako TextFormField
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(10.0),
-          border: Border.all(color: Theme.of(context).colorScheme.outline, width: 1.0),
-        ),
-        alignment: Alignment.center,
-        child: Icon(Icons.add_photo_alternate_outlined, color: Theme.of(context).colorScheme.secondary, size: 24.0),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final args = GoRouterState.of(context).extra as Map<String, dynamic>?;
@@ -417,8 +401,11 @@ class _ConnectQuestionPageState extends ConsumerState<ConnectQuestionPage> {
 
                   // UPLOAD OBRÁZKU
                   ImageUploadWidget(
-                    onImageSelected: (file, bytes) {
-                      print('Image selected: ${file?.name}');
+                    initialImageUrl: _imageBase64,
+                    onImageSelected: (base64DataUrl) {
+                      setState(() {
+                        _imageBase64 = base64DataUrl;
+                      });
                     },
                   ),
                   
@@ -429,7 +416,7 @@ class _ConnectQuestionPageState extends ConsumerState<ConnectQuestionPage> {
                   // DYNAMICKÁ SEKCE PRO PÁROVÁNÍ
                   Text('SPRÁVNÉ DVOJICE K PROPOJENÍ', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, letterSpacing: 1.2, fontSize: 12, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 4.0),
-                  Text('Zadejte hodnoty, které k sobě patří. K libovolné položce můžete připojit i obrázek. Studentům se sloupce automaticky zamíchají.', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontSize: 12)),
+                  Text('Zadejte hodnoty, které k sobě patří. Studentům se sloupce automaticky zamíchají.', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontSize: 12)),
                   const SizedBox(height: 24.0),
                   
                   // Záhlaví sloupců
@@ -471,8 +458,6 @@ class _ConnectQuestionPageState extends ConsumerState<ConnectQuestionPage> {
                             Expanded(
                               child: Row(
                                 children: [
-                                  _buildImagePlaceholder(),
-                                  const SizedBox(width: 8.0),
                                   Expanded(
                                     child: TextFormField(
                                       controller: leftCtrl,
@@ -505,8 +490,6 @@ class _ConnectQuestionPageState extends ConsumerState<ConnectQuestionPage> {
                             Expanded(
                               child: Row(
                                 children: [
-                                  _buildImagePlaceholder(),
-                                  const SizedBox(width: 8.0),
                                   Expanded(
                                     child: TextFormField(
                                       controller: rightCtrl,

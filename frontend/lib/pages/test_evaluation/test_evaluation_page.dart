@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/services.dart';
+import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'test_evaluation_provider.dart';
 import '../class_manager/test_attempts/test_attempts_provider.dart';
@@ -410,6 +411,33 @@ class _TestEvaluationPageState extends ConsumerState<TestEvaluationPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (question['image_url'] != null && question['image_url'].toString().isNotEmpty) ...[
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12.0),
+                      child: Builder(builder: (context) {
+                        final url = question['image_url'].toString();
+                        if (url.startsWith('data:image')) {
+                          try {
+                            String b64 = url.split(',').last.trim();
+                            return ConstrainedBox(
+                              constraints: const BoxConstraints(maxHeight: 300),
+                              child: Image.memory(
+                                base64Decode(base64.normalize(b64)),
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                                gaplessPlayback: true,
+                              ),
+                            );
+                          } catch (e) {
+                            print('Image rendering error in test_evaluation_page: $e');
+                            return const SizedBox();
+                          }
+                        }
+                        return ConstrainedBox(constraints: const BoxConstraints(maxHeight: 300), child: Image.network(url, fit: BoxFit.cover, width: double.infinity, errorBuilder: (c, e, s) => const SizedBox()));
+                      }),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                   Text(
                     question['text'] ?? '',
                     style: GoogleFonts.inter(fontSize: 16, color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.w500),

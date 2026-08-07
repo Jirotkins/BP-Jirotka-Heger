@@ -20,6 +20,7 @@ class _ShortAnswerQuestionPageState extends ConsumerState<ShortAnswerQuestionPag
 
   final List<TextEditingController> _answerControllers = [];
   bool _isInitialized = false;
+  String? _imageBase64;
 
   @override
   void initState() {
@@ -38,6 +39,7 @@ class _ShortAnswerQuestionPageState extends ConsumerState<ShortAnswerQuestionPag
       
       if (questionData != null) {
         _questionTextController.text = questionData['text'] ?? '';
+        _imageBase64 = questionData['image_url'];
         
         final answers = questionData['answers'] as List?;
         if (answers != null && answers.isNotEmpty) {
@@ -105,6 +107,7 @@ class _ShortAnswerQuestionPageState extends ConsumerState<ShortAnswerQuestionPag
         "text": _questionTextController.text.trim(),
         "type": "SHORT_ANSWER", 
         "default_points": 1,
+        "image_url": _imageBase64,
         "answers": answers,
       };
 
@@ -338,8 +341,11 @@ class _ShortAnswerQuestionPageState extends ConsumerState<ShortAnswerQuestionPag
 
                   // UPLOAD OBRÁZKU
                   ImageUploadWidget(
-                    onImageSelected: (file, bytes) {
-                      print('Image selected: ${file?.name}');
+                    initialImageUrl: _imageBase64,
+                    onImageSelected: (base64DataUrl) {
+                      setState(() {
+                        _imageBase64 = base64DataUrl;
+                      });
                     },
                   ),
                   
