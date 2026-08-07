@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'test_attempts_provider.dart';
+import '../../../components/page_header_widget.dart';
 
 class TestAttemptsPage extends ConsumerStatefulWidget {
   final int assignmentId;
@@ -33,33 +34,35 @@ class _TestAttemptsPageState extends ConsumerState<TestAttemptsPage> {
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(widget.testTitle, style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
-            const SizedBox(width: 12),
-            Tooltip(
-              message: 'Data se aktualizují živě',
-              child: Container(
-                width: 8,
-                height: 8,
-                decoration: const BoxDecoration(
-                  color: Colors.green,
-                  shape: BoxShape.circle,
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          PageHeaderWidget(
+            title: widget.testTitle,
+            showBackButton: true,
+            actions: [
+              Tooltip(
+                message: 'Data se aktualizují živě',
+                child: Container(
+                  width: 10,
+                  height: 10,
+                  decoration: const BoxDecoration(
+                    color: Colors.green,
+                    shape: BoxShape.circle,
+                  ),
                 ),
               ),
-            ),
-          ],
-        ),
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        surfaceTintColor: Colors.transparent,
+            ],
+          ),
+          Expanded(
+            child: state.isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : state.errorMessage != null
+                    ? Center(child: Text(state.errorMessage!, style: TextStyle(color: Theme.of(context).colorScheme.error)))
+                    : _buildBody(context, state),
+          ),
+        ],
       ),
-      body: state.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : state.errorMessage != null
-              ? Center(child: Text(state.errorMessage!, style: TextStyle(color: Theme.of(context).colorScheme.error)))
-              : _buildBody(context, state),
     );
   }
 

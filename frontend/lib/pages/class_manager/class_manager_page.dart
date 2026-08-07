@@ -66,6 +66,7 @@ class _ClassManagerPageState extends ConsumerState<ClassManagerPage> {
       children: [
         PageHeaderWidget(
           title: className,
+          showBackButton: true,
           actions: [
             ElevatedButton.icon(
               onPressed: () {

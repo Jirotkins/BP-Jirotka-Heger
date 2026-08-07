@@ -318,6 +318,7 @@ class _ConnectQuestionPageState extends ConsumerState<ConnectQuestionPage> {
         // --- DYNAMICKÁ HLAVIČKA ---
         PageHeaderWidget(
           title: isEdit ? 'Úprava otázky' : 'Tvorba: $targetName',
+          showBackButton: true,
           actions: [
             // TLAČÍTKO 1: Pohled studenta
             ElevatedButton.icon(

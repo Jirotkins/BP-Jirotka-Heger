@@ -187,6 +187,7 @@ class _OpenQuestionPageState extends ConsumerState<OpenQuestionPage> {
         // --- DYNAMICKÁ HLAVIČKA ---
         PageHeaderWidget(
           title: isEdit ? 'Úprava otázky' : 'Tvorba: $targetName',
+          showBackButton: true,
           actions: [
             ElevatedButton.icon(
               onPressed: _showStudentPreview, 

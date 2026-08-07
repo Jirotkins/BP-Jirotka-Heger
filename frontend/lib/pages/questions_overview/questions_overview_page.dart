@@ -112,7 +112,8 @@ class _QuestionsOverviewPageState extends ConsumerState<QuestionsOverviewPage> {
       children: [
         // --- HLAVIČKA ---
         PageHeaderWidget(
-          title: 'Banka: ${widget.bankName}',
+          title: 'Úprava banky – ${widget.bankName}',
+          showBackButton: true,
           actions: [
             ElevatedButton.icon(
               onPressed: () {

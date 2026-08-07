@@ -25,7 +25,8 @@ class _AddNewQuestionPageState extends State<AddNewQuestionPage> {
         
         // DYNAMICKÁ HLAVIČKA
         PageHeaderWidget(
-          title: 'Vytvořit otázku — $targetName',
+          title: 'Vytvořit otázku – $targetName',
+          showBackButton: true,
           actions: const [], 
         ),
         
