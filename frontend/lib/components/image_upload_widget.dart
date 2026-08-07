@@ -1,18 +1,21 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:cross_file/cross_file.dart';
 import 'dart:typed_data';
+import 'dart:convert';
 
 class ImageUploadWidget extends StatefulWidget {
-  final Function(XFile? file, Uint8List? bytes) onImageSelected;
+  final void Function(String? base64DataUrl) onImageSelected;
   final String title;
+  final String? initialImageUrl;
 
   const ImageUploadWidget({
     super.key,
     required this.onImageSelected,
-    this.title = 'Přetáhněte obrázek nebo schéma (volitelné)',
+    this.title = 'Přidat obrázek (volitelné)',
+    this.initialImageUrl,
   });
 
   @override
@@ -21,8 +24,40 @@ class ImageUploadWidget extends StatefulWidget {
 
 class _ImageUploadWidgetState extends State<ImageUploadWidget> {
   bool _isHovering = false;
-  XFile? _selectedFile;
-  Uint8List? _fileBytes;
+  String? _currentImageUrl;
+  Uint8List? _currentImageBytes;
+  
+  @override
+  void initState() {
+    super.initState();
+    _currentImageUrl = widget.initialImageUrl;
+    if (_currentImageUrl != null && _currentImageUrl!.startsWith('data:image')) {
+      try {
+        final b64 = _currentImageUrl!.split(',').last;
+        _currentImageBytes = base64Decode(b64);
+      } catch (e) {
+        // Fallback
+      }
+    }
+  }
+
+  Future<void> _processFile(XFile file, Uint8List bytes) async {
+    final ext = file.name.split('.').last.toLowerCase();
+    String mimeType = 'image/png';
+    if (ext == 'jpg' || ext == 'jpeg') mimeType = 'image/jpeg';
+    if (ext == 'svg') mimeType = 'image/svg+xml';
+    if (ext == 'webp') mimeType = 'image/webp';
+    
+    final base64Str = base64Encode(bytes);
+    final dataUrl = 'data:$mimeType;base64,$base64Str';
+    
+    setState(() {
+      _currentImageUrl = dataUrl;
+      _currentImageBytes = bytes;
+    });
+    
+    widget.onImageSelected(dataUrl);
+  }
 
   Future<void> _pickImage() async {
     FilePickerResult? result = await FilePicker.pickFiles(
@@ -32,64 +67,54 @@ class _ImageUploadWidgetState extends State<ImageUploadWidget> {
 
     if (result != null) {
       final file = result.files.first;
-      setState(() {
-        _selectedFile = XFile(file.path ?? file.name);
-        _fileBytes = file.bytes;
-      });
-      widget.onImageSelected(_selectedFile, _fileBytes);
+      if (file.bytes != null) {
+        await _processFile(XFile(file.path ?? file.name), file.bytes!);
+      }
     }
   }
 
   void _removeImage() {
     setState(() {
-      _selectedFile = null;
-      _fileBytes = null;
+      _currentImageUrl = null;
+      _currentImageBytes = null;
     });
-    widget.onImageSelected(null, null);
+    widget.onImageSelected(null);
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_selectedFile != null) {
+    if (_currentImageUrl != null) {
       return Container(
-        height: 120.0,
+        height: 140.0,
+        width: 200.0,
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(12.0),
-          border: Border.all(color: Theme.of(context).colorScheme.primary, width: 1.5),
+          border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5), width: 1.5),
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-        child: Row(
+        clipBehavior: Clip.hardEdge,
+        child: Stack(
+          fit: StackFit.expand,
           children: [
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8.0),
-                color: Theme.of(context).colorScheme.primaryContainer,
-              ),
-              clipBehavior: Clip.hardEdge,
-              child: _fileBytes != null
-                  ? Image.memory(_fileBytes!, fit: BoxFit.cover)
-                  : const Center(child: Icon(Icons.image)),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Text(
-                _selectedFile!.name,
-                style: GoogleFonts.inter(
-                  color: Theme.of(context).colorScheme.onSurface,
-                  fontSize: 14.0,
-                  fontWeight: FontWeight.w600,
+            _currentImageBytes != null
+                ? Image.memory(_currentImageBytes!, fit: BoxFit.cover)
+                : Image.network(_currentImageUrl!, fit: BoxFit.cover, errorBuilder: (c, e, s) => const Center(child: Icon(Icons.broken_image))),
+            Positioned(
+              top: 4,
+              right: 4,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.6),
+                  shape: BoxShape.circle,
                 ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+                child: IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                  onPressed: _removeImage,
+                  tooltip: 'Odebrat obrázek',
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                ),
               ),
-            ),
-            IconButton(
-              icon: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error),
-              onPressed: _removeImage,
-              tooltip: 'Odebrat obrázek',
             )
           ],
         ),
@@ -101,57 +126,43 @@ class _ImageUploadWidgetState extends State<ImageUploadWidget> {
         if (detail.files.isNotEmpty) {
           final file = detail.files.first;
           final bytes = await file.readAsBytes();
-          setState(() {
-            _selectedFile = file;
-            _fileBytes = bytes;
-          });
-          widget.onImageSelected(_selectedFile, _fileBytes);
+          await _processFile(file, bytes);
         }
       },
-      onDragEntered: (detail) {
-        setState(() {
-          _isHovering = true;
-        });
-      },
-      onDragExited: (detail) {
-        setState(() {
-          _isHovering = false;
-        });
-      },
-      child: GestureDetector(
+      onDragEntered: (_) => setState(() => _isHovering = true),
+      onDragExited: (_) => setState(() => _isHovering = false),
+      child: InkWell(
         onTap: _pickImage,
+        borderRadius: BorderRadius.circular(8.0),
         child: Container(
-          height: 120.0,
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
           decoration: BoxDecoration(
             color: _isHovering 
                 ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.1) 
                 : Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(12.0),
+            borderRadius: BorderRadius.circular(8.0),
             border: Border.all(
               color: _isHovering 
                   ? Theme.of(context).colorScheme.primary 
                   : Theme.of(context).colorScheme.outline, 
-              width: 1.5
+              width: 1.0,
+              style: BorderStyle.solid,
             ),
           ),
-          alignment: Alignment.center,
-          child: Column(
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                Icons.cloud_upload_outlined, 
-                color: _isHovering 
-                    ? Theme.of(context).colorScheme.primary 
-                    : Theme.of(context).colorScheme.secondary, 
-                size: 36.0
+                Icons.add_photo_alternate_outlined, 
+                color: Theme.of(context).colorScheme.primary, 
+                size: 20.0
               ),
-              const SizedBox(height: 8.0),
+              const SizedBox(width: 8.0),
               Text(
                 widget.title, 
                 style: GoogleFonts.inter(
-                  color: _isHovering 
-                      ? Theme.of(context).colorScheme.primary 
-                      : Theme.of(context).colorScheme.secondary, 
+                  color: Theme.of(context).colorScheme.primary, 
+                  fontWeight: FontWeight.w600,
                   fontSize: 14.0
                 )
               ),

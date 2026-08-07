@@ -137,6 +137,8 @@ class ApiClient {
       } else {
         throw ApiException('Nelze se připojit k SSE', response.statusCode);
       }
+    } catch (e) {
+      print('SSE Error: $e');
     } finally {
       client.close();
     }

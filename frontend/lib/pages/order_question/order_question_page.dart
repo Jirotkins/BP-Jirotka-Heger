@@ -23,6 +23,7 @@ class _OrderQuestionPageState extends ConsumerState<OrderQuestionPage> {
   // DYNAMICKÝ SEZNAM pro položky k seřazení 
   final List<TextEditingController> _optionControllers = [];
   bool _isInitialized = false;
+  String? _imageBase64;
 
   @override
   void initState() {
@@ -45,6 +46,7 @@ class _OrderQuestionPageState extends ConsumerState<OrderQuestionPage> {
       
       if (questionData != null) {
         _questionTextController.text = questionData['text'] ?? '';
+        _imageBase64 = questionData['image_url'];
         
         final answers = questionData['answers'] as List?;
         if (answers != null && answers.isNotEmpty) {
@@ -130,6 +132,7 @@ class _OrderQuestionPageState extends ConsumerState<OrderQuestionPage> {
         "text": _questionTextController.text.trim(),
         "type": "ORDERING",
         "default_points": 1,
+        "image_url": _imageBase64,
         "answers": answers,
       };
 
@@ -267,6 +270,7 @@ class _OrderQuestionPageState extends ConsumerState<OrderQuestionPage> {
         // --- DYNAMICKÁ HLAVIČKA ---
         PageHeaderWidget(
           title: isEdit ? 'Úprava otázky' : 'Tvorba: $targetName',
+          showBackButton: true,
           actions: [
             ElevatedButton.icon(
               onPressed: _showStudentPreview, 
@@ -363,8 +367,11 @@ class _OrderQuestionPageState extends ConsumerState<OrderQuestionPage> {
 
                   // UPLOAD OBRÁZKU
                   ImageUploadWidget(
-                    onImageSelected: (file, bytes) {
-                      print('Image selected: ${file?.name}');
+                    initialImageUrl: _imageBase64,
+                    onImageSelected: (base64DataUrl) {
+                      setState(() {
+                        _imageBase64 = base64DataUrl;
+                      });
                     },
                   ),
                   

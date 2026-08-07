@@ -22,6 +22,7 @@ class _MultiChoiceQuestionPageState extends ConsumerState<MultiChoiceQuestionPag
   // DYNAMICKÝ SEZNAM pro možnosti (Textový kontroler + informace, zda je to správná odpověď)
   final List<Map<String, dynamic>> _options = [];
   bool _isInitialized = false;
+  String? _imageBase64;
 
   @override
   void initState() {
@@ -47,6 +48,7 @@ class _MultiChoiceQuestionPageState extends ConsumerState<MultiChoiceQuestionPag
       
       if (questionData != null) {
         _questionTextController.text = questionData['text'] ?? '';
+        _imageBase64 = questionData['image_url'];
         
         final answers = questionData['answers'] as List?;
         if (answers != null && answers.isNotEmpty) {
@@ -141,6 +143,7 @@ class _MultiChoiceQuestionPageState extends ConsumerState<MultiChoiceQuestionPag
         "text": _questionTextController.text.trim(),
         "type": qType,
         "default_points": 1,
+        "image_url": _imageBase64,
         "answers": answers,
       };
 
@@ -284,24 +287,6 @@ class _MultiChoiceQuestionPageState extends ConsumerState<MultiChoiceQuestionPag
     );
   }
 
-  // --- POMOCNÁ METODA PRO TLAČÍTKO NAHRÁNÍ OBRÁZKU K MOŽNOSTI ---
-  Widget _buildImagePlaceholder() {
-    return InkWell(
-      onTap: () => print('Nahrát obrázek (zatím jen placeholder)'),
-      borderRadius: BorderRadius.circular(10.0),
-      child: Container(
-        width: 48.0,
-        height: 48.0, 
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(10.0),
-          border: Border.all(color: Theme.of(context).colorScheme.outline, width: 1.0),
-        ),
-        alignment: Alignment.center,
-        child: Icon(Icons.add_photo_alternate_outlined, color: Theme.of(context).colorScheme.secondary, size: 24.0),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -319,6 +304,7 @@ class _MultiChoiceQuestionPageState extends ConsumerState<MultiChoiceQuestionPag
         // --- DYNAMICKÁ HLAVIČKA ---
         PageHeaderWidget(
           title: isEdit ? 'Úprava otázky' : 'Tvorba: $targetName',
+          showBackButton: true,
           actions: [
             // TLAČÍTKO 1: Pohled studenta
             ElevatedButton.icon(
@@ -417,8 +403,11 @@ class _MultiChoiceQuestionPageState extends ConsumerState<MultiChoiceQuestionPag
 
                   // UPLOAD OBRÁZKU
                   ImageUploadWidget(
-                    onImageSelected: (file, bytes) {
-                      print('Image selected: ${file?.name}');
+                    initialImageUrl: _imageBase64,
+                    onImageSelected: (base64DataUrl) {
+                      setState(() {
+                        _imageBase64 = base64DataUrl;
+                      });
                     },
                   ),
                   
@@ -429,7 +418,7 @@ class _MultiChoiceQuestionPageState extends ConsumerState<MultiChoiceQuestionPag
                   // DYNAMICKÁ SEKCE PRO MOŽNOSTI
                   Text('VARIANTY ODPOVĚDÍ', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, letterSpacing: 1.2, fontSize: 12, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 4.0),
-                  Text('Zadejte možné odpovědi a zaškrtněte tu správnou (nebo více správných). Ke každé možnosti lze přidat obrázek.', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontSize: 12)),
+                  Text('Zadejte možné odpovědi a zaškrtněte tu správnou (nebo více správných).', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontSize: 12)),
                   const SizedBox(height: 24.0),
 
                   // Generování řádků s možnostmi
@@ -466,10 +455,6 @@ class _MultiChoiceQuestionPageState extends ConsumerState<MultiChoiceQuestionPag
                               ),
                             ),
                             const SizedBox(width: 16.0),
-                            
-                            // 2. Obrázek (Placeholder)
-                            _buildImagePlaceholder(),
-                            const SizedBox(width: 12.0),
 
                             // 3. Textové pole
                             Expanded(

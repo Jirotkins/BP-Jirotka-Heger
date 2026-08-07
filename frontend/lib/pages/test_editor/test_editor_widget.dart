@@ -75,7 +75,8 @@ class _TestEditorWidgetState extends ConsumerState<TestEditorWidget> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         PageHeaderWidget(
-          title: 'Nový test — $targetClass',
+          title: 'Nový test – $targetClass',
+          showBackButton: true,
           actions: [
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

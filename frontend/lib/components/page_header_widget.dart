@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'package:go_router/go_router.dart';
+
 class PageHeaderWidget extends StatelessWidget {
   final String title;
   final String? subtitle;
   final List<Widget>? actions;
+  final bool showBackButton;
 
   const PageHeaderWidget({
     super.key,
     required this.title,
     this.subtitle,
     this.actions,
+    this.showBackButton = false,
   });
 
   @override
@@ -41,32 +45,53 @@ class PageHeaderWidget extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
               children: [
-                Text(
-                  title,
-                  style: GoogleFonts.interTight(
-                    fontSize: 30.0, 
-                    fontWeight: FontWeight.w800, 
-                    letterSpacing: -0.5,
-                    height: 1.1, 
-                    color: Theme.of(context).colorScheme.onSurface, 
-                  ),
-                ),
-                if (subtitle != null) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle!,
-                    style: GoogleFonts.inter(
-                      fontSize: 14.0,
-                      color: Theme.of(context).colorScheme.secondary,
-                      fontWeight: FontWeight.w500,
-                      height: 1.1,
+                if (showBackButton)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 16.0),
+                    child: IconButton(
+                      icon: const Icon(Icons.arrow_back),
+                      color: Theme.of(context).colorScheme.onSurface,
+                      onPressed: () {
+                        if (context.canPop()) {
+                          context.pop();
+                        } else {
+                          context.go('/classOverview');
+                        }
+                      },
                     ),
                   ),
-                ],
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: GoogleFonts.interTight(
+                          fontSize: 30.0, 
+                          fontWeight: FontWeight.w800, 
+                          letterSpacing: -0.5,
+                          height: 1.1, 
+                          color: Theme.of(context).colorScheme.onSurface, 
+                        ),
+                      ),
+                      if (subtitle != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          subtitle!,
+                          style: GoogleFonts.inter(
+                            fontSize: 14.0,
+                            color: Theme.of(context).colorScheme.secondary,
+                            fontWeight: FontWeight.w500,
+                            height: 1.1,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
               ],
             ),
           ),

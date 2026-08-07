@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:convert';
 
 import 'test_active_provider.dart';
 import '../../components/test_submit_popup_widget.dart';
@@ -231,9 +232,41 @@ class _TestActiveWidgetState extends ConsumerState<TestActiveWidget> {
                           boxShadow: [BoxShadow(color: Theme.of(context).shadowColor.withValues(alpha: 0.04), blurRadius: 10.0, offset: const Offset(0, 4))],
                         ),
                         padding: const EdgeInsets.all(24.0),
-                        child: Text(
-                          currentQuestion['text'],
-                          style: GoogleFonts.inter(fontSize: 18.0, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.onSurface, height: 1.4),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (currentQuestion['image_url'] != null && currentQuestion['image_url'].toString().isNotEmpty) ...[
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(12.0),
+                                child: Builder(builder: (context) {
+                                  final url = currentQuestion['image_url'].toString();
+                                  if (url.startsWith('data:image')) {
+                                    try {
+                                      String b64 = url.split(',').last.trim();
+                                      return ConstrainedBox(
+                                        constraints: const BoxConstraints(maxHeight: 300),
+                                        child: Image.memory(
+                                          base64Decode(base64.normalize(b64)),
+                                          fit: BoxFit.cover,
+                                          width: double.infinity,
+                                          gaplessPlayback: true,
+                                        ),
+                                      );
+                                    } catch (e) {
+                                      print('Image rendering error in test_active_widget: $e');
+                                      return const SizedBox();
+                                    }
+                                  }
+                                  return ConstrainedBox(constraints: const BoxConstraints(maxHeight: 300), child: Image.network(url, fit: BoxFit.cover, width: double.infinity, errorBuilder: (c, e, s) => const SizedBox()));
+                                }),
+                              ),
+                              const SizedBox(height: 16.0),
+                            ],
+                            Text(
+                              currentQuestion['text'],
+                              style: GoogleFonts.inter(fontSize: 18.0, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.onSurface, height: 1.4),
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(height: 32.0),

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/services.dart';
+import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'test_evaluation_provider.dart';
 import '../class_manager/test_attempts/test_attempts_provider.dart';
 import '../../theme/app_themes.dart';
+import '../../components/page_header_widget.dart';
 
 class TestEvaluationPage extends ConsumerStatefulWidget {
   final int? assignmentId;
@@ -113,12 +115,11 @@ class _TestEvaluationPageState extends ConsumerState<TestEvaluationPage> {
     if (state.isLoading) {
       return Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        appBar: AppBar(
-          backgroundColor: Theme.of(context).colorScheme.surface,
-          elevation: 0,
-        ),
-        body: Center(
-          child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary),
+        body: Column(
+          children: [
+            const PageHeaderWidget(title: 'Načítání...', showBackButton: true),
+            Expanded(child: Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary))),
+          ],
         ),
       );
     }
@@ -126,40 +127,26 @@ class _TestEvaluationPageState extends ConsumerState<TestEvaluationPage> {
     if (state.testData.isEmpty) {
       return Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        appBar: AppBar(
-          backgroundColor: Theme.of(context).colorScheme.surface,
-          title: Text('Chyba načítání', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurface)),
-          elevation: 0,
-        ),
-        body: Center(
-          child: Text('Data o testu se nepodařilo načíst.', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurface)),
+        body: Column(
+          children: [
+            const PageHeaderWidget(title: 'Chyba načítání', showBackButton: true),
+            Expanded(child: Center(child: Text('Data o testu se nepodařilo načíst.', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurface)))),
+          ],
         ),
       );
     }
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        elevation: 1,
-        shadowColor: Theme.of(context).shadowColor.withValues(alpha: 0.1),
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.onSurface),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: Text(
-          'Hodnocení testu',
-          style: GoogleFonts.inter(
-            color: Theme.of(context).colorScheme.onSurface,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        actions: [
-          if (!widget.isStudent)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Center(
-                child: state.isSubmitting
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          PageHeaderWidget(
+            title: 'Hodnocení testu',
+            showBackButton: true,
+            actions: [
+              if (!widget.isStudent)
+                state.isSubmitting
                     ? SizedBox(
                         width: 24, height: 24,
                         child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.primary),
@@ -175,18 +162,20 @@ class _TestEvaluationPageState extends ConsumerState<TestEvaluationPage> {
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
                       ),
+            ],
+          ),
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  _buildHeaderInfo(context, state),
+                  _buildQuestionsList(context, state, notifier),
+                  const SizedBox(height: 60), 
+                ],
               ),
             ),
+          ),
         ],
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            _buildHeaderInfo(context, state),
-            _buildQuestionsList(context, state, notifier),
-            const SizedBox(height: 60), 
-          ],
-        ),
       ),
     );
   }
@@ -422,6 +411,33 @@ class _TestEvaluationPageState extends ConsumerState<TestEvaluationPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (question['image_url'] != null && question['image_url'].toString().isNotEmpty) ...[
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12.0),
+                      child: Builder(builder: (context) {
+                        final url = question['image_url'].toString();
+                        if (url.startsWith('data:image')) {
+                          try {
+                            String b64 = url.split(',').last.trim();
+                            return ConstrainedBox(
+                              constraints: const BoxConstraints(maxHeight: 300),
+                              child: Image.memory(
+                                base64Decode(base64.normalize(b64)),
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                                gaplessPlayback: true,
+                              ),
+                            );
+                          } catch (e) {
+                            print('Image rendering error in test_evaluation_page: $e');
+                            return const SizedBox();
+                          }
+                        }
+                        return ConstrainedBox(constraints: const BoxConstraints(maxHeight: 300), child: Image.network(url, fit: BoxFit.cover, width: double.infinity, errorBuilder: (c, e, s) => const SizedBox()));
+                      }),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                   Text(
                     question['text'] ?? '',
                     style: GoogleFonts.inter(fontSize: 16, color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.w500),

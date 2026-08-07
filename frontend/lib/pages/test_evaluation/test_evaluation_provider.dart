@@ -177,6 +177,7 @@ class TestEvaluationNotifier extends Notifier<TestEvaluationState> {
         "number": index.toString(),
         "type": type,
         "text": snap['text'] ?? '',
+        "image_url": snap['image_url'], // PRIDANO
         "studentAnswer": displayStudentAnswer ?? '-',
         "studentPairs": displayStudentPairs,
         "isCorrect": (awardedPoints ?? 0) > 0, 
