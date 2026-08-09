@@ -66,6 +66,7 @@ class StudentOverviewNotifier extends Notifier<StudentOverviewState> {
           'groupId': assignment['group_id']?.toString() ?? '',
           'questions': assignment['question_count'] ?? 0,
           'attempt_id': assignment['attempt_id'],
+          'score_percent': assignment['score_percent'],
         };
       }).toList();
 
@@ -76,7 +77,7 @@ class StudentOverviewNotifier extends Notifier<StudentOverviewState> {
         final name = group['name'] as String? ?? 'Neznámá třída';
         final groupId = group['group_id'].toString();
         
-        final testCount = activeTestsList.where((t) => t['groupId'] == groupId).length;
+        final testCount = activeTestsList.where((t) => t['groupId'] == groupId && (t['status'] == null || t['status'] == 'STARTED')).length;
         
         return {
           'id': groupId,
@@ -85,7 +86,7 @@ class StudentOverviewNotifier extends Notifier<StudentOverviewState> {
           'teacher': group['teacher_name'] ?? 'Neznámý učitel',
           'color': colors[idx % colors.length],
           'testCount': testCount,
-          'status': 'active',
+          'status': testCount > 0 ? 'active' : 'none',
           'timeText': '',
         };
       }).toList();

@@ -40,7 +40,7 @@ class _SettingsStudentPageState extends ConsumerState<SettingsStudentPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Jakub Novák',
+              ref.watch(authProvider).username ?? 'Student',
               style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurface, fontSize: 24, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 2),
@@ -69,7 +69,7 @@ class _SettingsStudentPageState extends ConsumerState<SettingsStudentPage> {
                   icon: Icons.person_outline_rounded,
                   iconColor: customColors?.blueText ?? const Color(0xFF3D5AF1),
                   title: 'Změnit jméno',
-                  subtitle: 'petr.novak@email.cz', 
+                  subtitle: ref.watch(authProvider).username ?? 'student@skola.cz', 
                   onTap: () {
                     debugPrint('Změna jména');
                   },

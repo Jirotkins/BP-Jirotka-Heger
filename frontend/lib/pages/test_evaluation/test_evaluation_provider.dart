@@ -140,6 +140,10 @@ class TestEvaluationNotifier extends Notifier<TestEvaluationState> {
       
       bool isAutoGraded = (type != 'open');
       
+      if (isAutoGraded && snap['awardedPoints'] != null) {
+        awardedPoints = (snap['awardedPoints'] as num).toDouble();
+      }
+      
       if (!isAutoGraded) {
         expanded.add(qId);
         if (teacherFeedback != null) feedbacks[qId] = teacherFeedback;

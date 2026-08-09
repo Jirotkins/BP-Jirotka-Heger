@@ -198,7 +198,18 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/testActive',
         builder: (context, state) =>
-            const TestActiveWidget(), // Případně doplníme předávání parametrů
+            const TestActiveWidget(), 
+      ),
+      GoRoute(
+        path: '/studentTestEvaluation',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>? ?? {};
+          return TestEvaluationPage(
+            assignmentId: extra['assignmentId'] as int?,
+            attemptId: extra['attemptId'] as int?,
+            isStudent: extra['isStudent'] as bool? ?? true,
+          );
+        },
       ),
     ],
   );

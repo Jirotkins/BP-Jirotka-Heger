@@ -14,12 +14,14 @@ class AuthState {
   final UserRole role;
   final bool isAuthenticated;
   final String? token; 
+  final String? username;
   final bool isLoading;
   
   const AuthState({
     this.role = UserRole.guest,
     this.isAuthenticated = false,
     this.token,
+    this.username,
     this.isLoading = true,
   });
 
@@ -27,12 +29,14 @@ class AuthState {
     UserRole? role,
     bool? isAuthenticated,
     String? token,
+    String? username,
     bool? isLoading,
   }) {
     return AuthState(
       role: role ?? this.role,
       isAuthenticated: isAuthenticated ?? this.isAuthenticated,
       token: token ?? this.token,
+      username: username ?? this.username,
       isLoading: isLoading ?? this.isLoading,
     );
   }
@@ -54,11 +58,13 @@ class AuthNotifier extends Notifier<AuthState> {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString(_tokenKey);
       final roleStr = prefs.getString(_roleKey);
+      final username = prefs.getString('username');
 
       if (token != null && roleStr != null) {
         state = state.copyWith(
           isAuthenticated: true,
           token: token,
+          username: username,
           role: roleStr == 'student' ? UserRole.student : UserRole.teacher,
           isLoading: false,
         );
@@ -94,11 +100,13 @@ class AuthNotifier extends Notifier<AuthState> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_tokenKey, token);
       await prefs.setString(_roleKey, isStudent ? 'student' : 'teacher');
+      await prefs.setString('username', username);
 
       state = state.copyWith(
         isAuthenticated: true,
         role: isStudent ? UserRole.student : UserRole.teacher,
         token: token,
+        username: username,
       );
     } else {
       throw Exception('Server nevrátil přístupový token.');
@@ -110,7 +118,7 @@ class AuthNotifier extends Notifier<AuthState> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_tokenKey);
     await prefs.remove(_roleKey);
-
+    await prefs.remove('username');
     state = const AuthState(isLoading: false);
   }
 }

@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'student_overview_provider.dart';
 import '../../components/subject_card_widget.dart';
+import '../../providers/auth_provider.dart';
 
 // Úvodní domovská obrazovka studenta (Dashboard).
 // Slouží jako rozcestník pro probíhající testy a přehled zapsaných předmětů.
@@ -66,7 +67,7 @@ class _StudentOverviewPageState extends ConsumerState<StudentOverviewPage> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Jakub Novák', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurface, fontSize: 24, fontWeight: FontWeight.w800)),
+            Text(ref.watch(authProvider).username ?? 'Student', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurface, fontSize: 24, fontWeight: FontWeight.w800)),
             const SizedBox(height: 2),
             Text('Přehled studia', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontSize: 13, fontWeight: FontWeight.w500)),
           ],

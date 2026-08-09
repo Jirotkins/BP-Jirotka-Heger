@@ -41,8 +41,8 @@ class _SubjectPageState extends ConsumerState<SubjectPage> {
         'info': 'Termín: ${test['deadline']} • ${test['questions']} otázek',
         'date': test['deadline'],
         'questions': test['questions'] ?? 0,
-        'score': status == 'GRADED' ? 'Ohodnoceno' : 'Čeká na hodnocení',
-        'isWarning': false,
+        'score': status == 'GRADED' ? (test['score_percent'] != null ? '${(test['score_percent'] as num).toStringAsFixed(0)} %' : 'Ohodnoceno') : 'Čeká na hodnocení',
+        'isWarning': status == 'GRADED' && test['score_percent'] != null && (test['score_percent'] as num) < 50,
         'attempt_id': test['attempt_id'],
       };
 
@@ -293,7 +293,7 @@ class _SubjectPageState extends ConsumerState<SubjectPage> {
 
     return InkWell(
       onTap: () {
-        context.push('/testEvaluation', extra: {
+        context.push('/studentTestEvaluation', extra: {
           'assignmentId': test['id'] ?? 999,
           'attemptId': test['attempt_id'] ?? 1, // Fallback dokud backend nepřidá attempt_id
           'isStudent': true,
