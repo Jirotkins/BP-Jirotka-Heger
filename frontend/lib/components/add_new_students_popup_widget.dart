@@ -142,7 +142,7 @@ class _AddNewStudentsPopupWidgetState extends ConsumerState<AddNewStudentsPopupW
                   child: ListView.separated(
                     shrinkWrap: true,
                     itemCount: credentials.length,
-                    separatorBuilder: (_, __) => const Divider(height: 1),
+                    separatorBuilder: (_, _) => const Divider(height: 1),
                     itemBuilder: (context, index) {
                       final c = credentials[index];
                       return ListTile(

@@ -198,7 +198,7 @@ class _TestSettingsWidgetState extends State<TestSettingsWidget> {
         const SizedBox(width: 16),
         Switch(
           value: value,
-          activeColor: Theme.of(context).colorScheme.primary,
+          activeThumbColor: Theme.of(context).colorScheme.primary,
           onChanged: onChanged,
         ),
       ],

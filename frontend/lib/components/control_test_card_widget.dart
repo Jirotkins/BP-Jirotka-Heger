@@ -6,7 +6,7 @@ class ControlTestCard extends StatelessWidget {
   final String subtitle;
   final VoidCallback onTap;
 
-  const ControlTestCard({
+  const ControlTestCard({super.key, 
     required this.title,
     required this.subtitle,
     required this.onTap,

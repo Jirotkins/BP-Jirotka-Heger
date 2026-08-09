@@ -59,7 +59,7 @@ class StudentRowWidget extends StatelessWidget {
                 // Tlačítko Upravit
                 IconButton(
                   icon: Icon(Icons.edit_outlined, color: Theme.of(context).colorScheme.primary, size: 18.0),
-                  onPressed: () => print('Upravit studenta: $studentName'),
+                  onPressed: () => debugPrint('Upravit studenta: $studentName'),
                   constraints: const BoxConstraints(),
                   padding: const EdgeInsets.all(8.0),
                   tooltip: 'Upravit',

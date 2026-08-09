@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -138,7 +139,7 @@ class ApiClient {
         throw ApiException('Nelze se připojit k SSE', response.statusCode);
       }
     } catch (e) {
-      print('SSE Error: $e');
+      debugPrint('SSE Error: $e');
     } finally {
       client.close();
     }

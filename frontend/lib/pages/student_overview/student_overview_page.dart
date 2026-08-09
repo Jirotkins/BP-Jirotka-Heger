@@ -96,7 +96,7 @@ class _StudentOverviewPageState extends ConsumerState<StudentOverviewPage> {
                 _buildSectionHeader('Aktivní testy', trulyActiveTests.length, Theme.of(context).colorScheme.error),
                 const SizedBox(height: 16),
                 // Vykreslí všechny probíhající testy jako velké červené karty
-                ...trulyActiveTests.map((test) => _buildActiveTestCard(test)).toList(),
+                ...trulyActiveTests.map((test) => _buildActiveTestCard(test)),
                 const SizedBox(height: 32),
               ],
 
@@ -114,7 +114,7 @@ class _StudentOverviewPageState extends ConsumerState<StudentOverviewPage> {
                 testCount: (sub['testCount'] as int?) ?? 0,
                 status: sub['status']?.toString() ?? '',
                 timeText: sub['timeText']?.toString() ?? '',
-              )).toList(),
+              )),
               
               const SizedBox(height: 20),
             ],

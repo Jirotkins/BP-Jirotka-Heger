@@ -1,5 +1,5 @@
 # FÁZE 1: Stažení Flutteru a sestavení aplikace
-FROM debian:latest AS build-env
+FROM ubuntu:24.04 AS build-env
 
 # Instalace potřebných nástrojů pro stažení Flutteru
 RUN apt-get update && apt-get install -y curl git unzip xz-utils
@@ -23,7 +23,7 @@ COPY . .
 
 # Instalace balíčků a sestavení produkční webové verze
 RUN flutter pub get
-RUN flutter build web --release
+RUN flutter build web --release --no-tree-shake-icons
 
 # FÁZE 2: Nasazení na lehký webový server Nginx
 FROM nginx:alpine

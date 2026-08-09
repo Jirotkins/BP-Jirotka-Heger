@@ -6,10 +6,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 // IMPORT PROVIDERŮ
 import 'providers/theme_provider.dart';
-import 'providers/auth_provider.dart';
 
 // IMPORT VŠECH POUŽÍVANÝCH STRÁNEK A ROUTERU
-import 'package:google_fonts/google_fonts.dart';
 
 import 'theme/app_themes.dart';
 import 'router/app_router.dart'; 

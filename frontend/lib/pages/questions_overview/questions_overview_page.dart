@@ -176,20 +176,4 @@ class _QuestionsOverviewPageState extends ConsumerState<QuestionsOverviewPage> {
       ],
     );
   }
-
-
-
-  String _getTypeLabel(String rawType) {
-    switch (rawType) {
-      case 'SINGLE_CHOICE':
-      case 'MULTI_CHOICE':
-        return 'Výběr možností';
-      case 'OPEN_TEXT':
-        return 'Otevřená otázka';
-      case 'ORDERING':
-        return 'Seřazování';
-      default:
-        return 'Neznámý typ ($rawType)';
-    }
-  }
 }

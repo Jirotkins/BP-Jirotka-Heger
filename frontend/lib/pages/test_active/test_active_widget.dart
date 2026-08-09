@@ -253,7 +253,7 @@ class _TestActiveWidgetState extends ConsumerState<TestActiveWidget> {
                                         ),
                                       );
                                     } catch (e) {
-                                      print('Image rendering error in test_active_widget: $e');
+                                      debugPrint('Image rendering error in test_active_widget: $e');
                                       return const SizedBox();
                                     }
                                   }
@@ -504,7 +504,7 @@ class _TestActiveWidgetState extends ConsumerState<TestActiveWidget> {
                 const SizedBox(height: 12.0),
                 
                 DropdownButtonFormField<String>(
-                  value: pairs[leftItem], 
+                  initialValue: pairs[leftItem], 
                   isExpanded: true,
                   hint: Text('Vyberte správnou možnost', style: GoogleFonts.inter(fontSize: 14.0, color: Theme.of(context).colorScheme.onSurfaceVariant)),
                   decoration: InputDecoration(
@@ -532,7 +532,7 @@ class _TestActiveWidgetState extends ConsumerState<TestActiveWidget> {
               ],
             ),
           );
-        }).toList(),
+        }),
       ],
     );
   }

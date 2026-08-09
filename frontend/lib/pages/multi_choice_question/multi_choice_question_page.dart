@@ -225,7 +225,7 @@ class _MultiChoiceQuestionPageState extends ConsumerState<MultiChoiceQuestionPag
                             Expanded(
                               child: ListView.separated(
                                 itemCount: studentOptions.length,
-                                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                                separatorBuilder: (_, _) => const SizedBox(height: 12),
                                 itemBuilder: (context, index) {
                                   bool isChecked = studentChecked[index];
                                   return InkWell(

@@ -150,7 +150,7 @@ class _ClassOverviewPageState extends ConsumerState<ClassOverviewPage> {
                               subject = g['description'];
                             }
                           } catch (e) {
-                            print('Nelze rozparsovat JSON z description: $e');
+                            debugPrint('Nelze rozparsovat JSON z description: $e');
                           }
 
                           return ClassCardWidget(

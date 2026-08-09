@@ -233,7 +233,7 @@ class _ConnectQuestionPageState extends ConsumerState<ConnectQuestionPage> {
                               Expanded(
                                 child: ListView.separated(
                                   itemCount: leftItems.length,
-                                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                                  separatorBuilder: (_, _) => const SizedBox(height: 12),
                                   itemBuilder: (context, index) => _buildPreviewCard(leftItems[index], const Color(0xFFF5F3FF), const Color(0xFF7C3AED)),
                                 ),
                               ),
@@ -242,7 +242,7 @@ class _ConnectQuestionPageState extends ConsumerState<ConnectQuestionPage> {
                               Expanded(
                                 child: ListView.separated(
                                   itemCount: rightItems.length,
-                                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                                  separatorBuilder: (_, _) => const SizedBox(height: 12),
                                   itemBuilder: (context, index) => _buildPreviewCard(rightItems[index], Colors.white, const Color(0xFFE5E7EB)),
                                 ),
                               ),
@@ -279,7 +279,7 @@ class _ConnectQuestionPageState extends ConsumerState<ConnectQuestionPage> {
         color: bgColor,
         borderRadius: BorderRadius.circular(12.0),
         border: Border.all(color: borderColor),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 4, offset: const Offset(0, 2))]
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 4, offset: const Offset(0, 2))]
       ),
       alignment: Alignment.center,
       child: Text(text, textAlign: TextAlign.center, style: GoogleFonts.inter(fontWeight: FontWeight.w500, color: const Color(0xFF111827), fontSize: 13)),

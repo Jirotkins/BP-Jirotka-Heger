@@ -52,7 +52,7 @@ class TestActiveState {
 
 class TestActiveNotifier extends Notifier<TestActiveState> {
   Timer? _timer;
-  int? _assignmentId;
+
 
   int? _attemptId;
   @override
@@ -64,7 +64,7 @@ class TestActiveNotifier extends Notifier<TestActiveState> {
   }
 
   Future<void> fetchTest(int? assignmentId) async {
-    _assignmentId = assignmentId;
+
     if (assignmentId == null) {
       _showError('Chybí ID přiřazení testu.');
       return;

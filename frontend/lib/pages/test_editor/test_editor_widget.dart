@@ -104,7 +104,7 @@ class _TestEditorWidgetState extends ConsumerState<TestEditorWidget> {
 
                     Text('VÝBĚR OTÁZEK Z BANEK', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.secondary, letterSpacing: 1.1)),
                     const SizedBox(height: 8.0),
-                    ...state.banks.map((bank) => _buildBankExpansionTile(bank, state, notifier)).toList(),
+                    ...state.banks.map((bank) => _buildBankExpansionTile(bank, state, notifier)),
                     if (state.banks.isEmpty)
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 16.0),
@@ -186,7 +186,7 @@ class _TestEditorWidgetState extends ConsumerState<TestEditorWidget> {
                   isSelected: isSelected,
                   onToggle: () => notifier.toggleQuestionSelection(qId),
                 );
-              }).toList(),
+              }),
           ],
         ),
       ),

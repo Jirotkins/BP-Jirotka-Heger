@@ -8,7 +8,7 @@ class ActiveTestCard extends StatelessWidget {
   final int totalStudents;
   final VoidCallback onTap;
 
-  const ActiveTestCard({
+  const ActiveTestCard({super.key, 
     required this.title,
     required this.subtitle,
     required this.submittedCount,

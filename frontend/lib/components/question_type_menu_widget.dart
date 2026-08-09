@@ -40,7 +40,7 @@ class QuestionTypeMenuWidget extends StatelessWidget {
           boxShadow: [
             BoxShadow(
               blurRadius: 24.0,
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               offset: const Offset(0.0, 4.0),
             )
           ],

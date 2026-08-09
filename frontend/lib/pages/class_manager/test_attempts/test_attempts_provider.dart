@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../services/api_client.dart';
@@ -106,7 +107,7 @@ class TestAttemptsNotifier extends Notifier<TestAttemptsState> {
         }
       },
       onError: (e) {
-        print('Chyba SSE: $e');
+        debugPrint('Chyba SSE: $e');
         // V případě chyby se můžeme pokusit reconnect po chvíli
         Future.delayed(const Duration(seconds: 5), () {
           if (ref.exists(testAttemptsProvider)) {

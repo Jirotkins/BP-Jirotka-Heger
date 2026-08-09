@@ -206,7 +206,7 @@ class _OrderQuestionPageState extends ConsumerState<OrderQuestionPage> {
                         Expanded(
                           child: ListView.separated(
                             itemCount: mockStudentItems.length,
-                            separatorBuilder: (_, __) => const SizedBox(height: 12),
+                            separatorBuilder: (_, _) => const SizedBox(height: 12),
                             itemBuilder: (context, index) {
                               return Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),

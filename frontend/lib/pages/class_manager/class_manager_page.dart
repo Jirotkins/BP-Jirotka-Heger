@@ -290,12 +290,12 @@ class _ClassManagerPageState extends ConsumerState<ClassManagerPage> {
                   },
                 ),
               );
-            }).toList(),
+            }),
           ],
 
           if (upcomingTests.isNotEmpty) ...[
             const SizedBox(height: 48.0),
-            _buildSectionHeader(context, 'Připravené a naplánované testy', Theme.of(context).colorScheme.tertiary ?? Colors.orange, upcomingTests.length.toString()), 
+            _buildSectionHeader(context, 'Připravené a naplánované testy', Theme.of(context).colorScheme.tertiary, upcomingTests.length.toString()), 
             const SizedBox(height: 16.0),
             ...upcomingTests.map((test) {
               return Padding(
@@ -308,7 +308,7 @@ class _ClassManagerPageState extends ConsumerState<ClassManagerPage> {
                   onTap: () => _showActivateDialog(test['assignment_id'], notifier),
                 ),
               );
-            }).toList(),
+            }),
           ],
 
           if (finishedTests.isNotEmpty) ...[
@@ -329,7 +329,7 @@ class _ClassManagerPageState extends ConsumerState<ClassManagerPage> {
                   },
                 ),
               );
-            }).toList(),
+            }),
           ],
         ],
       ),

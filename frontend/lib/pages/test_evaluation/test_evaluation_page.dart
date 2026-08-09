@@ -77,7 +77,7 @@ class _TestEvaluationPageState extends ConsumerState<TestEvaluationPage> {
   Widget build(BuildContext context) {
     final state = ref.watch(testEvaluationProvider);
     final notifier = ref.read(testEvaluationProvider.notifier);
-    final customColors = Theme.of(context).extension<CustomColors>();
+
 
     ref.listen<TestEvaluationState>(testEvaluationProvider, (previous, next) {
       if (previous?.isLoading == true && next.isLoading == false) {
@@ -429,7 +429,7 @@ class _TestEvaluationPageState extends ConsumerState<TestEvaluationPage> {
                               ),
                             );
                           } catch (e) {
-                            print('Image rendering error in test_evaluation_page: $e');
+                            debugPrint('Image rendering error in test_evaluation_page: $e');
                             return const SizedBox();
                           }
                         }
@@ -573,7 +573,7 @@ class _TestEvaluationPageState extends ConsumerState<TestEvaluationPage> {
                 ],
               ),
             );
-          }).toList(),
+          }),
         ],
       ),
     );
@@ -672,7 +672,7 @@ class _TestEvaluationPageState extends ConsumerState<TestEvaluationPage> {
                 ],
               ),
             );
-          }).toList(),
+          }),
         ],
       ),
     );

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/auth_provider.dart';
@@ -72,7 +71,7 @@ class _SettingsStudentPageState extends ConsumerState<SettingsStudentPage> {
                   title: 'Změnit jméno',
                   subtitle: 'petr.novak@email.cz', 
                   onTap: () {
-                    print('Změna jména');
+                    debugPrint('Změna jména');
                   },
                 ),
                 Divider(height: 1, indent: 56, color: Theme.of(context).colorScheme.outline),
@@ -82,7 +81,7 @@ class _SettingsStudentPageState extends ConsumerState<SettingsStudentPage> {
                   iconColor: customColors?.blueText ?? const Color(0xFF3D5AF1),
                   title: 'Změnit heslo',
                   onTap: () {
-                    print('Změna hesla');
+                    debugPrint('Změna hesla');
                   },
                 ),
               ]),
@@ -127,7 +126,7 @@ class _SettingsStudentPageState extends ConsumerState<SettingsStudentPage> {
                   iconColor: customColors?.blueText ?? const Color(0xFF8E8EF5),
                   title: 'O aplikaci',
                   trailingText: 'v1.0.0',
-                  onTap: () => print('O aplikaci'),
+                  onTap: () => debugPrint('O aplikaci'),
                 ),
               ]),
 
@@ -236,7 +235,7 @@ class _SettingsStudentPageState extends ConsumerState<SettingsStudentPage> {
             // Pravá část (verze, switch, nebo šipka)
             if (trailingText != null)
               Text(trailingText, style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontSize: 13.0)),
-            if (trailing != null) trailing,
+            ?trailing,
             if (onTap != null && showArrow && trailing == null)
               Icon(Icons.arrow_forward_ios, color: Theme.of(context).colorScheme.onSurfaceVariant, size: 14.0),
           ],

@@ -36,7 +36,7 @@ class BankCardWidget extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             blurRadius: 10.0,
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             offset: const Offset(0, 4),
           )
         ],
@@ -151,7 +151,7 @@ class BankCardWidget extends StatelessWidget {
                 }
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                 foregroundColor: Theme.of(context).colorScheme.primary,
                 elevation: 0,
                 minimumSize: const Size(0, 38.0),

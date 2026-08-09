@@ -118,7 +118,7 @@ class TestEvaluationNotifier extends Notifier<TestEvaluationState> {
       String rawType = snap['type']?.toString().toUpperCase() ?? 'OPEN_TEXT';
       double maxPoints = (snap['points'] ?? 1).toDouble();
       
-      dynamic ansData = _rawStudentAnswers[qId] ?? _rawStudentAnswers[int.tryParse(qId) ?? -1];
+      dynamic ansData = _rawStudentAnswers[qId];
       
       dynamic studentAnswerValue = ansData;
       double? awardedPoints;
@@ -205,7 +205,7 @@ class TestEvaluationNotifier extends Notifier<TestEvaluationState> {
     }
 
     final mappedData = {
-        "studentName": data['student_name'] != null ? data['student_name'] : "Student ID: ${data['student_id']}",
+        "studentName": data['student_name'] ?? "Student ID: ${data['student_id']}",
         "subject": "Pokus #${data['attempt_id']}",
       "classGroup": statusText,
       "submittedAt": submittedAtText,
@@ -274,7 +274,7 @@ class TestEvaluationNotifier extends Notifier<TestEvaluationState> {
        String feedback = state.teacherFeedbacks[qId] ?? "";
        double pts = double.tryParse(state.awardedPoints[qId]?.replaceAll(',', '.') ?? '') ?? 0.0;
        
-       dynamic existing = updatedAnswers[qId] ?? updatedAnswers[int.tryParse(qId) ?? -1];
+       dynamic existing = updatedAnswers[qId];
        if (existing is Map) {
           existing['teacher_feedback'] = feedback;
           existing['awarded_points'] = pts;

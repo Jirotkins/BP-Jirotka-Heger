@@ -43,13 +43,13 @@ class _SettingsTeacherPageState extends ConsumerState<SettingsTeacherPage> {
                   _buildSettingsItem(
                     icon: Icons.person_outline_rounded,
                     title: 'Změnit jméno',
-                    onTap: () => print('Změna jména'),
+                    onTap: () => debugPrint('Změna jména'),
                   ),
                   const Divider(height: 1, indent: 50),
                   _buildSettingsItem(
                     icon: Icons.lock_outline_rounded,
                     title: 'Změnit heslo',
-                    onTap: () => print('Změna hesla'),
+                    onTap: () => debugPrint('Změna hesla'),
                   ),
                 ]),
 
@@ -92,7 +92,7 @@ class _SettingsTeacherPageState extends ConsumerState<SettingsTeacherPage> {
                     icon: Icons.info_outline_rounded,
                     title: 'O aplikaci',
                     trailingText: 'v1.0.0',
-                    onTap: () => print('O aplikaci'),
+                    onTap: () => debugPrint('O aplikaci'),
                   ),
                   const Divider(height: 1, indent: 50),
                   _buildSettingsItem(
@@ -185,7 +185,7 @@ class _SettingsTeacherPageState extends ConsumerState<SettingsTeacherPage> {
                 trailingText,
                 style: TextStyle(color: Theme.of(context).colorScheme.secondary, fontSize: 14.0),
               ),
-            if (trailing != null) trailing,
+            ?trailing,
             if (onTap != null && showArrow && trailing == null)
               Icon(Icons.arrow_forward_ios, color: Theme.of(context).colorScheme.secondary, size: 14.0),
           ],

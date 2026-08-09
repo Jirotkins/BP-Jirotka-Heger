@@ -134,7 +134,7 @@ class _SubjectPageState extends ConsumerState<SubjectPage> {
                 InkWell(
                   onTap: () {
                     // Navigace do ostrého testu s předáním ID testu
-                    context.push('/testActive', extra: {'assignmentId': activeTest!['id'], 'testTitle': activeTest!['title']});
+                    context.push('/testActive', extra: {'assignmentId': activeTest!['id'], 'testTitle': activeTest['title']});
                   },
                   borderRadius: BorderRadius.circular(12.0),
                   child: Container(
@@ -158,9 +158,9 @@ class _SubjectPageState extends ConsumerState<SubjectPage> {
                                 ],
                               ),
                               const SizedBox(height: 6),
-                              Text(activeTest!['title'], style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16.0, color: Theme.of(context).colorScheme.onSurface)),
+                              Text(activeTest['title'], style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16.0, color: Theme.of(context).colorScheme.onSurface)),
                               const SizedBox(height: 2),
-                              Text(activeTest!['info'], style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontSize: 12.0)),
+                              Text(activeTest['info'], style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontSize: 12.0)),
                             ],
                           ),
                         ),

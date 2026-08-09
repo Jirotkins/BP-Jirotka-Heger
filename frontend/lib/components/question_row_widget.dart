@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../theme/app_themes.dart';
 import '../utils/question_type_helper.dart';
 
 class QuestionRowWidget extends StatelessWidget {

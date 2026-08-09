@@ -104,15 +104,14 @@ class _TimeSettingsWidgetState extends State<TimeSettingsWidget> {
           final pickedMinutes = picked.hour * 60 + picked.minute;
           
           if (pickedMinutes <= startMinutes) {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text('Čas "do" musí být později než čas "od" ve stejný den.'),
-                  backgroundColor: Theme.of(context).colorScheme.error,
-                  duration: const Duration(seconds: 3),
-                ),
-              );
-            }
+            if (!context.mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('Čas "do" musí být později než čas "od" ve stejný den.'),
+                backgroundColor: Theme.of(context).colorScheme.error,
+                duration: const Duration(seconds: 3),
+              ),
+            );
             return;
           }
         }
