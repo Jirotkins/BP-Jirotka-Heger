@@ -7,6 +7,7 @@ class ActiveTestCard extends StatelessWidget {
   final int submittedCount;
   final int totalStudents;
   final VoidCallback onTap;
+  final bool isScheduled;
 
   const ActiveTestCard({super.key, 
     required this.title,
@@ -14,6 +15,7 @@ class ActiveTestCard extends StatelessWidget {
     required this.submittedCount,
     required this.totalStudents,
     required this.onTap,
+    this.isScheduled = false,
   });
 
   @override
@@ -37,9 +39,9 @@ class ActiveTestCard extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Container(width: 6, height: 6, decoration: BoxDecoration(color: Theme.of(context).colorScheme.error, shape: BoxShape.circle)),
+                      Container(width: 6, height: 6, decoration: BoxDecoration(color: isScheduled ? Theme.of(context).colorScheme.tertiary : Theme.of(context).colorScheme.error, shape: BoxShape.circle)),
                       const SizedBox(width: 8),
-                      Text('Probíhá', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.error, fontSize: 12, fontWeight: FontWeight.w600)),
+                      Text(isScheduled ? 'Naplánováno' : 'Probíhá', style: GoogleFonts.inter(color: isScheduled ? Theme.of(context).colorScheme.tertiary : Theme.of(context).colorScheme.error, fontSize: 12, fontWeight: FontWeight.w600)),
                     ],
                   ),
                   const SizedBox(height: 6),

@@ -32,18 +32,46 @@ class _SubjectPageState extends ConsumerState<SubjectPage> {
     List<Map<String, dynamic>> upcomingTests = [];
     List<Map<String, dynamic>> pastTests = [];
 
+    final now = DateTime.now();
+
     for (var test in subjectAssignments) {
       final status = test['status'];
+      
+      bool isScheduledFuture = false;
+      final String? activateFrom = test['rawActivateFrom'];
+      if (activateFrom != null) {
+        final fromDate = DateTime.parse(activateFrom.endsWith('Z') ? activateFrom : '${activateFrom}Z').toLocal();
+        if (now.isBefore(fromDate)) {
+          isScheduledFuture = true;
+        }
+      }
+
+      String infoText = '';
+      if (isScheduledFuture) {
+        if (test['formattedActivateFrom'] != null) {
+          infoText = 'Termín: ${test['formattedActivateFrom']} – ${test['deadline']} • ${test['questions'] ?? 0} otázek';
+        } else {
+          infoText = 'Termín: ${test['deadline']} • ${test['questions'] ?? 0} otázek';
+        }
+      } else {
+        if (test['deadline'] != 'Bez termínu') {
+          infoText = 'Spuštěno do: ${test['deadline']} • ${test['questions'] ?? 0} otázek';
+        } else {
+          infoText = 'Aktivní • ${test['questions'] ?? 0} otázek';
+        }
+      }
+
       final uiTest = {
         'id': test['id'],
         'title': test['title'],
         'deadline': test['deadline'],
-        'info': 'Termín: ${test['deadline']} • ${test['questions']} otázek',
+        'info': infoText,
         'date': test['deadline'],
         'questions': test['questions'] ?? 0,
         'score': status == 'GRADED' ? (test['score_percent'] != null ? '${(test['score_percent'] as num).toStringAsFixed(0)} %' : 'Ohodnoceno') : 'Čeká na hodnocení',
         'isWarning': status == 'GRADED' && test['score_percent'] != null && (test['score_percent'] as num) < 50,
         'attempt_id': test['attempt_id'],
+        'isScheduledFuture': isScheduledFuture,
       };
 
       if (status == 'STARTED') {
@@ -258,10 +286,21 @@ class _SubjectPageState extends ConsumerState<SubjectPage> {
     );
   }
 
-  // Karta reprezentující jeden nadcházející test. Po kliknutí otevře ostrý test.
+  // Karta reprezentující jeden nadcházející test.
   Widget _buildUpcomingTestCard(Map<String, dynamic> test) {
+    bool isScheduledFuture = test['isScheduledFuture'] == true;
+
     return InkWell(
-      onTap: () {
+      onTap: isScheduledFuture ? () {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Čas pro tento test ještě nenastal.'),
+            backgroundColor: Theme.of(context).colorScheme.secondary,
+            duration: const Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      } : () {
          context.push('/testActive', extra: {'assignmentId': test['id'], 'testTitle': test['title']});
       },
       child: Padding(
@@ -272,13 +311,16 @@ class _SubjectPageState extends ConsumerState<SubjectPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(test['title'], style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14.0, color: Theme.of(context).colorScheme.onSurface)),
+                  Text(test['title'], style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14.0, color: isScheduledFuture ? Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5) : Theme.of(context).colorScheme.onSurface)),
                   const SizedBox(height: 4),
-                  Text('Termín: ${test['deadline']} • ${test['questions']} otázek', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontSize: 12.0)),
+                  Text(test['info'] ?? '', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontSize: 12.0)),
                 ],
               ),
             ),
-            Icon(Icons.arrow_forward_ios, color: Theme.of(context).colorScheme.onSurfaceVariant, size: 14.0),
+            if (isScheduledFuture)
+              Icon(Icons.lock_clock, color: Theme.of(context).colorScheme.secondary, size: 16.0)
+            else
+              Icon(Icons.arrow_forward_ios, color: Theme.of(context).colorScheme.onSurfaceVariant, size: 14.0),
           ],
         ),
       ),

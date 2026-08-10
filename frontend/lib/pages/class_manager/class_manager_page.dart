@@ -302,9 +302,14 @@ class _ClassManagerPageState extends ConsumerState<ClassManagerPage> {
                 padding: const EdgeInsets.only(bottom: 16.0),
                 child: ActiveTestCard( 
                   title: test['template_name'] ?? 'Neznámý test',
-                  subtitle: test['activate_from'] != null ? 'Naplánováno na: ${_formatDate(test['activate_from'] as String?)}' : 'Čeká na manuální spuštění',
+                  subtitle: test['activate_from'] != null 
+                    ? (test['activate_to'] != null 
+                        ? 'Termín: ${_formatDate(test['activate_from'] as String?)} – ${_formatDate(test['activate_to'] as String?)}' 
+                        : 'Naplánováno na: ${_formatDate(test['activate_from'] as String?)}') 
+                    : 'Čeká na manuální spuštění',
                   submittedCount: test['submitted_count'] ?? 0,
                   totalStudents: test['total_students'] ?? 0,
+                  isScheduled: true,
                   onTap: () => _showActivateDialog(test['assignment_id'], notifier),
                 ),
               );

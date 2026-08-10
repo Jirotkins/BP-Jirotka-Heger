@@ -58,6 +58,9 @@ class StudentOverviewNotifier extends Notifier<StudentOverviewState> {
           'deadline': assignment['activate_to'] != null 
               ? DateFormat('dd. MM. yyyy HH:mm').format(DateTime.parse(assignment['activate_to'].endsWith('Z') ? assignment['activate_to'] : '${assignment['activate_to']}Z').toLocal())
               : 'Bez termínu',
+          'formattedActivateFrom': assignment['activate_from'] != null
+              ? DateFormat('dd. MM. yyyy HH:mm').format(DateTime.parse(assignment['activate_from'].endsWith('Z') ? assignment['activate_from'] : '${assignment['activate_from']}Z').toLocal())
+              : null,
           'rawActivateFrom': assignment['activate_from'],
           'rawActivateTo': assignment['activate_to'],
           'expiresIn': '${assignment['time_limit_minutes'] ?? 0} min',
@@ -79,7 +82,18 @@ class StudentOverviewNotifier extends Notifier<StudentOverviewState> {
         final name = group['name'] as String? ?? 'Neznámá třída';
         final groupId = group['group_id'].toString();
         
-        final testCount = activeTestsList.where((t) => t['groupId'] == groupId && (t['status'] == null || t['status'] == 'STARTED')).length;
+        final now = DateTime.now();
+        final testCount = activeTestsList.where((t) {
+          if (t['groupId'] != groupId) return false;
+          if (!(t['status'] == null || t['status'] == 'STARTED')) return false;
+          
+          final String? activateFrom = t['rawActivateFrom'];
+          if (activateFrom != null) {
+            final fromDate = DateTime.parse(activateFrom.endsWith('Z') ? activateFrom : '${activateFrom}Z').toLocal();
+            if (now.isBefore(fromDate)) return false;
+          }
+          return true;
+        }).length;
         
         return {
           'id': groupId,
