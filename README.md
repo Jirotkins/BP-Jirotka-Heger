@@ -18,7 +18,11 @@ git clone https://github.com/Jirotkins/BP-Jirotka-Heger.git
 cd BP-Jirotka-Heger
 ```
 
-### 3. Spuštění přes Docker
+### 3. Nastavení prostředí (Config)
+Před prvním spuštěním je nutné vytvořit konfigurační soubor `.env`, ze kterého si databáze a backend načtou přístupové údaje. V kořenové složce projektu vytvořte kopii vzorového souboru:
+- `cp .env.example .env`
+
+### 4. Spuštění přes Docker
 V kořenové složce projektu spusťte:
 ```bash
 docker-compose up --build -d

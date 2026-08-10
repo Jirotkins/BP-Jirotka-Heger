@@ -12,3 +12,5 @@ backend/__pycache__/main.cpython-311.pyc
 backend_requirements.md
 backend_requirements (1).md
 frontend_guide.md
+
+.env
