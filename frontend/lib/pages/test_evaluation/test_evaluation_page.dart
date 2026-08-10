@@ -169,7 +169,17 @@ class _TestEvaluationPageState extends ConsumerState<TestEvaluationPage> {
               child: Column(
                 children: [
                   _buildHeaderInfo(context, state),
-                  _buildQuestionsList(context, state, notifier),
+                  if (!widget.isStudent || (state.testData['show_results_after_submit'] ?? true))
+                    _buildQuestionsList(context, state, notifier)
+                  else
+                    Padding(
+                      padding: const EdgeInsets.all(32.0),
+                      child: Text(
+                        'Učitel u tohoto testu zakázal zobrazení správných odpovědí.',
+                        style: GoogleFonts.inter(fontSize: 16, color: Theme.of(context).colorScheme.onSurfaceVariant, fontStyle: FontStyle.italic),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
                   const SizedBox(height: 60), 
                 ],
               ),

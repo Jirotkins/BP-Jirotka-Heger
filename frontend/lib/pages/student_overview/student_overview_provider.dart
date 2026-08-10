@@ -67,6 +67,8 @@ class StudentOverviewNotifier extends Notifier<StudentOverviewState> {
           'questions': assignment['question_count'] ?? 0,
           'attempt_id': assignment['attempt_id'],
           'score_percent': assignment['score_percent'],
+          'max_attempts': assignment['max_attempts'],
+          'attempts_count': assignment['attempts_count'],
         };
       }).toList();
 

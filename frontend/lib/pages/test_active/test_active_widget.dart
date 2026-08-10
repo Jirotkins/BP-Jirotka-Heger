@@ -281,6 +281,8 @@ class _TestActiveWidgetState extends ConsumerState<TestActiveWidget> {
                         _buildMatchQuestion(currentQuestion, state, notifier),
 
                       const SizedBox(height: 24.0),
+                      if (state.showImmediateFeedback) _buildFeedbackBanner(currentQuestion, state),
+                      const SizedBox(height: 24.0),
                     ],
                   ),
                 ),
@@ -292,7 +294,7 @@ class _TestActiveWidgetState extends ConsumerState<TestActiveWidget> {
                   top: false,
                   child: Row(
                     children: [
-                      if (state.currentIndex > 0) ...[
+                      if (state.currentIndex > 0 && state.canGoBack) ...[
                         InkWell(
                           onTap: notifier.previousQuestion,
                           borderRadius: BorderRadius.circular(24.0),
@@ -300,6 +302,24 @@ class _TestActiveWidgetState extends ConsumerState<TestActiveWidget> {
                             height: 52, width: 52,
                             decoration: BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.outline, width: 1.5), shape: BoxShape.circle),
                             child: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.onSurface),
+                          ),
+                        ),
+                        const SizedBox(width: 16.0),
+                      ],
+                      if (state.showImmediateFeedback) ...[
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: state.isLoading || state.questionFeedback.containsKey((currentQuestion['id'] ?? currentQuestion['question_id']).toString())
+                                ? null
+                                : () => notifier.checkCurrentAnswer(),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16.0),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26.0)),
+                              side: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5),
+                            ),
+                            child: state.isLoading
+                                ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.0, color: Theme.of(context).colorScheme.primary))
+                                : Text('Zkontrolovat', style: GoogleFonts.inter(fontSize: 16.0, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
                           ),
                         ),
                         const SizedBox(width: 16.0),
@@ -340,6 +360,48 @@ class _TestActiveWidgetState extends ConsumerState<TestActiveWidget> {
           ),
         ),
       ));
+  }
+
+  Widget _buildFeedbackBanner(Map<String, dynamic> question, TestActiveState state) {
+    final qId = (question['id'] ?? question['question_id']).toString();
+    if (!state.questionFeedback.containsKey(qId)) return const SizedBox.shrink();
+
+    final result = state.questionFeedback[qId];
+    final isCorrect = result == 'correct';
+    final isPending = result == 'pending';
+
+    Color bgColor = isCorrect ? const Color(0xFFDCFCE7) : const Color(0xFFFEE2E2);
+    Color textColor = isCorrect ? const Color(0xFF166534) : const Color(0xFF991B1B);
+    Color borderColor = isCorrect ? const Color(0xFF4ADE80) : const Color(0xFFF87171);
+    IconData icon = isCorrect ? Icons.check_circle : Icons.cancel;
+    String text = isCorrect ? 'Správně!' : 'Špatně!';
+
+    if (isPending) {
+      bgColor = Theme.of(context).colorScheme.surfaceContainerHighest;
+      textColor = Theme.of(context).colorScheme.onSurfaceVariant;
+      borderColor = Theme.of(context).colorScheme.outline;
+      icon = Icons.hourglass_empty;
+      text = 'Odpověď uložena (čeká na ruční hodnocení)';
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16.0),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(12.0),
+        border: Border.all(color: borderColor),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: textColor),
+          const SizedBox(width: 12.0),
+          Expanded(
+            child: Text(text, style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: textColor, fontSize: 15.0)),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildChoiceQuestion(Map<String, dynamic> question, TestActiveState state, TestActiveNotifier notifier) {

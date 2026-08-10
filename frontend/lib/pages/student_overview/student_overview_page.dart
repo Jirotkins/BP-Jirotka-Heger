@@ -192,20 +192,27 @@ class _StudentOverviewPageState extends ConsumerState<StudentOverviewPage> {
                 ],
               ),
               const SizedBox(height: 12),
-              ElevatedButton(
-                onPressed: () {
-                  // Otevře ostrý test a předá do něj ID přiřazení (assignmentId), aby si TestActiveWidget
-                  // mohl z API (GET /exam-assignments/{assignmentId}/take) načíst příslušné otázky.
-                  context.push('/testActive', extra: {'assignmentId': test['id'], 'testTitle': test['title']});
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.error,
-                  foregroundColor: Theme.of(context).colorScheme.onError,
-                  elevation: 0,
-                  minimumSize: const Size(80, 36),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                ),
-                child: Text('Spustit', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold)),
+              Builder(
+                builder: (context) {
+                  bool hasAttemptsRemaining = true;
+                  if (test['max_attempts'] != null && test['attempts_count'] != null) {
+                    hasAttemptsRemaining = (test['attempts_count'] as int) < (test['max_attempts'] as int);
+                  }
+                  
+                  return ElevatedButton(
+                    onPressed: hasAttemptsRemaining ? () {
+                      context.push('/testActive', extra: {'assignmentId': test['id'], 'testTitle': test['title']});
+                    } : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: hasAttemptsRemaining ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.surfaceContainerHighest,
+                      foregroundColor: hasAttemptsRemaining ? Theme.of(context).colorScheme.onError : Theme.of(context).colorScheme.onSurfaceVariant,
+                      elevation: 0,
+                      minimumSize: const Size(80, 36),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    ),
+                    child: Text(hasAttemptsRemaining ? 'Spustit' : 'Vyčerpáno', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold)),
+                  );
+                }
               ),
             ],
           ),

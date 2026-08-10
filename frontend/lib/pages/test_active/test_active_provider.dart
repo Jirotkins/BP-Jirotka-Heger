@@ -15,6 +15,10 @@ class TestActiveState {
   final bool isExiting;
   final bool submitSuccess;
 
+  final bool showImmediateFeedback;
+  final Map<String, String> questionFeedback;
+  final bool canGoBack;
+
   TestActiveState({
     this.isLoading = true,
     this.errorMessage,
@@ -24,6 +28,9 @@ class TestActiveState {
     this.remainingSeconds = 0,
     this.isExiting = false,
     this.submitSuccess = false,
+    this.showImmediateFeedback = false,
+    this.questionFeedback = const {},
+    this.canGoBack = true,
   });
 
   TestActiveState copyWith({
@@ -35,6 +42,9 @@ class TestActiveState {
     int? remainingSeconds,
     bool? isExiting,
     bool? submitSuccess,
+    bool? showImmediateFeedback,
+    Map<String, String>? questionFeedback,
+    bool? canGoBack,
     bool clearError = false,
   }) {
     return TestActiveState(
@@ -46,12 +56,16 @@ class TestActiveState {
       remainingSeconds: remainingSeconds ?? this.remainingSeconds,
       isExiting: isExiting ?? this.isExiting,
       submitSuccess: submitSuccess ?? false,
+      showImmediateFeedback: showImmediateFeedback ?? this.showImmediateFeedback,
+      questionFeedback: questionFeedback ?? this.questionFeedback,
+      canGoBack: canGoBack ?? this.canGoBack,
     );
   }
 }
 
 class TestActiveNotifier extends Notifier<TestActiveState> {
   Timer? _timer;
+  StreamSubscription? _sseSubscription;
 
 
   int? _attemptId;
@@ -59,6 +73,7 @@ class TestActiveNotifier extends Notifier<TestActiveState> {
   TestActiveState build() {
     ref.onDispose(() {
       _timer?.cancel();
+      _sseSubscription?.cancel();
     });
     return TestActiveState();
   }
@@ -133,11 +148,20 @@ class TestActiveNotifier extends Notifier<TestActiveState> {
         if (remaining < 0) remaining = 0;
       }
       
+      bool showFeedback = response['show_immediate_feedback'] ?? false;
+      bool canGoBack = response['can_go_back'] ?? true;
+
       state = state.copyWith(
         questions: questions,
         remainingSeconds: remaining,
         isLoading: false,
+        showImmediateFeedback: showFeedback,
+        canGoBack: canGoBack,
       );
+
+      if (showFeedback && _attemptId != null) {
+        _startSseListener();
+      }
 
       _startTimer();
     } catch (e) {
@@ -172,10 +196,72 @@ class TestActiveNotifier extends Notifier<TestActiveState> {
     state = state.copyWith(clearError: true);
   }
 
+  void _startSseListener() {
+    final apiClient = ref.read(apiClientProvider);
+    _sseSubscription?.cancel();
+    _sseSubscription = apiClient.listenSse('/api/sse/student/attempts/$_attemptId/feedback').listen((event) {
+      if (event['event'] == 'immediate_feedback' && event['feedback'] != null) {
+        final Map<String, dynamic> feedbackMap = event['feedback'];
+        final Map<String, String> newFeedback = Map<String, String>.from(state.questionFeedback);
+        
+        feedbackMap.forEach((qId, result) {
+          newFeedback[qId] = result.toString();
+        });
+        
+        state = state.copyWith(questionFeedback: newFeedback);
+      }
+    }, onError: (e) {
+      // Ignorovat SSE chyby
+    });
+  }
+
   void updateAnswer(dynamic answerData) {
     final newAnswers = Map<int, dynamic>.from(state.selectedAnswers);
     newAnswers[state.currentIndex] = answerData;
     state = state.copyWith(selectedAnswers: newAnswers);
+  }
+
+  Future<void> checkCurrentAnswer() async {
+    if (_attemptId == null) return;
+    
+    final currentQ = state.questions[state.currentIndex];
+    final questionId = (currentQ['id'] ?? currentQ['question_id']).toString();
+    
+    // Pokud už feedback má, nepotřebujeme to kontrolovat znovu
+    if (state.questionFeedback.containsKey(questionId)) return;
+
+    final answerData = state.selectedAnswers[state.currentIndex];
+    if (answerData == null) return; // Nemá smysl kontrolovat prázdnou
+
+    state = state.copyWith(isLoading: true);
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      dynamic payloadData = answerData;
+      
+      if (currentQ['type'] == 'ORDERING' && answerData is List) {
+         List<String> idList = [];
+         for (var text in answerData) {
+             var matchingAnswer = (currentQ['answers'] as List).firstWhere((a) => a['text'].toString() == text.toString(), orElse: () => null);
+             if (matchingAnswer != null) {
+                 idList.add(matchingAnswer['answer_id'].toString());
+             } else {
+                 idList.add(text.toString());
+             }
+         }
+         if (idList.isNotEmpty) {
+             payloadData = idList;
+         }
+      }
+
+      await apiClient.put('/api/student/attempts/$_attemptId/answers', {
+        "answers": { questionId: payloadData }
+      });
+      // SSE backend by teď měl poslat `immediate_feedback` přes kanál
+    } catch (e) {
+      state = state.copyWith(errorMessage: 'Nelze zkontrolovat odpověď: $e');
+    } finally {
+      state = state.copyWith(isLoading: false);
+    }
   }
 
   void nextQuestion() {

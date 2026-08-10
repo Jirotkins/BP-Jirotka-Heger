@@ -218,7 +218,8 @@ class TestEditorNotifier extends Notifier<TestEditorState> {
         "activate_from": activateFromStr,
         "activate_to": activateToStr,
         "time_limit_minutes": state.timeSettings['durationMinutes'] ?? 45,
-        "access_password": null
+        "access_password": null,
+        "show_immediate_feedback": state.testSettings['immediate_feedback'] ?? false
       };
 
       await apiClient.post('/groups/$groupId/exam-assignments', assignData);
