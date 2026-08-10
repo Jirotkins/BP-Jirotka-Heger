@@ -16,13 +16,18 @@ RUN flutter channel stable
 RUN flutter upgrade
 RUN flutter config --enable-web
 
-# Vytvoření pracovní složky a zkopírování našeho kódu
+# Vytvoření pracovní složky
 RUN mkdir /app
 WORKDIR /app
+
+# Zkopíruje pouze definiční soubor balíčků a stáhne je
+COPY pubspec.yaml ./
+RUN flutter pub get
+
+# Zkopíruje zbytek zdrojového kódu
 COPY . .
 
 # Instalace balíčků a sestavení produkční webové verze
-RUN flutter pub get
 RUN flutter build web --release --no-tree-shake-icons
 
 # FÁZE 2: Nasazení na lehký webový server Nginx

@@ -95,6 +95,7 @@ class AuthNotifier extends Notifier<AuthState> {
 
     // Úspěch - vytažení tokenu
     final token = response['access_token'];
+    
     if (token != null) {
       // Uložíme do lokální paměti
       final prefs = await SharedPreferences.getInstance();

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/auth_provider.dart';
 
-class SidebarTeacherWidget extends StatefulWidget {
+class SidebarTeacherWidget extends ConsumerStatefulWidget {
   final String? activePage;
 
   const SidebarTeacherWidget({
@@ -10,17 +12,35 @@ class SidebarTeacherWidget extends StatefulWidget {
   });
 
   @override
-  State<SidebarTeacherWidget> createState() => _SidebarTeacherWidgetState();
+  ConsumerState<SidebarTeacherWidget> createState() => _SidebarTeacherWidgetState();
 }
 
-class _SidebarTeacherWidgetState extends State<SidebarTeacherWidget> {
+class _SidebarTeacherWidgetState extends ConsumerState<SidebarTeacherWidget> {
   // Zde držíme stav najetí myši čistě v rámci widgetu
   bool _isHovered = false;
 
   @override
   Widget build(BuildContext context) {
-    // Získáme přesnou aktuální cestu z navigátoru (např. '/classManager')
+    // Získáme přesnou aktuální cestu z navigátoru (např. '/classOverview')
     final currentRoute = GoRouterState.of(context).uri.path;
+    
+    // Načteme stav uživatele (jeho email je v username)
+    final authState = ref.watch(authProvider);
+    final username = authState.username ?? 'ucitel@skola.cz';
+    
+    // Zobrazujeme přímo email jako jméno
+    final teacherName = username;
+    
+    // Iniciály: první dvě písmena z emailu
+    String getInitials(String email) {
+      if (email.isEmpty) return 'U';
+      if (email.length >= 2) {
+        return email.substring(0, 2).toUpperCase();
+      }
+      return email[0].toUpperCase();
+    }
+    
+    final initials = getInitials(username);
 
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
@@ -106,16 +126,16 @@ class _SidebarTeacherWidgetState extends State<SidebarTeacherWidget> {
                           ),
                           alignment: Alignment.center,
                           child: Text(
-                            'PN',
+                            initials,
                             style: TextStyle(color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.bold, fontSize: 16),
                           ),
                         ),
                         const SizedBox(height: 8.0),
                         if (_isHovered)
-                          const Text(
-                            'Mgr. Petr Novák',
+                          Text(
+                            teacherName,
                             textAlign: TextAlign.center,
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                             overflow: TextOverflow.ellipsis,
                           ),
                       ],
