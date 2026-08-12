@@ -6,6 +6,10 @@ import '../../components/page_header_widget.dart';
 import '../../components/add_new_bank_popup_widget.dart';
 import '../../components/bank_card_widget.dart';
 
+/// Stránka zobrazující přehled všech vytvořených bank otázek (složek).
+/// 
+/// Umožňuje zakládat nové banky, mazat je (pokud nejsou používány v testech)
+/// a slouží jako rozcestník pro vstup do detailu banky (přehledu otázek).
 class BankOverviewPage extends ConsumerStatefulWidget {
   const BankOverviewPage({super.key});
 
@@ -13,6 +17,7 @@ class BankOverviewPage extends ConsumerStatefulWidget {
   ConsumerState<BankOverviewPage> createState() => _BankOverviewPageState();
 }
 
+/// Stav řídící načítání a aktualizaci zobrazených bank otázek.
 class _BankOverviewPageState extends ConsumerState<BankOverviewPage> {
   @override
   void initState() {
@@ -22,6 +27,8 @@ class _BankOverviewPageState extends ConsumerState<BankOverviewPage> {
     });
   }
 
+  /// Pokusí se smazat zvolenou banku. Zobrazí varovný dialog.
+  /// Pokud API vrátí chybu "IN_USE", zobrazí informační dialog o nemožnosti smazání.
   Future<void> _deleteBank(int bankId, BankOverviewNotifier notifier) async {
     final bool? confirm = await showDialog<bool>(
       context: context,

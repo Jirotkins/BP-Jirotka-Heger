@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import '../theme/app_themes.dart';
 
+/// Pomocná třída pro mapování typů otázek z backendu na jejich české názvy,
+/// cesty (routy) v aplikaci a odpovídající barevné štítky z definovaného tématu.
 class QuestionTypeHelper {
-  /// Vrací český formátovaný název pro daný typ otázky ze serveru
+  /// Vrací dlouhý, formátovaný český název pro daný [backendType] otázky.
+  /// Používá se typicky v titulcích a přehledech.
   static String getLabel(String backendType) {
     switch (backendType) {
       case 'SINGLE_CHOICE':
       case 'MULTI_CHOICE': 
-        return 'Výběr z možností'; // V editoru testů se to na kartách trochu zkracuje, to můžeme ošetřit nebo nechat takto
+        return 'Výběr z možností';
       case 'ORDERING': 
         return 'Seřazení';
       case 'MATCHING': 
@@ -20,6 +23,9 @@ class QuestionTypeHelper {
         return backendType;
     }
   }
+
+  /// Vrací odpovídající navigační cestu (route path) pro zobrazení/editaci
+  /// daného typu otázky podle jejího [backendType].
   static String getRouteForType(String backendType) {
     switch (backendType) {
       case 'SINGLE_CHOICE':
@@ -38,7 +44,7 @@ class QuestionTypeHelper {
     }
   }
 
-  /// Vrací krátký český název (vhodný do malých štítků, např. v Test Editoru)
+  /// Vrací zkrácený český název otázky (vhodný pro malé štítky, např. v Test Editoru).
   static String getShortLabel(String backendType) {
     switch (backendType) {
       case 'SINGLE_CHOICE':
@@ -57,7 +63,8 @@ class QuestionTypeHelper {
     }
   }
 
-  /// Vrací barvy štítku přesně podle zadání v bakalářské práci
+  /// Vrací mapu barev (klíče 'bg' pro pozadí a 'text' pro písmo) štítku.
+  /// Barvy vycházejí z `CustomColors` rozšíření, specifikovaného pro světlý/tmavý režim.
   static Map<String, Color> getColors(BuildContext context, String backendType) {
     final customColors = Theme.of(context).extension<CustomColors>();
     

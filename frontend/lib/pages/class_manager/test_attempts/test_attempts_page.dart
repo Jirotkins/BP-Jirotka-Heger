@@ -5,8 +5,16 @@ import 'package:google_fonts/google_fonts.dart';
 import 'test_attempts_provider.dart';
 import '../../../components/page_header_widget.dart';
 
+/// Stránka zobrazující seznam odevzdání (pokusů) konkrétního testu pro celou třídu.
+/// 
+/// Poskytuje přehled o všech studentech, kteří test odevzdali, s informací o jejich
+/// dosaženém skóre (bodech) a aktuálním stavu (např. automaticky oznámkováno vs. ke kontrole).
+/// Kliknutím na vybraný pokus je učitel přesměrován do manuálního hodnocení daného testu.
 class TestAttemptsPage extends ConsumerStatefulWidget {
+  /// ID konkrétního zadání testu (assignment), pro které chceme načíst pokusy.
   final int assignmentId;
+  
+  /// Název testu zobrazovaný v hlavičce stránky.
   final String testTitle;
 
   const TestAttemptsPage({
@@ -19,6 +27,7 @@ class TestAttemptsPage extends ConsumerStatefulWidget {
   ConsumerState<TestAttemptsPage> createState() => _TestAttemptsPageState();
 }
 
+/// Stav řídící načítání dat pro [TestAttemptsPage].
 class _TestAttemptsPageState extends ConsumerState<TestAttemptsPage> {
   @override
   void initState() {
@@ -66,6 +75,7 @@ class _TestAttemptsPageState extends ConsumerState<TestAttemptsPage> {
     );
   }
 
+  /// Pomocná metoda pro vykreslení hlavního seznamu odevzdání.
   Widget _buildBody(BuildContext context, TestAttemptsState state) {
     if (state.attempts.isEmpty) {
       return Center(

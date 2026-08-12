@@ -1,11 +1,21 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../services/api_client.dart';
 
+/// Stav pro obrazovku správy třídy.
 class ClassManagerState {
+  /// Určuje, zda aktuálně probíhá načítání dat ze serveru.
   final bool isLoading;
+  
+  /// Chybová zpráva, pokud nějaká operace selhala. Jinak null.
   final String? errorMessage;
+  
+  /// Mapa obsahující testy roztříděné do kategorií (např. 'active', 'upcoming', 'finished').
   final Map<String, dynamic>? overviewData;
+  
+  /// Seznam studentů v této třídě.
   final List<dynamic> studentsData;
+  
+  /// ID aktuálně spravované třídy.
   final int? groupId;
 
   ClassManagerState({
@@ -16,6 +26,8 @@ class ClassManagerState {
     this.groupId,
   });
 
+  /// Vytvoří kopii aktuálního stavu s možností změnit vybrané hodnoty.
+  /// Pomocí [clearError] lze explicitně vymazat chybovou hlášku.
   ClassManagerState copyWith({
     bool? isLoading,
     String? errorMessage,
@@ -34,12 +46,14 @@ class ClassManagerState {
   }
 }
 
+/// Správce stavu (Notifier) pro obrazovku správy třídy.
 class ClassManagerNotifier extends Notifier<ClassManagerState> {
   @override
   ClassManagerState build() {
     return ClassManagerState(isLoading: true);
   }
 
+  /// Načte data studentů a testů pro zadanou třídu [groupId].
   Future<void> fetchData(int groupId) async {
     state = state.copyWith(isLoading: true, groupId: groupId, clearError: true);
 
@@ -64,6 +78,7 @@ class ClassManagerNotifier extends Notifier<ClassManagerState> {
     }
   }
 
+  /// Aktivuje (spustí) dříve naplánovaný test s daným [assignmentId].
   Future<void> activateTest(int assignmentId) async {
     if (state.groupId == null) return;
     
@@ -80,6 +95,7 @@ class ClassManagerNotifier extends Notifier<ClassManagerState> {
     }
   }
 
+  /// Odebere studenta s daným [studentId] ze zobrazené třídy.
   Future<void> removeStudent(int studentId) async {
     if (state.groupId == null) return;
     
@@ -96,6 +112,7 @@ class ClassManagerNotifier extends Notifier<ClassManagerState> {
     }
   }
 
+  /// Nastaví chybu v případě, že chybí [groupId] nutné pro načtení dat.
   void setGroupMissingError() {
     state = state.copyWith(
       isLoading: false,
@@ -103,10 +120,12 @@ class ClassManagerNotifier extends Notifier<ClassManagerState> {
     );
   }
   
+  /// Vymaže chybovou hlášku ve stavu (např. poté, co byla zobrazena uživateli).
   void clearError() {
     state = state.copyWith(clearError: true);
   }
   
+  /// Znovu načte data pro právě vybranou třídu.
   void refresh() {
     if (state.groupId != null) {
       fetchData(state.groupId!);
@@ -114,6 +133,7 @@ class ClassManagerNotifier extends Notifier<ClassManagerState> {
   }
 }
 
+/// Globálně dostupný provider pro [ClassManagerNotifier].
 final classManagerProvider = NotifierProvider.autoDispose<ClassManagerNotifier, ClassManagerState>(() {
   return ClassManagerNotifier();
 });

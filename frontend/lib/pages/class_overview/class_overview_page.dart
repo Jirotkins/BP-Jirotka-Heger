@@ -7,13 +7,19 @@ import '../../components/page_header_widget.dart';
 import '../../components/add_new_class_popup_widget.dart';
 import '../../components/class_card_widget.dart';
 
+/// Úvodní obrazovka učitele (Moje třídy).
+/// 
+/// Zobrazuje přehled všech vytvořených tříd ve formě gridu (karet).
+/// Umožňuje přidávat, upravovat a mazat třídy. Kliknutí na třídu vede do jejího detailu.
 class ClassOverviewPage extends ConsumerStatefulWidget {
+  /// Vytvoří instanci stránky s přehledem tříd.
   const ClassOverviewPage({super.key});
 
   @override
   ConsumerState<ClassOverviewPage> createState() => _ClassOverviewPageState();
 }
 
+/// Stav obrazovky [ClassOverviewPage] zajišťující načítání a operace se třídami.
 class _ClassOverviewPageState extends ConsumerState<ClassOverviewPage> {
 
   @override
@@ -24,6 +30,7 @@ class _ClassOverviewPageState extends ConsumerState<ClassOverviewPage> {
     });
   }
 
+  /// Zobrazí dialogové okno pro potvrzení smazání a následně smaže třídu.
   Future<void> _deleteGroup(int groupId, ClassOverviewNotifier notifier) async {
     final bool? confirm = await showDialog<bool>(
       context: context,
@@ -49,11 +56,52 @@ class _ClassOverviewPageState extends ConsumerState<ClassOverviewPage> {
     }
   }
 
+  /// Zpracuje řetězec z databáze a pokusí se z něj extrahovat předmět a ikonu.
+  /// 
+  /// Pokud je [descriptionRaw] platný JSON, pokusí se z něj vyčíst `subject` a `icon`.
+  /// V opačném případě vrací hrubý text jako předmět a výchozí ikonu knihy.
+  ({String subject, IconData icon}) _parseGroupDescription(dynamic descriptionRaw) {
+    String subject = 'Neznámý předmět';
+    IconData displayIcon = Icons.menu_book_outlined;
+
+    if (descriptionRaw == null) {
+      return (subject: subject, icon: displayIcon);
+    }
+
+    final descString = descriptionRaw.toString().trim();
+    if (descString.isEmpty) {
+      return (subject: subject, icon: displayIcon);
+    }
+
+    try {
+      if (descString.startsWith('{')) {
+        final descMap = jsonDecode(descString);
+        if (descMap['subject'] != null) {
+          subject = descMap['subject'];
+        }
+        if (descMap['icon'] != null) {
+          int codePoint = int.tryParse(descMap['icon'].toString()) ?? 0;
+          if (codePoint != 0) {
+            displayIcon = IconData(codePoint, fontFamily: 'MaterialIcons');
+          }
+        }
+      } else {
+        // Zpětná kompatibilita pro staré textové popisky bez JSON struktury
+        subject = descString;
+      }
+    } catch (e) {
+      debugPrint('Nelze rozparsovat JSON z description: $e');
+    }
+
+    return (subject: subject, icon: displayIcon);
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(classOverviewProvider);
     final notifier = ref.read(classOverviewProvider.notifier);
 
+    // Posluchač pro zobrazení případných chybových hlášek ze StateManageru
     ref.listen<ClassOverviewState>(classOverviewProvider, (previous, next) {
       if (next.errorMessage != null && next.errorMessage != previous?.errorMessage) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -69,8 +117,7 @@ class _ClassOverviewPageState extends ConsumerState<ClassOverviewPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        
-        // --- HLAVIČKA ---
+        // HLAVIČKA STRÁNKY
         PageHeaderWidget(
           title: 'Moje třídy',
           actions: [
@@ -104,7 +151,7 @@ class _ClassOverviewPageState extends ConsumerState<ClassOverviewPage> {
           ],
         ),
 
-        // --- SEKCE S KARTAMI ---
+        // SEZNAM KARET TŘÍD
         Expanded(
           child: state.isLoading && state.groups.isEmpty
               ? Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary))
@@ -129,40 +176,18 @@ class _ClassOverviewPageState extends ConsumerState<ClassOverviewPage> {
                         itemCount: state.groups.length,
                         itemBuilder: (context, index) {
                           final g = state.groups[index];
-
-                          // Pokus o rozparsování description jako JSON, kvůli uložení ikony a předmětu
-                          String subject = 'Neznámý předmět';
-                          IconData displayIcon = Icons.menu_book_outlined;
-
-                          try {
-                            if (g['description'] != null && g['description'].toString().startsWith('{')) {
-                              final descMap = jsonDecode(g['description']);
-                              if (descMap['subject'] != null) {
-                                subject = descMap['subject'];
-                              }
-                              if (descMap['icon'] != null) {
-                                int codePoint = int.tryParse(descMap['icon'].toString()) ?? 0;
-                                if (codePoint != 0) {
-                                  displayIcon = IconData(codePoint, fontFamily: 'MaterialIcons');
-                                }
-                              }
-                            } else if (g['description'] != null && g['description'].toString().trim().isNotEmpty) {
-                              subject = g['description'];
-                            }
-                          } catch (e) {
-                            debugPrint('Nelze rozparsovat JSON z description: $e');
-                          }
+                          final parsedData = _parseGroupDescription(g['description']);
 
                           return ClassCardWidget(
                             groupId: g['group_id'],
                             title: g['name'] ?? 'Neznámý název',
-                            subject: subject,
-                            icon: Icon(displayIcon, color: Theme.of(context).colorScheme.primary, size: 28),
+                            subject: parsedData.subject,
+                            icon: Icon(parsedData.icon, color: Theme.of(context).colorScheme.primary, size: 28),
                             studentCount: g['student_count'] ?? 0,
                             activeTestCount: g['active_assignment_count'] ?? 0,
                             testsToControl: g['pending_grade_count'] ?? 0,
                             onEdit: () {
-                              int iconIndex = AddNewClassPopupWidget.availableIcons.indexWhere((icon) => icon.codePoint == displayIcon.codePoint);
+                              int iconIndex = AddNewClassPopupWidget.availableIcons.indexWhere((icon) => icon.codePoint == parsedData.icon.codePoint);
                               if (iconIndex == -1) iconIndex = 0;
                               
                               showDialog(
@@ -175,7 +200,7 @@ class _ClassOverviewPageState extends ConsumerState<ClassOverviewPage> {
                                   child: AddNewClassPopupWidget(
                                     groupId: g['group_id'],
                                     initialName: g['name'] ?? '',
-                                    initialSubject: subject,
+                                    initialSubject: parsedData.subject,
                                     initialIconIndex: iconIndex,
                                   ),
                                 ),
@@ -190,4 +215,4 @@ class _ClassOverviewPageState extends ConsumerState<ClassOverviewPage> {
       ],
     );
   }
-}
+}

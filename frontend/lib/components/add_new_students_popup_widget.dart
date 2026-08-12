@@ -3,8 +3,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../services/api_client.dart';
 import '../../utils/download_helper.dart';
 
+/// Vyskakovací dialogové okno pro hromadné přidání nových studentů do třídy.
+/// 
+/// Umožňuje zadat předponu (např. 'student') a počet studentů (např. 30).
+/// Server automaticky vygeneruje účty (např. student1, student2...)
+/// a okno následně zobrazí jejich přihlašovací údaje (včetně hesla),
+/// s možností stáhnout je ve formátu CSV.
 class AddNewStudentsPopupWidget extends ConsumerStatefulWidget {
+  /// ID třídy, do které chceme studenty přidat.
   final int groupId;
+  
+  /// Callback zavolaný po úspěšném přidání a zavření okna.
   final VoidCallback? onSuccess;
 
   const AddNewStudentsPopupWidget({
@@ -17,6 +26,7 @@ class AddNewStudentsPopupWidget extends ConsumerStatefulWidget {
   ConsumerState<AddNewStudentsPopupWidget> createState() => _AddNewStudentsPopupWidgetState();
 }
 
+/// Stav dialogového okna řídící formulář, volání API a zobrazení vygenerovaných přístupových údajů.
 class _AddNewStudentsPopupWidgetState extends ConsumerState<AddNewStudentsPopupWidget> {
   late TextEditingController _prefixController;
   late FocusNode _prefixFocusNode;
@@ -43,6 +53,7 @@ class _AddNewStudentsPopupWidgetState extends ConsumerState<AddNewStudentsPopupW
     super.dispose();
   }
 
+  /// Odešle formulář, zavolá API pro hromadné vytvoření studentů a zpracuje výsledek.
   Future<void> _addStudents() async {
     final prefix = _prefixController.text.trim();
     final countText = _countController.text.trim();
@@ -90,6 +101,7 @@ class _AddNewStudentsPopupWidgetState extends ConsumerState<AddNewStudentsPopupW
     }
   }
 
+  /// Zobrazí výsledný dialog s tabulkou vygenerovaných hesel a tlačítkem pro uložení CSV.
   void _showCredentialsDialog(BuildContext context, String csvData) {
     final lines = csvData.trim().split('\n');
     // Přeskočíme hlavičku a načteme data

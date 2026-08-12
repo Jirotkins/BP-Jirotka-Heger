@@ -1,14 +1,57 @@
 import 'package:flutter/material.dart';
 
+/// Komponenta pro výběr role při přihlašování (Student / Učitel).
+/// 
+/// Vykresluje přepínač ve stylu "pill" (kapsle) se dvěma možnostmi.
+/// Kdykoliv uživatel vybere jinou roli, zavolá se callback [onRoleChanged].
 class RoleToggleWidget extends StatelessWidget {
+  /// Počáteční hodnota určující, zda je vybrán student (`true`) nebo učitel (`false`).
   final bool initialIsStudent;
+  
+  /// Callback volaný při změně role. Předává `true` pro studenta a `false` pro učitele.
   final ValueChanged<bool> onRoleChanged;
 
+  /// Vytvoří widget pro přepínání role.
   const RoleToggleWidget({
     super.key,
     required this.initialIsStudent,
     required this.onRoleChanged,
   });
+
+  /// Pomocná metoda pro vykreslení jednoho ze dvou tlačítek přepínače.
+  /// 
+  /// Zajišťuje správné barvy, animace a reakci na kliknutí v závislosti
+  /// na tom, zda je tlačítko aktuálně [isSelected].
+  Widget _buildRoleButton(
+    BuildContext context, 
+    String title, 
+    bool isSelected, 
+    VoidCallback onTap, 
+    Color primaryColor,
+  ) {
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(24.0), // Zabrání tomu, aby efekt "přetekl" přes rohy
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          decoration: BoxDecoration(
+            color: isSelected ? primaryColor : Colors.transparent,
+            borderRadius: BorderRadius.circular(24.0),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            title,
+            style: TextStyle(
+              color: isSelected ? Theme.of(context).colorScheme.onPrimary : primaryColor,
+              fontWeight: FontWeight.bold,
+              fontSize: 16.0,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,51 +70,19 @@ class RoleToggleWidget extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // TLAČÍTKO STUDENT
-            Expanded(
-              child: InkWell(
-                onTap: () => onRoleChanged(true),
-                borderRadius: BorderRadius.circular(24.0), // Zabrání tomu, aby efekt "přetekl" přes rohy
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  decoration: BoxDecoration(
-                    color: initialIsStudent ? primaryColor : Colors.transparent,
-                    borderRadius: BorderRadius.circular(24.0),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    'Student',
-                    style: TextStyle(
-                      color: initialIsStudent ? Theme.of(context).colorScheme.onPrimary : primaryColor,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16.0,
-                    ),
-                  ),
-                ),
-              ),
+            _buildRoleButton(
+              context, 
+              'Student', 
+              initialIsStudent, 
+              () => onRoleChanged(true), 
+              primaryColor,
             ),
-            // TLAČÍTKO UČITEL
-            Expanded(
-              child: InkWell(
-                onTap: () => onRoleChanged(false),
-                borderRadius: BorderRadius.circular(24.0),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  decoration: BoxDecoration(
-                    color: !initialIsStudent ? primaryColor : Colors.transparent,
-                    borderRadius: BorderRadius.circular(24.0),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    'Učitel',
-                    style: TextStyle(
-                      color: !initialIsStudent ? Theme.of(context).colorScheme.onPrimary : primaryColor,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16.0,
-                    ),
-                  ),
-                ),
-              ),
+            _buildRoleButton(
+              context, 
+              'Učitel', 
+              !initialIsStudent, 
+              () => onRoleChanged(false), 
+              primaryColor,
             ),
           ],
         ),

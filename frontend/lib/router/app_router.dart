@@ -7,10 +7,9 @@ import '../pages/pages.dart';
 import '../layouts/teacher_main_layout.dart';
 import '../layouts/student_main_layout.dart';
 
-// ----------------------------------------------------------------------
-// 1. Notifier, který GoRouteru řekne, že se změnil stav přihlášení,
-// a že má znovu zkontrolovat přesměrování.
-// ----------------------------------------------------------------------
+/// [RouterNotifier] slouží k upozornění GoRouteru na změnu stavu přihlášení.
+/// Pokud se například uživatel odhlásí nebo přihlásí (změní se [AuthState]), 
+/// vyvolá `notifyListeners()`, čímž se znovu přepočítá logika přesměrování (redirect).
 class RouterNotifier extends ChangeNotifier {
   final Ref _ref;
 
@@ -19,9 +18,9 @@ class RouterNotifier extends ChangeNotifier {
   }
 }
 
-// ----------------------------------------------------------------------
-// 2. Samotný poskytovatel GoRouteru
-// ----------------------------------------------------------------------
+/// Globální provider pro [GoRouter].
+/// Obsahuje konfiguraci všech cest v aplikaci a zabezpečení přístupu 
+/// pomocí metody `redirect` závislé na [authProvider].
 final routerProvider = Provider<GoRouter>((ref) {
   final notifier = RouterNotifier(ref);
 
@@ -51,6 +50,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
 
       // 4. Ochrana rolí (Učitel vs Student)
+      // Definice cest, které smí vidět pouze učitel.
       final teacherRoutes = [
         '/classOverview',
         '/classManager',
@@ -65,19 +65,23 @@ final routerProvider = Provider<GoRouter>((ref) {
         '/connectQuestion',
         '/orderQuestion',
       ];
+      
+      // Definice cest, které smí vidět pouze student.
       final studentRoutes = ['/studentHome', '/subjectPage', '/testActive'];
 
+      // Zablokování přístupu studenta do učitelské sekce.
       if (teacherRoutes.contains(state.uri.path) &&
           authState.role != UserRole.teacher) {
-        return '/studentHome'; // Student se snaží na učitelskou
+        return '/studentHome';
       }
 
+      // Zablokování přístupu učitele do studentské sekce.
       if (studentRoutes.contains(state.uri.path) &&
           authState.role != UserRole.student) {
-        return '/classOverview'; // Učitel se snaží na studentskou
+        return '/classOverview';
       }
 
-      // Žádný problém nenalezen, uživatel může pokračovat tam, kam mířil
+      // Žádný problém nenalezen, uživatel může pokračovat na původní URL.
       return null;
     },
     routes: [
@@ -93,9 +97,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
 
       // --- UČITELSKÉ CESTY (SPA Layout) ---
+      // Všechny tyto cesty jsou zabaleny do [TeacherMainLayout],
+      // který zajišťuje trvalé zobrazení levého (nebo spodního) menu.
       ShellRoute(
         builder: (context, state, child) {
-          // Určení aktivní záložky v menu podle URL
+          // Logika pro určení aktivní záložky v navigačním menu.
           String activePage = 'classes';
           if (state.uri.path.contains('bank') ||
               state.uri.path.toLowerCase().contains('question')) {

@@ -3,17 +3,40 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_themes.dart';
 
+/// Vizuální karta reprezentující jednu třídu na obrazovce "Moje třídy".
+/// 
+/// Zobrazuje základní údaje o třídě, jako je název, předmět, ikona,
+/// počet studentů, aktivních testů a testů čekajících na kontrolu.
+/// Kliknutím na tlačítko "Detail" přesměruje učitele do správy dané třídy.
 class ClassCardWidget extends StatelessWidget {
+  /// Unikátní identifikátor třídy v databázi.
   final int groupId;
+  
+  /// Název třídy (např. '1.A').
   final String title;
+  
+  /// Název předmětu (např. 'Matematika').
   final String subject;
+  
+  /// Celkový počet studentů zapsaných ve třídě.
   final int studentCount;
+  
+  /// Počet právě probíhajících nebo naplánovaných testů.
   final int activeTestCount;
+  
+  /// Počet testů, které je nutné ručně ohodnotit.
   final int testsToControl;
+  
+  /// Vizuální ikona charakterizující předmět.
   final Widget icon;
+  
+  /// Funkce volaná při kliknutí na úpravu třídy (volitelná).
   final VoidCallback? onEdit;
+  
+  /// Funkce volaná při kliknutí na smazání třídy (volitelná).
   final VoidCallback? onDelete;
 
+  /// Vytvoří instanci karty třídy.
   const ClassCardWidget({
     super.key,
     required this.groupId,
@@ -51,7 +74,7 @@ class ClassCardWidget extends StatelessWidget {
         mainAxisSize: MainAxisSize.min, 
         children: [
           
-          // --- HORNÍ ČÁST (Ikona, Název, Předmět) ---
+          // HORNÍ ČÁST (Ikona, Název, Předmět, Akce)
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -132,7 +155,7 @@ class ClassCardWidget extends StatelessWidget {
           
           const SizedBox(height: 24.0),
 
-          // --- STŘEDNÍ ČÁST (Čísla) ---
+          // STŘEDNÍ ČÁST (Statistiky třídy)
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -144,7 +167,7 @@ class ClassCardWidget extends StatelessWidget {
 
           const SizedBox(height: 24.0),
 
-          // --- SPODNÍ ČÁST  ---
+          // SPODNÍ ČÁST (Tlačítko pro detail)
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
@@ -153,7 +176,7 @@ class ClassCardWidget extends StatelessWidget {
                     'className': title,
                     'subject': subject,
                     'groupId': groupId,
-                  },); 
+                  }); 
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
@@ -178,6 +201,9 @@ class ClassCardWidget extends StatelessWidget {
     );
   }
 
+  /// Pomocná metoda pro vykreslení jednoho číselného údaje (statistiky).
+  ///
+  /// Vykresluje svislý blok s popiskem [label] a tučnou hodnotou [value] obarvenou barvou [valueColor].
   Widget _buildStatColumn(BuildContext context, String label, String value, Color valueColor) {
     return Expanded(
       child: Column(

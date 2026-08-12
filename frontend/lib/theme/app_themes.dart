@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+/// Vlastní rozšíření (ThemeExtension) nad výchozím `ThemeData` ve Flutteru.
+/// 
+/// Umožňuje definovat sady doplňkových barev (např. štítky stavů, specifická 
+/// pozadí) a plynule mezi nimi interpolovat (při přepínání light/dark mode).
 class CustomColors extends ThemeExtension<CustomColors> {
   final Color? blueText;
   final Color? blueBg;
@@ -66,8 +70,10 @@ class CustomColors extends ThemeExtension<CustomColors> {
   }
 }
 
+/// Třída sdružující konfigurace (Světlý / Tmavý režim) pro globální vzhled aplikace.
 class AppThemes {
-  // === SVĚTLÝ REŽIM ===
+  /// **SVĚTLÝ REŽIM**
+  /// Výchozí světlé barvy používající Material Design ColorScheme.
   static final ThemeData lightTheme = ThemeData(
     brightness: Brightness.light,
     primaryColor: const Color(0xFF0056D2),
@@ -105,7 +111,8 @@ class AppThemes {
     ),
   );
 
-  // === TMAVÝ REŽIM ===
+  /// **TMAVÝ REŽIM**
+  /// Přizpůsobené barvy pro noční prohlížení. Kladou důraz na dostatečný kontrast.
   static final ThemeData darkTheme = ThemeData(
     brightness: Brightness.dark,
     primaryColor: const Color(0xFF3B82F6), // Trochu světlejší modrá pro lepší kontrast v dark mode

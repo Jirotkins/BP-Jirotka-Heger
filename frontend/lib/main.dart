@@ -3,23 +3,24 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-
-// IMPORT PROVIDERŮ
 import 'providers/theme_provider.dart';
-
-// IMPORT VŠECH POUŽÍVANÝCH STRÁNEK A ROUTERU
-
 import 'theme/app_themes.dart';
 import 'router/app_router.dart'; 
 
-// Zde připravíme prázdný provider, který pak v main() přepíšeme skutečnou instancí
+/// Zástupný provider pro [SharedPreferences]. 
+/// Během inicializace aplikace (v `main()`) je tento provider přepsán
+/// skutečnou asynchronně získanou instancí (přes `overrideWithValue`).
+/// Tím je zajištěn bezproblémový synchronní přístup k paměti napříč celou aplikací.
 final sharedPrefsProvider = Provider<SharedPreferences>((ref) => throw UnimplementedError());
 
 void main() async {
+  // Inicializace vazeb Flutteru před asynchronním voláním.
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Načtení lokální paměti.
   final prefs = await SharedPreferences.getInstance();
 
-  // Spuštění samotné aplikace obalené v ProviderScope pro Riverpod
+  // Spuštění samotné aplikace obalené v ProviderScope pro správu stavů (Riverpod).
   runApp(
     ProviderScope(
       overrides: [
@@ -30,12 +31,13 @@ void main() async {
   );
 }
 
+/// Hlavní kořenový widget aplikace.
+/// Nastavuje lokalizaci (češtinu), napojení na GoRouter a aktuální vizuální režim.
 class BakalarkaApp extends ConsumerWidget {
   const BakalarkaApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Čtení aktuálního tématu (Světlý/Tmavý) z Riverpodu
     final currentThemeMode = ref.watch(themeProvider);
     final router = ref.watch(routerProvider);
 
@@ -52,10 +54,8 @@ class BakalarkaApp extends ConsumerWidget {
         GlobalCupertinoLocalizations.delegate,
       ],
       supportedLocales: const [
-        Locale('cs', 'CZ'), // Nastavení češtiny jako hlavního jazyka
+        Locale('cs', 'CZ'),
       ],
-
-      // Reaktivní hlavní obrazovka podle stavu přihlášení
       routerConfig: router,
     );
   }

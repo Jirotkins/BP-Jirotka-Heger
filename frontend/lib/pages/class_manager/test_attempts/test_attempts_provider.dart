@@ -3,9 +3,16 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../services/api_client.dart';
 import 'package:intl/intl.dart';
+
+/// Stav řídící načítání a aktualizaci seznamu odevzdaných testů (pokusů).
 class TestAttemptsState {
+  /// Udává, zda právě probíhá stahování dat ze serveru.
   final bool isLoading;
+  
+  /// Chybová hláška v případě selhání HTTP požadavku.
   final String? errorMessage;
+  
+  /// Seznam zpracovaných odevzdání (pokusů) připravených pro zobrazení.
   final List<Map<String, dynamic>> attempts;
   
   TestAttemptsState({
@@ -28,6 +35,8 @@ class TestAttemptsState {
   }
 }
 
+/// Správce stavu, který se stará o komunikaci s API a poslouchání SSE eventů
+/// (Server-Sent Events) pro živou aktualizaci stavu testů během jejich průběhu.
 class TestAttemptsNotifier extends Notifier<TestAttemptsState> {
   StreamSubscription? _sseSubscription;
 
@@ -39,6 +48,10 @@ class TestAttemptsNotifier extends Notifier<TestAttemptsState> {
     return TestAttemptsState();
   }
 
+  /// Stáhne seznam všech dosavadních pokusů o vypracování testu [assignmentId].
+  /// 
+  /// Pokud je [silent] rovno true, nevyvolává se zobrazení načítacího kolečka (isLoading).
+  /// To je využíváno pro "tišší" aktualizaci dat na pozadí pomocí SSE.
   Future<void> fetchAttempts(int assignmentId, {bool silent = false}) async {
     if (!silent) {
       state = state.copyWith(isLoading: true, clearError: true);
@@ -93,6 +106,8 @@ class TestAttemptsNotifier extends Notifier<TestAttemptsState> {
     }
   }
 
+  /// Spustí poslouchání SSE (Server-Sent Events) pro živou aktualizaci
+  /// výsledků v momentě, kdy nějaký student test odevzdá nebo na něm začne pracovat.
   void _startSseListener(int assignmentId) {
     final apiClient = ref.read(apiClientProvider);
     _sseSubscription = apiClient.listenSse('/api/sse/teacher/assignments/$assignmentId/progress').listen(
@@ -122,6 +137,7 @@ class TestAttemptsNotifier extends Notifier<TestAttemptsState> {
   }
 }
 
+/// Globálně dostupný provider poskytující přístup ke správci odevzdaných testů.
 final testAttemptsProvider = NotifierProvider.autoDispose<TestAttemptsNotifier, TestAttemptsState>(() {
   return TestAttemptsNotifier();
 });

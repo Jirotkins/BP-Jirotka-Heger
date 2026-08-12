@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+/// Komponenta spravující pravidla a dodatečné nastavení pro zadávaný test.
+///
+/// Obsahuje volby jako "Počet pokusů", "Náhodné pořadí", "Okamžitá zpětná vazba" apod.
+/// Při jakékoliv změně předává celý slovník (Map) ven přes [onChanged].
 class TestSettingsWidget extends StatefulWidget {
   final Function(Map<String, dynamic>)? onChanged;
 
@@ -10,6 +14,7 @@ class TestSettingsWidget extends StatefulWidget {
   State<TestSettingsWidget> createState() => _TestSettingsWidgetState();
 }
 
+/// Stav uchovávající jednotlivá pravidla (přepínače a dropdown).
 class _TestSettingsWidgetState extends State<TestSettingsWidget> {
   // Lokální stavy nastavení
   String? _selectedAttempts = '1';
@@ -159,7 +164,7 @@ class _TestSettingsWidgetState extends State<TestSettingsWidget> {
     );
   }
 
-  // Pomocná metoda pro obecný řádek s vlastním pravým prvkem (Dropdown)
+  /// Pomocná metoda pro obecný řádek s vlastním pravým prvkem (zde Dropdown).
   Widget _buildSettingRow({required String title, required String subtitle, required Widget trailing}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -180,7 +185,7 @@ class _TestSettingsWidgetState extends State<TestSettingsWidget> {
     );
   }
 
-  // Pomocná metoda přímo pro Switche
+  /// Pomocná metoda pro vykreslení řádku s přepínačem (Switch).
   Widget _buildSwitchRow({required String title, required String subtitle, required bool value, required Function(bool) onChanged}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,

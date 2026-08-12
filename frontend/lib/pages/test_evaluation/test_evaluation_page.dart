@@ -8,6 +8,11 @@ import '../class_manager/test_attempts/test_attempts_provider.dart';
 import '../../theme/app_themes.dart';
 import '../../components/page_header_widget.dart';
 
+/// Stránka určená pro zobrazení a manuální ohodnocení již vyplněného testu.
+///
+/// Vykresluje informace o testu, otázky s odpověďmi studenta a umožňuje
+/// učiteli doplnit body a zpětnou vazbu u otevřených otázek. Pokud se na
+/// stránku dívá student ([isStudent] = true), je UI pouze pro čtení.
 class TestEvaluationPage extends ConsumerStatefulWidget {
   final int? assignmentId;
   final int? attemptId;
@@ -24,6 +29,7 @@ class TestEvaluationPage extends ConsumerStatefulWidget {
   ConsumerState<TestEvaluationPage> createState() => _TestEvaluationPageState();
 }
 
+/// Vnitřní stav stránky s lokálními controllery pro textová pole hodnocení.
 class _TestEvaluationPageState extends ConsumerState<TestEvaluationPage> {
   final Map<String, TextEditingController> _feedbackControllers = {};
   final Map<String, TextEditingController> _pointsControllers = {};
@@ -190,6 +196,8 @@ class _TestEvaluationPageState extends ConsumerState<TestEvaluationPage> {
     );
   }
 
+  /// Vykreslí horní informační panel s detaily o odevzdaném testu
+  /// (Jméno studenta, předmět, stav, datum a maximální skóre).
   Widget _buildHeaderInfo(BuildContext context, TestEvaluationState state) {
     return Container(
       color: Theme.of(context).colorScheme.surface,
@@ -261,6 +269,8 @@ class _TestEvaluationPageState extends ConsumerState<TestEvaluationPage> {
     );
   }
 
+  /// Vykreslí hlavní sekci se seznamem všech otázek.
+  /// Iteruje přes `state.testData['questions']`.
   Widget _buildQuestionsList(BuildContext context, TestEvaluationState state, TestEvaluationNotifier notifier) {
     List<dynamic> questions = state.testData['questions'] ?? [];
 
@@ -320,6 +330,10 @@ class _TestEvaluationPageState extends ConsumerState<TestEvaluationPage> {
     }
   }
 
+  /// Vykreslí univerzální kartu (Card) pro danou otázku.
+  /// 
+  /// Zajišťuje zobrazení znění, obrázků a hlavičky s body. Volá další pod-metody
+  /// (`_buildAutoGradedAnswerView` apod.) podle typu otázky.
   Widget _buildDynamicEvaluationCard(Map<String, dynamic> question, int index, TestEvaluationState state, TestEvaluationNotifier notifier) {
     String qId = question['id'];
     bool isExpanded = state.expandedQuestions.contains(qId);
@@ -471,8 +485,11 @@ class _TestEvaluationPageState extends ConsumerState<TestEvaluationPage> {
     );
   }
 
+  /// Vykreslí vizuální zhodnocení u automaticky opravovaných otázek
+  /// (např. multiple choice, short answer), kde se jen zobrazuje odpověď žáka
+  /// a správná odpověď s ikonami pro úspěch/neúspěch.
   Widget _buildAutoGradedAnswerView(Map<String, dynamic> question) {
-    bool isCorrect = question['isCorrect'] ?? false;
+    bool isCorrect = question['isCorrect'] == true;
     final customColors = Theme.of(context).extension<CustomColors>();
 
     return Container(
@@ -506,6 +523,8 @@ class _TestEvaluationPageState extends ConsumerState<TestEvaluationPage> {
     );
   }
 
+  /// Vykreslí detail seřazovací (ORDER) otázky – jak žák položky poskládal.
+  /// (Tato implementace se spoléhá na backend ohledně logiky částečných bodů).
   Widget _buildOrderAnswerView(Map<String, dynamic> question) {
     double awarded = (question['awardedPoints'] ?? 0).toDouble();
     double max = (question['maxPoints'] ?? 1).toDouble();
@@ -589,6 +608,8 @@ class _TestEvaluationPageState extends ConsumerState<TestEvaluationPage> {
     );
   }
 
+  /// Vykreslí detail spojovací (MATCHING) otázky – zobrazení párů levé a pravé strany,
+  /// jak je student propojil.
   Widget _buildMatchAnswerView(Map<String, dynamic> question) {
     double awarded = (question['awardedPoints'] ?? 0).toDouble();
     double max = (question['maxPoints'] ?? 1).toDouble();
@@ -688,6 +709,8 @@ class _TestEvaluationPageState extends ConsumerState<TestEvaluationPage> {
     );
   }
 
+  /// Sekce pro manuální (otevřené) otázky (např. 'open'). Zobrazí textové
+  /// pole pro zpětnou vazbu učitele a input pro manuální udělení bodů.
   Widget _buildOpenQuestionEvaluation(Map<String, dynamic> question, TestEvaluationNotifier notifier) {
     String qId = question['id'] ?? '';
     if (!_pointsControllers.containsKey(qId)) return const SizedBox();

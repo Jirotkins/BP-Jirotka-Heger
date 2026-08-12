@@ -2,14 +2,34 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 
+/// Vizualizační komponenta pro jednu konkrétní banku otázek.
+/// 
+/// Zobrazuje zadanou ikonu, název, předmět a aktuální počet otázek.
+/// Obsahuje kontextové menu pro úpravu a smazání banky, 
+/// a výrazné tlačítko pro přechod do detailu (seznamu otázek).
 class BankCardWidget extends StatelessWidget {
+  /// Jednoznačné ID banky otázek.
   final int id;
+  
+  /// Zvolený název banky (např. Biologie - savci).
   final String title;
+  
+  /// Volitelný předmět, do kterého banka spadá.
   final String subject;
+  
+  /// Zjištěný počet celkových otázek uložených v bance.
   final int questionCount;
+  
+  /// Widget s vybranou ikonou, pro vizuální odlišení banky.
   final Widget icon;
+  
+  /// Callback při vybrání možnosti "Upravit" v kontextovém menu.
   final VoidCallback? onEdit;
+  
+  /// Callback při vybrání možnosti "Smazat" v kontextovém menu.
   final VoidCallback? onDelete;
+  
+  /// Callback pro aktualizaci seznamu bank po případném návratu z detailu.
   final VoidCallback? onRefresh;
 
   const BankCardWidget({

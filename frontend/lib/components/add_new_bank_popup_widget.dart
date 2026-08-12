@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../pages/bank_overview/bank_overview_provider.dart';
 
+/// Vyskakovací dialogové okno pro vytvoření nové banky otázek nebo úpravu existující.
+/// 
+/// Umožňuje zadat název banky, volitelný předmět a vybrat si jednu
+/// z předdefinovaných ikon. Slouží jak pro vytváření (kdy je [bankId] null),
+/// tak pro editaci (kdy se předají počáteční hodnoty).
 class AddNewBankPopupWidget extends ConsumerStatefulWidget {
   final int? bankId;
   final String? initialName;
@@ -20,6 +25,7 @@ class AddNewBankPopupWidget extends ConsumerStatefulWidget {
   ConsumerState<AddNewBankPopupWidget> createState() => _AddNewBankPopupWidgetState();
 }
 
+/// Stav formuláře pro vytvoření/úpravu banky řídící validaci, API volání a výběr ikony.
 class _AddNewBankPopupWidgetState extends ConsumerState<AddNewBankPopupWidget> {
   late TextEditingController _nameController;
   late FocusNode _nameFocusNode;
@@ -50,6 +56,8 @@ class _AddNewBankPopupWidgetState extends ConsumerState<AddNewBankPopupWidget> {
     super.dispose();
   }
 
+  /// Provede základní validaci a následně zavolá buď aktualizaci (pokud editujeme)
+  /// nebo vytvoření nové banky přes `bankOverviewProvider`.
   Future<void> _saveBank() async {
     if (_nameController.text.trim().isEmpty) {
       setState(() => _localError = 'Název banky je povinný.');

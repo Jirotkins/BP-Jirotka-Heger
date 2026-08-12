@@ -10,6 +10,10 @@ import '../../components/time_settings_widget.dart';
 import '../../theme/app_themes.dart';
 import 'test_editor_provider.dart';
 
+/// Stránka reprezentující vizuální Editor testů.
+/// 
+/// Umožňuje uživateli zadat název nového testu, vybrat cílové otázky
+/// z existujících bank a nakonfigurovat chování a časování testu.
 class TestEditorWidget extends ConsumerStatefulWidget {
   const TestEditorWidget({super.key});
 
@@ -17,6 +21,7 @@ class TestEditorWidget extends ConsumerStatefulWidget {
   ConsumerState<TestEditorWidget> createState() => _TestEditorWidgetState();
 }
 
+/// Stav řídící vstup názvu testu a reakci na akce odeslání do backendu.
 class _TestEditorWidgetState extends ConsumerState<TestEditorWidget> {
   late TextEditingController _testNameController;
   late FocusNode _testNameFocusNode;
@@ -144,6 +149,8 @@ class _TestEditorWidgetState extends ConsumerState<TestEditorWidget> {
     );
   }
 
+  /// Vykreslí jednu rozbalovací (ExpansionTile) kartu pro danou banku.
+  /// Uvnitř se (po rozevření) načtou a zobrazí jednotlivé otázky.
   Widget _buildBankExpansionTile(Map<String, dynamic> bank, TestEditorState state, TestEditorNotifier notifier) {
     int bankId = bank['id'];
     bool isLoading = state.bankQuestionsLoading[bankId] == true;
@@ -193,6 +200,7 @@ class _TestEditorWidgetState extends ConsumerState<TestEditorWidget> {
     );
   }
 
+  /// Vykreslí textové pole pro zadání názvu nového testu.
   Widget _buildTestNameInput() {
     return Container(
       decoration: BoxDecoration(

@@ -4,6 +4,9 @@ import '../../components/page_header_widget.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
 
+/// Stránka s nastavením profilu a aplikace pro uživatele v roli Učitele.
+///
+/// Umožňuje změnu jména, hesla, přepínání tmavého režimu a bezpečné odhlášení.
 class SettingsTeacherPage extends ConsumerStatefulWidget {
   const SettingsTeacherPage({super.key});
 
@@ -12,8 +15,6 @@ class SettingsTeacherPage extends ConsumerStatefulWidget {
 }
 
 class _SettingsTeacherPageState extends ConsumerState<SettingsTeacherPage> {
-  // Lokální stavy pro přepínače
-  bool _isEmailNotificationsEnabled = false;
 
   @override
   Widget build(BuildContext context) {
@@ -55,20 +56,10 @@ class _SettingsTeacherPageState extends ConsumerState<SettingsTeacherPage> {
 
                 const SizedBox(height: 32.0),
 
-                // SEKCE OZNÁMENÍ A REŽIM
-                _buildSectionTitle('OZNÁMENÍ A VZHLED'),
+                // SEKCE VZHLED
+                _buildSectionTitle('VZHLED'),
                 const SizedBox(height: 8.0),
                 _buildSettingsBox([
-                  _buildSettingsItem(
-                    icon: Icons.mail_outline_rounded,
-                    title: 'E-mailová oznámení',
-                    trailing: Switch(
-                      value: _isEmailNotificationsEnabled,
-                      activeThumbColor: Theme.of(context).colorScheme.primary,
-                      onChanged: (val) => setState(() => _isEmailNotificationsEnabled = val),
-                    ),
-                  ),
-                  const Divider(height: 1, indent: 50),
                   _buildSettingsItem(
                     icon: Icons.dark_mode_outlined,
                     title: 'Tmavý režim',
@@ -115,7 +106,7 @@ class _SettingsTeacherPageState extends ConsumerState<SettingsTeacherPage> {
     );
   }
   
-  // Pomocný widget pro nadpis sekce
+  /// Pomocný widget pro vykreslení nadpisu sekce.
   Widget _buildSectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.only(left: 4.0),
@@ -131,6 +122,7 @@ class _SettingsTeacherPageState extends ConsumerState<SettingsTeacherPage> {
     );
   }
 
+  /// Obaluje skupinu položek do rámečku s pozadím.
   Widget _buildSettingsBox(List<Widget> children) {
     return Container(
       width: double.infinity,
@@ -142,6 +134,10 @@ class _SettingsTeacherPageState extends ConsumerState<SettingsTeacherPage> {
       child: Column(children: children),
     );
   }
+
+  /// Univerzální stavební blok pro položku v nastavení.
+  /// 
+  /// Zobrazuje ikonu, název a volitelný koncový widget (šipku, text nebo přepínač).
 
   Widget _buildSettingsItem({
     required IconData icon,

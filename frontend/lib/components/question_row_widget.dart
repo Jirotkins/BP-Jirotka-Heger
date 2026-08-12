@@ -2,13 +2,30 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../utils/question_type_helper.dart';
 
+/// Vizualizační komponenta pro jeden řádek seznamu s otázkou.
+/// 
+/// Zobrazuje znění otázky, barevný štítek pro typ otázky a akční
+/// tlačítka pro její úpravu nebo smazání.
 class QuestionRowWidget extends StatelessWidget {
+  /// Unikátní ID otázky.
   final int id;
+  
+  /// Znění otázky pro náhled v seznamu.
   final String question;
+  
+  /// Textový kód typu otázky (např. 'multi_choice', 'short_answer').
   final String type;
+  
+  /// ID banky, ve které je otázka uložena (pro návrat z editoru).
   final int bankId;
+  
+  /// Název cílové banky/testu pro zobrazení v editoru.
   final String targetName;
+  
+  /// Kompletní JSON (raw data) otázky stažená z API. Předává se editoru.
   final Map<String, dynamic>? questionData;
+  
+  /// Callback volaný při stisku tlačítka "Smazat".
   final VoidCallback? onDelete;
 
   const QuestionRowWidget({

@@ -4,9 +4,11 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/auth_provider.dart';
 
-// URL adresa backendu.
+/// URL adresa backendu (FastAPI).
 const String baseUrl = 'http://127.0.0.1:8000'; //172.20.10.8:8000
 
+/// Vlastní výjimka pro ošetření chyb ze serveru.
+/// Uchovává textovou [message] a HTTP [statusCode].
 class ApiException implements Exception {
   final String message;
   final int statusCode;
@@ -17,7 +19,10 @@ class ApiException implements Exception {
   String toString() => message;
 }
 
+/// Třída zapouzdřující veškerou HTTP komunikaci (CRUD + SSE) s backendem.
+/// Automaticky vkládá autorizační token, ošetřuje chyby a parsuje odpovědi.
 class ApiClient {
+  /// JWT token vložený (pokud existuje) do hlavičky každého požadavku.
   final String? token;
 
   ApiClient({this.token});
@@ -34,6 +39,7 @@ class ApiClient {
     return headers;
   }
 
+  /// Odešle HTTP POST požadavek na [endpoint] se zadaným [body].
   Future<dynamic> post(String endpoint, Map<String, dynamic> body) async {
     final uri = Uri.parse('$baseUrl$endpoint');
     try {
@@ -50,6 +56,7 @@ class ApiClient {
     }
   }
 
+  /// Odešle HTTP PUT požadavek na [endpoint] se zadaným [body].
   Future<dynamic> put(String endpoint, Map<String, dynamic> body) async {
     final uri = Uri.parse('$baseUrl$endpoint');
     try {
@@ -66,6 +73,7 @@ class ApiClient {
     }
   }
 
+  /// Odešle HTTP DELETE požadavek na [endpoint].
   Future<dynamic> delete(String endpoint) async {
     final uri = Uri.parse('$baseUrl$endpoint');
     try {
@@ -78,6 +86,7 @@ class ApiClient {
     }
   }
 
+  /// Odešle HTTP GET požadavek na [endpoint].
   Future<dynamic> get(String endpoint) async {
     final uri = Uri.parse('$baseUrl$endpoint');
     try {
@@ -90,6 +99,8 @@ class ApiClient {
     }
   }
 
+  /// Interní metoda, která zpracovává surovou odpověď `http.Response`.
+  /// Pokud status není `2xx`, pokusí se vyextrahovat hlášku 'detail' a vyhodí [ApiException].
   dynamic _processResponse(http.Response response) {
     dynamic body;
     try {
@@ -146,8 +157,9 @@ class ApiClient {
   }
 }
 
-// Provider pro ApiClienta, který je závislý na AuthProvideru
-// Díky tomuto přístupu se do ApiClienta automaticky propíše token hned, jakmile se uživatel přihlásí
+/// Globální Riverpod provider pro [ApiClient].
+/// Reaguje na změny v [authProvider] – tzn. jakmile se uživatel přihlásí,
+/// instance se přepíše a získá k dispozici aktuální přístupový `token`.
 final apiClientProvider = Provider<ApiClient>((ref) {
   final authState = ref.watch(authProvider);
   return ApiClient(token: authState.token);

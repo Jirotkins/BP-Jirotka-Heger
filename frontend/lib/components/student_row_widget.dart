@@ -1,8 +1,17 @@
 import 'package:flutter/material.dart';
 
+/// Vizualizační komponenta pro jeden řádek s údaji studenta v seznamu.
+/// 
+/// Zobrazuje ID studenta, jeho email/uživatelské jméno a poskytuje
+/// akční tlačítka pro úpravu (zatím neimplementováno) nebo smazání studenta.
 class StudentRowWidget extends StatelessWidget {
+  /// Unikátní identifikátor studenta.
   final int id;
+  
+  /// Přihlašovací email nebo vygenerované jméno studenta.
   final String studentName;
+  
+  /// Callback volaný při kliknutí na tlačítko "Smazat".
   final VoidCallback? onDelete;
 
   const StudentRowWidget({
@@ -52,18 +61,10 @@ class StudentRowWidget extends StatelessWidget {
               ),
             ),
 
-            // AKČNÍ TLAČÍTKA (Editovat a Smazat)
+            // AKČNÍ TLAČÍTKA
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Tlačítko Upravit
-                IconButton(
-                  icon: Icon(Icons.edit_outlined, color: Theme.of(context).colorScheme.primary, size: 18.0),
-                  onPressed: () => debugPrint('Upravit studenta: $studentName'),
-                  constraints: const BoxConstraints(),
-                  padding: const EdgeInsets.all(8.0),
-                  tooltip: 'Upravit',
-                ),
                 // Tlačítko Smazat
                 IconButton(
                   icon: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error, size: 18.0),

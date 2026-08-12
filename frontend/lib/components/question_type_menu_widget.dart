@@ -3,7 +3,11 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_themes.dart';
 
+/// Zobrazuje rozbalovací nabídku (typicky v modálním okně) pro výběr nového typu otázky,
+/// kterou chce uživatel vytvořit v Editoru. Každá možnost přesměruje na jiný formulář.
 class QuestionTypeMenuWidget extends StatelessWidget {
+  /// Extra argumenty potřebné k předání dál do routeru 
+  /// (typicky ID banky nebo její název pro návrat).
   final Map<String, dynamic>? args;
 
   const QuestionTypeMenuWidget({
@@ -17,7 +21,7 @@ class QuestionTypeMenuWidget extends StatelessWidget {
     // ZÍSKÁNÍ DAT Z PARAMETRU
     final String targetName = args?['targetName'] ?? args?['bankName'] ?? 'Neznámá banka';
 
-    // Pomocná funkce pro navigaci
+    // Pomocná funkce pro navigaci na zvolený typ otázky (např. /multiChoiceQuestion).
     void navigateToEditor(String routeName) {
       final updatedArgs = Map<String, dynamic>.from(args ?? {});
       updatedArgs['targetName'] = targetName;
@@ -154,7 +158,7 @@ class QuestionTypeMenuWidget extends StatelessWidget {
     );
   }
 
-  // Pomocná metoda 
+  /// Pomocná metoda pro vygenerování jednoho interaktivního řádku (typ otázky) v menu.
   Widget _buildMenuOption({
     required BuildContext context,
     required IconData icon,

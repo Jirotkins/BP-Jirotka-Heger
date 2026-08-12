@@ -3,9 +3,15 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/auth_provider.dart';
 
+/// Boční navigační menu (sidebar) pro učitelské rozhraní.
+/// 
+/// Zobrazuje ikony pro rychlou navigaci. Při najetí myší (hover)
+/// se menu plynule rozbalí a zobrazí textové popisky.
 class SidebarTeacherWidget extends ConsumerStatefulWidget {
+  /// Identifikátor aktuálně aktivní stránky (např. 'classes', 'banks').
   final String? activePage;
 
+  /// Vytvoří instanci bočního menu.
   const SidebarTeacherWidget({
     super.key,
     required this.activePage,
@@ -15,38 +21,32 @@ class SidebarTeacherWidget extends ConsumerStatefulWidget {
   ConsumerState<SidebarTeacherWidget> createState() => _SidebarTeacherWidgetState();
 }
 
+/// Stav bočního menu řešící animaci rozbalení a navigaci.
 class _SidebarTeacherWidgetState extends ConsumerState<SidebarTeacherWidget> {
-  // Zde držíme stav najetí myši čistě v rámci widgetu
   bool _isHovered = false;
+
+  /// Vrátí iniciály z e-mailové adresy.
+  /// 
+  /// Používá první dvě písmena (pokud jsou k dispozici).
+  String _getInitials(String email) {
+    if (email.isEmpty) return 'U';
+    if (email.length >= 2) {
+      return email.substring(0, 2).toUpperCase();
+    }
+    return email[0].toUpperCase();
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Získáme přesnou aktuální cestu z navigátoru (např. '/classOverview')
     final currentRoute = GoRouterState.of(context).uri.path;
-    
-    // Načteme stav uživatele (jeho email je v username)
     final authState = ref.watch(authProvider);
     final username = authState.username ?? 'ucitel@skola.cz';
-    
-    // Zobrazujeme přímo email jako jméno
-    final teacherName = username;
-    
-    // Iniciály: první dvě písmena z emailu
-    String getInitials(String email) {
-      if (email.isEmpty) return 'U';
-      if (email.length >= 2) {
-        return email.substring(0, 2).toUpperCase();
-      }
-      return email[0].toUpperCase();
-    }
-    
-    final initials = getInitials(username);
+    final initials = _getInitials(username);
 
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
       child: AnimatedContainer(
-        // Plynulá animace rozbalení
         duration: const Duration(milliseconds: 200),
         width: _isHovered ? 250.0 : 85.0,
         decoration: BoxDecoration(
@@ -55,11 +55,9 @@ class _SidebarTeacherWidgetState extends ConsumerState<SidebarTeacherWidget> {
             right: BorderSide(color: Theme.of(context).colorScheme.outline, width: 1.0),
           ),
         ),
-        // LayoutBuilder pro získání dostupné výšky obrazovky
         child: LayoutBuilder(
           builder: (context, constraints) {
             return SingleChildScrollView(
-              // ConstrainedBox a IntrinsicHeight, aby Spacer fungoval uvnitř ScrollView
               child: ConstrainedBox(
                 constraints: BoxConstraints(
                   minHeight: constraints.maxHeight, 
@@ -70,7 +68,7 @@ class _SidebarTeacherWidgetState extends ConsumerState<SidebarTeacherWidget> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        // LOGO (Horní část)
+                        // LOGO
                         Padding(
                           padding: const EdgeInsets.only(bottom: 32.0),
                           child: Icon(Icons.quiz_outlined, color: Theme.of(context).colorScheme.primary, size: 48.0),
@@ -78,14 +76,12 @@ class _SidebarTeacherWidgetState extends ConsumerState<SidebarTeacherWidget> {
 
                         const Spacer(),
 
-                        // MENU POLOŽKY S CHYTROU NAVIGACÍ
+                        // NAVIGACE
                         _buildMenuItem(
                           icon: Icons.group_outlined,
                           title: 'Třídy',
                           pageKey: 'classes',
                           onTap: () {
-                            // Kontroluje REÁLNOU cestu. 
-                            // Pokud jsme v detailu třídy, pustí nás to zpět na přehled
                             if (currentRoute != '/classOverview') {
                               context.go('/classOverview');
                             }
@@ -116,7 +112,7 @@ class _SidebarTeacherWidgetState extends ConsumerState<SidebarTeacherWidget> {
 
                         const Spacer(),
 
-                        // PROFIL (Spodní část)
+                        // UŽIVATELSKÝ PROFIL
                         Container(
                           width: 48.0,
                           height: 48.0,
@@ -133,7 +129,7 @@ class _SidebarTeacherWidgetState extends ConsumerState<SidebarTeacherWidget> {
                         const SizedBox(height: 8.0),
                         if (_isHovered)
                           Text(
-                            teacherName,
+                            username,
                             textAlign: TextAlign.center,
                             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                             overflow: TextOverflow.ellipsis,
@@ -150,14 +146,13 @@ class _SidebarTeacherWidgetState extends ConsumerState<SidebarTeacherWidget> {
     );
   }
 
-  // Pomocná metoda pro stavbu čistých položek menu
+  /// Pomocná metoda pro vykreslení položky v menu.
   Widget _buildMenuItem({
     required IconData icon,
     required String title,
     required String pageKey,
     required VoidCallback onTap,
   }) {
-    // Pro podbarvení používá activePage z parametru 
     final isActive = widget.activePage == pageKey;
     
     return InkWell(
@@ -181,7 +176,7 @@ class _SidebarTeacherWidgetState extends ConsumerState<SidebarTeacherWidget> {
               Expanded(
                 child: Text(
                   title,
-                  maxLines: 1, // Pojistka proti zalomení na 2 řádky
+                  maxLines: 1,
                   style: TextStyle(
                     color: isActive ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurface,
                     fontWeight: isActive ? FontWeight.bold : FontWeight.w500,

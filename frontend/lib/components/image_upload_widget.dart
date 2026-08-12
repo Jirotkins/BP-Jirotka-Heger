@@ -6,9 +6,20 @@ import 'package:cross_file/cross_file.dart';
 import 'dart:typed_data';
 import 'dart:convert';
 
+/// Widget umožňující nahrání obrázku (přes Drag&Drop nebo klasický FilePicker).
+/// 
+/// Po výběru obrázku jej překonvertuje do Base64 formátu (`dataUrl`) a předá 
+/// jej zpět pomocí callbacku [onImageSelected]. Pokud je poskytnut [initialImageUrl], 
+/// pokusí se jej vykreslit.
 class ImageUploadWidget extends StatefulWidget {
+  /// Callback volaný při úspěšném nahrání nebo odebrání obrázku.
+  /// Vrací Base64 `dataUrl` řetězec nebo `null`, pokud je obrázek odstraněn.
   final void Function(String? base64DataUrl) onImageSelected;
+  
+  /// Titulek zobrazený na ploše pro nahrání.
   final String title;
+  
+  /// Počáteční obrázek k zobrazení (typicky při editaci existující otázky).
   final String? initialImageUrl;
 
   const ImageUploadWidget({
@@ -23,8 +34,13 @@ class ImageUploadWidget extends StatefulWidget {
 }
 
 class _ImageUploadWidgetState extends State<ImageUploadWidget> {
+  /// Určuje, zda se právě přetahuje soubor nad widgetem (Drag&Drop hover).
   bool _isHovering = false;
+  
+  /// Aktuálně načtená URL adresa obrázku (často Base64 řetězec).
   String? _currentImageUrl;
+  
+  /// Surová bajtová data obrázku pro rychlé a čisté vykreslování v paměti.
   Uint8List? _currentImageBytes;
   
   @override
@@ -41,6 +57,8 @@ class _ImageUploadWidgetState extends State<ImageUploadWidget> {
     }
   }
 
+  /// Zpracuje nahraný soubor (z FilePickeru i Drag&Drop), vytáhne jeho příponu 
+  /// a vytvoří příslušný Base64 dataUrl řetězec.
   Future<void> _processFile(XFile file, Uint8List bytes) async {
     final ext = file.name.split('.').last.toLowerCase();
     String mimeType = 'image/png';
@@ -59,6 +77,7 @@ class _ImageUploadWidgetState extends State<ImageUploadWidget> {
     widget.onImageSelected(dataUrl);
   }
 
+  /// Otevře systémové dialogové okno pro ruční výběr souboru (FilePicker).
   Future<void> _pickImage() async {
     FilePickerResult? result = await FilePicker.pickFiles(
       type: FileType.image,
@@ -73,6 +92,7 @@ class _ImageUploadWidgetState extends State<ImageUploadWidget> {
     }
   }
 
+  /// Odebere aktuální obrázek a vyvolá [onImageSelected] s hodnotou `null`.
   void _removeImage() {
     setState(() {
       _currentImageUrl = null;

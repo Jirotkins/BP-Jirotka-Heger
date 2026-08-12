@@ -3,10 +3,20 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'package:go_router/go_router.dart';
 
+/// Společná komponenta hlavičky stránky, která je jednotná napříč celou
+/// učitelskou aplikací. Obsahuje hlavní nadpis, volitelný podtitulek,
+/// kontextová tlačítka napravo a volitelné tlačítko zpět.
 class PageHeaderWidget extends StatelessWidget {
+  /// Hlavní velký nadpis stránky.
   final String title;
+  
+  /// Menší popisný text pod hlavním nadpisem (volitelný).
   final String? subtitle;
+  
+  /// Seznam widgetů (např. tlačítek), které se vyrenderují na pravé straně hlavičky.
   final List<Widget>? actions;
+  
+  /// Zda se má zobrazit šipka "zpět" pro návrat o úroveň výš.
   final bool showBackButton;
 
   const PageHeaderWidget({

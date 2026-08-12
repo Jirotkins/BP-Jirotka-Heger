@@ -6,8 +6,15 @@ import 'questions_overview_provider.dart';
 import '../../components/page_header_widget.dart';
 import '../../components/question_row_widget.dart';
 
+/// Stránka zobrazující přehled všech otázek uložených v konkrétní bance.
+/// 
+/// Umožňuje zobrazení detailů otázek, jejich mazání a poskytuje tlačítko
+/// pro přidání zbrusu nové otázky.
 class QuestionsOverviewPage extends ConsumerStatefulWidget {
+  /// ID banky (složky), ze které se načítají otázky.
   final int bankId;
+  
+  /// Název banky (pro zobrazení v hlavičce a předávání dál).
   final String bankName;
 
   const QuestionsOverviewPage({
@@ -20,6 +27,7 @@ class QuestionsOverviewPage extends ConsumerStatefulWidget {
   ConsumerState<QuestionsOverviewPage> createState() => _QuestionsOverviewPageState();
 }
 
+/// Stav řídící načítání a chování seznamu otázek na stránce.
 class _QuestionsOverviewPageState extends ConsumerState<QuestionsOverviewPage> {
   @override
   void initState() {
@@ -29,6 +37,9 @@ class _QuestionsOverviewPageState extends ConsumerState<QuestionsOverviewPage> {
     });
   }
 
+  /// Zobrazí varovný dialog a v případě potvrzení zavolá API pro smazání otázky.
+  /// Pokud API vrátí chybu, že je otázka použita v testu ('IN_USE'), nabídne
+  /// možnost vynuceného smazání (force: true).
   Future<void> _deleteQuestion(int questionId, QuestionsOverviewNotifier notifier) async {
     // 1. Zobrazit potvrzovací dialog
     final bool? confirm = await showDialog<bool>(

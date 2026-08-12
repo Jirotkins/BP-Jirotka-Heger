@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
 import '../components/sidebar_teacher_widget.dart';
 
+/// Hlavní rozvržení (layout) pro učitelské rozhraní.
+/// 
+/// Vykresluje sdílenou strukturu stránky sestávající z bočního menu [SidebarTeacherWidget]
+/// na levé straně a hlavního obsahu zadaného pomocí [child].
 class TeacherMainLayout extends StatelessWidget {
-  /// Tohle je ta "prázdná díra". Tady se bude zobrazovat obsah obrazovek.
+  /// Obsah (widget), který se má zobrazit ve zbylém prostoru vedle postranního menu.
   final Widget child;
-  /// Tohle říká Sidebaru, která položka má svítit jako aktivní.
+  
+  /// Identifikátor aktuálně aktivní stránky pro zvýraznění v bočním menu.
   final String activePage;
 
+  /// Vytvoří hlavní layout učitele.
   const TeacherMainLayout({
     super.key,
     required this.child,
@@ -16,22 +22,20 @@ class TeacherMainLayout extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor, // Globální pozadí aplikace
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Stack(
           children: [
-            // 1. ZDE JE OBSAH (Třídy, Banky, atd.)
-            // Positioned.fill vynutí, aby obsah zabíral celou obrazovku.
-            // Padding zleva jsme přesunuli sem, takže už ho nebudete muset
-            // psát do každé nové obrazovky! (85px je šířka sbaleného sidebaru)
+            // HLAVNÍ OBSAH STRÁNKY
+            // Odsazeno o 85 pixelů, což odpovídá šířce sbaleného postranního menu.
             Positioned.fill(
               child: Padding(
                 padding: const EdgeInsets.only(left: 85.0),
-                child: child, // Zde se vykreslí aktuální stránka
+                child: child,
               ),
             ),
 
-            // 2. ZDE JE SIDEBAR (Navždy ukotvený vlevo)
+            // POSTRANNÍ MENU (SIDEBAR)
             Positioned(
               top: 0,
               bottom: 0,
@@ -43,4 +47,4 @@ class TeacherMainLayout extends StatelessWidget {
       ),
     );
   }
-}
+}

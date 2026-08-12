@@ -3,13 +3,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../components/role_toggle_widget.dart';
 import '../../providers/auth_provider.dart';
 
+/// Hlavní stránka pro přihlášení do aplikace.
+/// 
+/// Umožňuje přihlášení studentům (pomocí kódu) i učitelům (pomocí e-mailu).
+/// Využívá [authProvider] pro zpracování logiky autentizace a komunikaci s API.
 class LoginPage extends ConsumerStatefulWidget {
+  /// Vytvoří instanci přihlašovací stránky.
   const LoginPage({super.key});
 
   @override
   ConsumerState<LoginPage> createState() => _LoginPageState();
 }
 
+/// Stav přihlašovací stránky, spravující textová pole, validaci a loading stav.
 class _LoginPageState extends ConsumerState<LoginPage> {
   late TextEditingController _emailController;
   late FocusNode _emailFocusNode;
@@ -40,7 +46,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     super.dispose();
   }
 
-  // --- HLAVNÍ LOGIKA PŘIHLÁŠENÍ (NYNÍ S REÁLNÝM API) ---
+  /// Zpracuje odeslání přihlašovacího formuláře.
+  /// 
+  /// Provádí základní validaci prázdných polí a následně volá `authProvider.notifier.login`.
+  /// V případě chyby zobrazí [SnackBar] s popisem problému.
   Future<void> _handleLogin() async {
     if (_emailController.text.trim().isEmpty || _passwordController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -52,7 +61,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     setState(() => _isLoading = true);
 
     try {
-      // Skutečné volání API přes Riverpod provider
       await ref.read(authProvider.notifier).login(
         _emailController.text.trim(),
         _passwordController.text.trim(),
@@ -60,9 +68,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       );
 
       if (!mounted) return;
-      
-      // Pozn.: Už se nestaráme o Navigator.pushReplacementNamed, 
-      // protože reaktivní widget v main.dart nás automaticky přenese do hlavní aplikace.
     } catch (e) {
       if (!mounted) return;
       // Zobrazení chybové hlášky, kterou vrátil backend nebo síťová vrstva
@@ -77,7 +82,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     }
   }
 
-  // Pomocná metoda pro stylizaci okrajů textových polí
+  /// Vrací jednotný styl ohraničení (border) pro textová pole.
   OutlineInputBorder _inputBorder() {
     return OutlineInputBorder(
       borderRadius: BorderRadius.circular(16.0),

@@ -2,12 +2,25 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../pages/class_overview/class_overview_provider.dart';
 
+/// Vyskakovací dialogové okno pro vytvoření nové třídy nebo úpravu existující.
+/// 
+/// Obsahuje formulář s textovými poli pro název a předmět a výběr z přednastavených ikon.
+/// V závislosti na tom, zda byl při vytvoření zadán [groupId], funguje buď
+/// v režimu vytváření, nebo v režimu editace (pokud jsou zadány i [initialName], atd.).
 class AddNewClassPopupWidget extends ConsumerStatefulWidget {
+  /// ID třídy, pokud se má okno použít k editaci.
   final int? groupId;
+  
+  /// Výchozí název třídy, předvyplněno při editaci.
   final String? initialName;
+  
+  /// Výchozí název předmětu, předvyplněno při editaci.
   final String? initialSubject;
+  
+  /// Výchozí index zvolené ikony z pole [availableIcons].
   final int? initialIconIndex;
 
+  /// Seznam podporovaných ikon, ze kterých si uživatel může vybírat.
   static const List<IconData> availableIcons = [
     Icons.menu_book_outlined,
     Icons.calculate_outlined,
@@ -16,6 +29,7 @@ class AddNewClassPopupWidget extends ConsumerStatefulWidget {
     Icons.public_outlined,
   ];
 
+  /// Vytvoří dialogové okno. Lze mu předat parametry pro editaci existující třídy.
   const AddNewClassPopupWidget({
     super.key,
     this.groupId,
@@ -28,15 +42,18 @@ class AddNewClassPopupWidget extends ConsumerStatefulWidget {
   ConsumerState<AddNewClassPopupWidget> createState() => _AddNewClassPopupWidgetState();
 }
 
+/// Stav dialogového okna uchovávající řídící proměnné formuláře (TextEditingControllers).
 class _AddNewClassPopupWidgetState extends ConsumerState<AddNewClassPopupWidget> {
   late TextEditingController _nameController;
   late FocusNode _nameFocusNode;
+  
   late TextEditingController _subjectController;
   late FocusNode _subjectFocusNode;
 
   late int _selectedIconIndex;
   String? _localError;
 
+  /// Určuje, zda jsme aktuálně v režimu editace existující třídy.
   bool get _isEditing => widget.groupId != null;
 
   @override
@@ -44,8 +61,10 @@ class _AddNewClassPopupWidgetState extends ConsumerState<AddNewClassPopupWidget>
     super.initState();
     _nameController = TextEditingController(text: widget.initialName ?? '');
     _nameFocusNode = FocusNode();
+    
     _subjectController = TextEditingController(text: widget.initialSubject ?? '');
     _subjectFocusNode = FocusNode();
+    
     _selectedIconIndex = widget.initialIconIndex ?? 0;
   }
 
@@ -58,6 +77,7 @@ class _AddNewClassPopupWidgetState extends ConsumerState<AddNewClassPopupWidget>
     super.dispose();
   }
 
+  /// Zvaliduje formulář a odešle data do provideru `classOverviewProvider`.
   Future<void> _saveClass() async {
     if (_nameController.text.trim().isEmpty) {
       setState(() => _localError = 'Název třídy je povinný.');
@@ -105,6 +125,7 @@ class _AddNewClassPopupWidgetState extends ConsumerState<AddNewClassPopupWidget>
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // TITULEK
           Text(
             _isEditing ? 'Upravit třídu' : 'Vytvořit novou třídu',
             textAlign: TextAlign.center,
@@ -112,6 +133,7 @@ class _AddNewClassPopupWidgetState extends ConsumerState<AddNewClassPopupWidget>
           ),
           const SizedBox(height: 24.0),
 
+          // CHYBOVÁ HLÁŠKA
           if (errorToShow != null) ...[
             Container(
               padding: const EdgeInsets.all(12),
@@ -121,18 +143,19 @@ class _AddNewClassPopupWidgetState extends ConsumerState<AddNewClassPopupWidget>
             const SizedBox(height: 16.0),
           ],
 
+          // NÁZEV TŘÍDY
           _buildInputLabel('Název'),
           const SizedBox(height: 6.0),
           _buildTextField(_nameController, _nameFocusNode, 'Zadejte název (např. 1.A)', state.isLoading),
-          
           const SizedBox(height: 16.0),
 
+          // NÁZEV PŘEDMĚTU
           _buildInputLabel('Předmět'),
           const SizedBox(height: 6.0),
           _buildTextField(_subjectController, _subjectFocusNode, 'Zadejte předmět (volitelné)', state.isLoading),
-
           const SizedBox(height: 16.0),
 
+          // VÝBĚR IKONY
           _buildInputLabel('Vyberte ikonu'),
           const SizedBox(height: 10.0),
           Row(
@@ -165,6 +188,7 @@ class _AddNewClassPopupWidgetState extends ConsumerState<AddNewClassPopupWidget>
           ),
           const SizedBox(height: 32.0),
 
+          // TLAČÍTKA AKCÍ
           Row(
             children: [
               Expanded(
@@ -203,10 +227,12 @@ class _AddNewClassPopupWidgetState extends ConsumerState<AddNewClassPopupWidget>
     );
   }
 
+  /// Pomocná metoda pro vykreslení popisku (štítku) nad textovým polem.
   Widget _buildInputLabel(String label) {
     return Text(label, style: TextStyle(color: Theme.of(context).colorScheme.secondary, fontWeight: FontWeight.w600, fontSize: 13.0));
   }
 
+  /// Pomocná metoda pro vykreslení textového pole pro zadávání hodnot.
   Widget _buildTextField(TextEditingController controller, FocusNode focusNode, String hint, bool isSaving) {
     return TextFormField(
       controller: controller,

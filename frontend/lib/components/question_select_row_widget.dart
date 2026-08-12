@@ -1,10 +1,21 @@
 import 'package:flutter/material.dart';
 import '../utils/question_type_helper.dart';
 
+/// Interaktivní řádek pro výběr otázky ze seznamu (banky).
+///
+/// Zobrazuje znění otázky, její typ (ve formě barevného štítku) a
+/// přepínač (Switch), který indikuje, zda bude otázka přidána do testu.
 class QuestionSelectRowWidget extends StatelessWidget {
+  /// Znění otázky (např. "Jaké je hlavní město ČR?").
   final String question;
+  
+  /// Identifikátor typu otázky (např. "multi_choice").
   final String type;
+  
+  /// Indikuje, zda je aktuální otázka vybrána (Switch je zapnutý).
   final bool isSelected;
+  
+  /// Callback, který se zavolá při změně stavu přepínače.
   final VoidCallback onToggle;
 
   const QuestionSelectRowWidget({

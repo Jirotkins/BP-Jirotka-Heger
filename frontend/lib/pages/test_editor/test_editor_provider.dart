@@ -1,20 +1,35 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../services/api_client.dart';
 
+/// Stav reprezentující veškerá data pro vytvoření nového testu.
 class TestEditorState {
+  /// Určuje, zda probíhá stahování seznamu bank.
   final bool isLoadingBanks;
+  
+  /// Chybová hláška v případě selhání API volání.
   final String? errorMessage;
+  /// Načtené banky otázek.
   final List<Map<String, dynamic>> banks;
   
+  /// Cache s načtenými otázkami pro jednotlivé banky (klíč = ID banky).
   final Map<int, List<Map<String, dynamic>>> bankQuestionsCache;
+  
+  /// Indikátor stahování otázek pro jednotlivé banky.
   final Map<int, bool> bankQuestionsLoading;
   
+  /// Množina vybraných ID otázek, které budou součástí testu.
   final Set<int> selectedQuestionIds;
   
+  /// Nastavení chování testu (např. náhodné pořadí, okamžitá zpětná vazba).
   final Map<String, dynamic> testSettings;
+  
+  /// Časové nastavení testu (okamžitě/naplánovaně, časový limit v minutách).
   final Map<String, dynamic> timeSettings;
   
+  /// Určuje, zda právě probíhá proces zadávání (odesílání na API).
   final bool isSubmitting;
+  
+  /// Flag indikující úspěšné odeslání. Využívá se k uzavření stránky a zobrazení notifikace.
   final bool submitSuccess;
 
   TestEditorState({
@@ -58,12 +73,14 @@ class TestEditorState {
   }
 }
 
+/// Správce stavu pro `TestEditorWidget`. Řídí načítání dat a finální odeslání šablony s přiřazením.
 class TestEditorNotifier extends Notifier<TestEditorState> {
   @override
   TestEditorState build() {
     return TestEditorState();
   }
 
+  /// Stáhne seznam všech dostupných bank otázek.
   Future<void> fetchBanks() async {
     state = state.copyWith(isLoadingBanks: true, clearError: true);
     try {
@@ -85,6 +102,7 @@ class TestEditorNotifier extends Notifier<TestEditorState> {
     }
   }
 
+  /// Načte seznam otázek pro konkrétní banku, pokud už nejsou v cache.
   Future<void> fetchQuestionsForBank(int bankId) async {
     if (state.bankQuestionsCache.containsKey(bankId) || state.bankQuestionsLoading[bankId] == true) {
       return;
@@ -124,6 +142,7 @@ class TestEditorNotifier extends Notifier<TestEditorState> {
     }
   }
 
+  /// Přidá nebo odebere otázku (dle ID) z množiny vybraných otázek pro test.
   void toggleQuestionSelection(int questionId) {
     final newSelected = Set<int>.from(state.selectedQuestionIds);
     if (newSelected.contains(questionId)) {
@@ -134,18 +153,24 @@ class TestEditorNotifier extends Notifier<TestEditorState> {
     state = state.copyWith(selectedQuestionIds: newSelected);
   }
 
+  /// Aktualizuje pravidla a nastavení testu z `TestSettingsWidget`.
   void updateTestSettings(Map<String, dynamic> settings) {
     state = state.copyWith(testSettings: settings);
   }
 
+  /// Aktualizuje časová nastavení z `TimeSettingsWidget`.
   void updateTimeSettings(Map<String, dynamic> settings) {
     state = state.copyWith(timeSettings: settings);
   }
 
+  /// Resetuje chybovou hlášku.
   void clearError() {
     state = state.copyWith(clearError: true);
   }
 
+  /// Ověří povinné údaje a odešle data backendu ve dvou krocích:
+  /// 1. Vytvoření šablony testu s vybranými otázkami a nastavením (`/test-templates`).
+  /// 2. Přiřazení šablony k dané třídě (skupině) s definovaným časem a limitem (`/exam-assignments`).
   Future<void> submitTest(int groupId, String testName) async {
     if (testName.trim().isEmpty) {
       state = state.copyWith(errorMessage: 'Zadejte název testu.');
@@ -234,6 +259,7 @@ class TestEditorNotifier extends Notifier<TestEditorState> {
   }
 }
 
+/// Poskytovatel stavu a metod pro vytváření testů (používá `autoDispose`).
 final testEditorProvider = NotifierProvider.autoDispose<TestEditorNotifier, TestEditorState>(() {
   return TestEditorNotifier();
 });

@@ -1,15 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+/// Interaktivní karta pro zobrazení běžícího (nebo naplánovaného) testu 
+/// ve výpisu třídy (Class Overview). Ukazuje kolik studentů již odevzdalo.
 class ActiveTestCard extends StatelessWidget {
+  /// Název testu.
   final String title;
+  
+  /// Doplňující text (např. čas spuštění).
   final String subtitle;
+  
+  /// Počet studentů, kteří test už úspěšně odevzdali.
   final int submittedCount;
+  
+  /// Celkový počet studentů přihlášených k testu.
   final int totalStudents;
+  
+  /// Akce vyvolaná po kliknutí na kartu.
   final VoidCallback onTap;
+  
+  /// Určuje, zda test zrovna probíhá (`false`) nebo je pouze naplánován na později (`true`).
   final bool isScheduled;
 
-  const ActiveTestCard({super.key, 
+  const ActiveTestCard({
+    super.key,
     required this.title,
     required this.subtitle,
     required this.submittedCount,

@@ -3,9 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../services/api_client.dart';
 
+/// Reprezentuje aktuální stav seznamu bank (skupin) otázek.
 class BankOverviewState {
+  /// Udává, zda právě probíhá síťová komunikace (např. stahování).
   final bool isLoading;
+  
+  /// Chybová hláška v případě selhání HTTP požadavku. Jinak null.
   final String? errorMessage;
+  
+  /// Seznam bank zformátovaný pro okamžité zobrazení v UI.
   final List<Map<String, dynamic>> banks;
 
   BankOverviewState({
@@ -14,6 +20,8 @@ class BankOverviewState {
     this.banks = const [],
   });
 
+  /// Vytvoří kopii aktuálního stavu s možností změnit vybrané hodnoty.
+  /// Pomocí [clearError] lze explicitně smazat chybovou hlášku.
   BankOverviewState copyWith({
     bool? isLoading,
     String? errorMessage,
@@ -28,7 +36,9 @@ class BankOverviewState {
   }
 }
 
+/// Správce stavu (Notifier) řídící operace nad seznamem bank.
 class BankOverviewNotifier extends Notifier<BankOverviewState> {
+  /// Předdefinovaný seznam ikon, ze kterých si uživatel může vybrat.
   final List<IconData> availableIcons = [
     Icons.menu_book_outlined,
     Icons.calculate_outlined,
@@ -42,6 +52,7 @@ class BankOverviewNotifier extends Notifier<BankOverviewState> {
     return BankOverviewState(isLoading: true);
   }
 
+  /// Stáhne seznam všech vytvořených bank z backendu a zpracuje metadata.
   Future<void> fetchBanks() async {
     state = state.copyWith(isLoading: true, clearError: true);
 
@@ -91,6 +102,7 @@ class BankOverviewNotifier extends Notifier<BankOverviewState> {
     }
   }
 
+  /// Vytvoří zbrusu novou banku na backendu a znovunačte seznam.
   Future<void> addBank(String name, String subject, int iconIndex) async {
     state = state.copyWith(isLoading: true, clearError: true);
     
@@ -118,6 +130,9 @@ class BankOverviewNotifier extends Notifier<BankOverviewState> {
     }
   }
 
+  /// Pokusí se smazat banku s daným [bankId]. 
+  /// Vrací [null] v případě úspěchu, jinak řetězec s chybou.
+  /// Specificky vrací 'IN_USE', pokud backend nahlásí konflikt (HTTP 409).
   Future<String?> deleteBank(int bankId) async {
     state = state.copyWith(isLoading: true, clearError: true);
 
@@ -139,6 +154,7 @@ class BankOverviewNotifier extends Notifier<BankOverviewState> {
     }
   }
 
+  /// Aktualizuje údaje u stávající banky na backendu a znovunačte seznam.
   Future<void> updateBank(int bankId, String name, String subject, int iconIndex) async {
     state = state.copyWith(isLoading: true, clearError: true);
 
@@ -164,11 +180,13 @@ class BankOverviewNotifier extends Notifier<BankOverviewState> {
     }
   }
 
+  /// Smaže aktuálně nastavenou chybovou hlášku.
   void clearError() {
     state = state.copyWith(clearError: true);
   }
 }
 
+/// Globálně dostupný provider poskytující přístup ke správci seznamu bank.
 final bankOverviewProvider = NotifierProvider.autoDispose<BankOverviewNotifier, BankOverviewState>(() {
   return BankOverviewNotifier();
 });

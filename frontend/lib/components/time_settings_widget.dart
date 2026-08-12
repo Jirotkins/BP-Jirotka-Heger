@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+/// Komponenta pro nastavení času a dostupnosti nově vytvářeného testu.
+///
+/// Umožňuje zvolit, zda se test spustí "Okamžitě" nebo "Naplánovaně" (s datem
+/// od/do) a jaký je jeho časový limit v minutách. Změny odesílá do parent
+/// widgetu přes callback [onChanged].
 class TimeSettingsWidget extends StatefulWidget {
   final Function(Map<String, dynamic>)? onChanged;
 
@@ -10,6 +15,7 @@ class TimeSettingsWidget extends StatefulWidget {
   State<TimeSettingsWidget> createState() => _TimeSettingsWidgetState();
 }
 
+/// Vnitřní stav uchovávající zvolená data, časy a limit.
 class _TimeSettingsWidgetState extends State<TimeSettingsWidget> {
   // Lokální stav: true = Okamžité, false = Naplánované
   bool _isInstant = true;
@@ -44,7 +50,7 @@ class _TimeSettingsWidgetState extends State<TimeSettingsWidget> {
     }
   }
 
-  // Funkce pro výběr data
+  /// Zobrazí systémový dialog pro výběr data (Start nebo Konec).
   Future<void> _pickDate(BuildContext context, bool isStart) async {
     DateTime initial = isStart ? (_startDate ?? DateTime.now()) : (_endDate ?? _startDate ?? DateTime.now());
     DateTime first = isStart ? DateTime.now() : (_startDate ?? DateTime.now());
@@ -77,7 +83,10 @@ class _TimeSettingsWidgetState extends State<TimeSettingsWidget> {
     }
   }
 
-  // Funkce pro výběr času
+  /// Zobrazí systémový dialog pro výběr času (Start nebo Konec).
+  ///
+  /// Obsahuje i základní validaci – pokud je vybrán stejný den, čas konce
+  /// nesmí být před (nebo roven) času začátku.
   Future<void> _pickTime(BuildContext context, bool isStart) async {
     final picked = await showTimePicker(
       context: context,
@@ -283,7 +292,8 @@ class _TimeSettingsWidgetState extends State<TimeSettingsWidget> {
     );
   }
 
-  // Pomocný widget pro přepínací tlačítka (Ochrana proti overflow)
+  /// Pomocný widget pro přepínací tlačítka "Okamžité" a "Naplánované".
+  /// Zajišťuje vizuální stav výběru a ochranu proti text-overflow na úzkých obrazovkách.
   Widget _buildToggleButton({required String label, required IconData icon, required bool isSelected, required VoidCallback onTap}) {
     return InkWell(
       onTap: onTap,
@@ -323,7 +333,8 @@ class _TimeSettingsWidgetState extends State<TimeSettingsWidget> {
     );
   }
 
-  // Pomocný widget pro pole s datem/časem
+  /// Pomocný widget vykreslující jedno pole pro zadání data nebo času.
+  /// Reaguje na kliknutí zavoláním dialogu přes [onTap].
   Widget _buildTimeBox(String label, String value, IconData icon, bool hasValue, VoidCallback onTap) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

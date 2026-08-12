@@ -1,12 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+/// Komponenta reprezentující interaktivní kartu (tlačítko) v seznamu akcí,
+/// typicky používaná v detailu třídy (Class Manager) pro zobrazení aktivních
+/// či uzavřených testů a proklik na jejich správu.
 class ControlTestCard extends StatelessWidget {
+  /// Hlavní nadpis karty (např. název testu).
   final String title;
+  
+  /// Podtitulek karty (např. termín spuštění nebo statistika odevzdání).
   final String subtitle;
+  
+  /// Akce vyvolaná po kliknutí na celou kartu.
   final VoidCallback onTap;
 
-  const ControlTestCard({super.key, 
+  const ControlTestCard({
+    super.key, 
     required this.title,
     required this.subtitle,
     required this.onTap,

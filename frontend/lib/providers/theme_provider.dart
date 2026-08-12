@@ -5,7 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../utils/web_color_helper.dart';
 import '../main.dart';
 
-// Notifier spravující hodnotu ThemeMode (světlý / tmavý)
+/// Správce stavu pro globální vizuální režim aplikace (Světlý / Tmavý).
+/// 
+/// Automaticky ukládá zvolený režim do paměti zařízení a bezprostředně
+/// reaguje úpravou systémových barev (Android/iOS SystemChrome) nebo webového pozadí.
 class ThemeNotifier extends Notifier<ThemeMode> {
   @override
   ThemeMode build() {
@@ -18,9 +21,11 @@ class ThemeNotifier extends Notifier<ThemeMode> {
     return initialMode;
   }
 
+  /// Vnitřní metoda pro úpravu barev mimo hlavní widget tree.
+  /// 
+  /// 1. Upraví hlavičky a spodní lišty prohlížeče (theme-color) a mobilních OS přes SystemChrome
+  /// Voláme to pouze na nativních platformách, aby se to "nepralo" s naším ručním web helperem!
   void _updateSystemUI(ThemeMode mode) {
-    // 1. Upraví hlavičky a spodní lišty prohlížeče (theme-color) a mobilních OS přes SystemChrome
-    // Voláme to pouze na nativních platformách, aby se to "nepralo" s naším ručním web helperem!
     if (!kIsWeb) {
       SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
         systemNavigationBarColor: mode == ThemeMode.dark ? const Color(0xFF121212) : const Color(0xFFF5F7FA),
@@ -39,6 +44,7 @@ class ThemeNotifier extends Notifier<ThemeMode> {
     }
   }
 
+  /// Přepne aktuální režim ze světlého na tmavý a naopak.
   void toggleTheme() {
     final newMode = state == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
     state = newMode;
@@ -46,12 +52,14 @@ class ThemeNotifier extends Notifier<ThemeMode> {
     _updateSystemUI(newMode);
   }
   
+  /// Fixně nastaví tmavý režim.
   void setDarkTheme() {
     state = ThemeMode.dark;
     ref.read(sharedPrefsProvider).setBool('isDarkTheme', true);
     _updateSystemUI(state);
   }
   
+  /// Fixně nastaví světlý režim.
   void setLightTheme() {
     state = ThemeMode.light;
     ref.read(sharedPrefsProvider).setBool('isDarkTheme', false);
@@ -59,7 +67,7 @@ class ThemeNotifier extends Notifier<ThemeMode> {
   }
 }
 
-// Globální provider pro ThemeMode
+/// Globální provider pro zpřístupnění `ThemeMode` do celé aplikace.
 final themeProvider = NotifierProvider<ThemeNotifier, ThemeMode>(() {
   return ThemeNotifier();
 });

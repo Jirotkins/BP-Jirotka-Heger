@@ -2,19 +2,32 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_client.dart'; 
 
-// Definice možných rolí uživatele
+/// Výčet možných rolí uživatele v systému.
 enum UserRole {
+  /// Nepřihlášený uživatel.
   guest,
+  
+  /// Přihlášený student.
   student,
+  
+  /// Přihlášený učitel.
   teacher,
 }
 
-// Model představující stav přihlášeného uživatele
+/// Model představující stav přihlášeného uživatele a jeho autentizační údaje.
 class AuthState {
+  /// Aktuální role uživatele.
   final UserRole role;
+  /// Udává, zda je uživatel úspěšně přihlášen a ověřen.
   final bool isAuthenticated;
+  
+  /// JWT token pro autorizaci požadavků vůči API.
   final String? token; 
+  
+  /// Zobrazované jméno nebo přihlašovací login.
   final String? username;
+  
+  /// Indikuje, zda se právě ověřuje uložené přihlášení (při startu aplikace).
   final bool isLoading;
   
   const AuthState({
@@ -42,7 +55,8 @@ class AuthState {
   }
 }
 
-// Notifier pro správu stavu přihlášení
+/// Správce stavu přihlášení. Stará se o komunikaci s backend API při loginu,
+/// načítání dříve uloženého stavu ze [SharedPreferences] a bezpečné odhlášení.
 class AuthNotifier extends Notifier<AuthState> {
   static const _tokenKey = 'jwt_token';
   static const _roleKey = 'user_role';
@@ -76,7 +90,10 @@ class AuthNotifier extends Notifier<AuthState> {
     }
   }
 
-  // Asynchronní metoda pro přihlášení, komunikuje s Python API
+  /// Asynchronní metoda pro přihlášení komunikující s Python API.
+  /// 
+  /// V případě úspěchu uloží token a roli do lokální paměti, aktualizuje stav.
+  /// V případě neúspěchu propustí vyhozenou výjimku.
   Future<void> login(String username, String password, bool isStudent) async {
     // Vytvoříme instanci klienta bez tokenu (protože ho ještě nemáme)
     final apiClient = ApiClient();
@@ -114,7 +131,7 @@ class AuthNotifier extends Notifier<AuthState> {
     }
   }
 
-  // Metoda pro odhlášení
+  /// Bezpečně odhlásí uživatele vymazáním lokálně uložených tokenů a resetem stavu.
   Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_tokenKey);
@@ -124,7 +141,7 @@ class AuthNotifier extends Notifier<AuthState> {
   }
 }
 
-// Globální provider
+/// Globální singleton provider pro autentizaci přístupný napříč aplikací.
 final authProvider = NotifierProvider<AuthNotifier, AuthState>(() {
   return AuthNotifier();
 });

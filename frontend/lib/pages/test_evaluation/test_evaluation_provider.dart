@@ -2,14 +2,29 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../services/api_client.dart';
 import 'package:intl/intl.dart';
 
+/// Stav reprezentující veškerá data a vstupy pro prohlížení a vyhodnocování testů.
 class TestEvaluationState {
+  /// Určuje, zda právě probíhá prvotní načítání.
   final bool isLoading;
+  /// Chybová hláška pro zobrazení uživateli.
   final String? errorMessage;
+  
+  /// Parsovaná data testu do jednotného formátu pro zobrazení v UI.
   final Map<String, dynamic> testData;
+  
+  /// Slovník zpětných vazeb od učitele (klíč = ID otázky).
   final Map<String, String> teacherFeedbacks;
+  
+  /// Slovník přidělených bodů od učitele (klíč = ID otázky).
   final Map<String, String> awardedPoints;
+  
+  /// Množina otázek, které jsou manuálně rozevřeny pro detaily.
   final Set<String> expandedQuestions;
+  
+  /// Určuje, zda právě probíhá odesílání finálního hodnocení.
   final bool isSubmitting;
+  
+  /// Flag pro úspěšné odeslání (trigger pro notifikaci v UI).
   final bool submitSuccess;
 
   TestEvaluationState({
@@ -46,6 +61,7 @@ class TestEvaluationState {
     );
   }
 
+  /// Průběžně počítá celkové přidělené skóre ze všech (i manuálně hodnocených) otázek.
   double get currentTotalScore {
     if (testData.isEmpty || testData['questions'] == null) return 0.0;
     
@@ -64,6 +80,8 @@ class TestEvaluationState {
   }
 }
 
+/// Správce stavu `TestEvaluationState`. Zajišťuje stahování syrových odpovědí z backendu, 
+/// jejich pročištění a spárování s metadaty otázek a finální odeslání ohodnoceného testu.
 class TestEvaluationNotifier extends Notifier<TestEvaluationState> {
   int? _assignmentId;
   int? _attemptId;
@@ -75,6 +93,7 @@ class TestEvaluationNotifier extends Notifier<TestEvaluationState> {
     return TestEvaluationState();
   }
 
+  /// Hlavní vstupní bod pro stažení testu a jeho odpovědí na základě pokusu (attempt).
   Future<void> fetchEvaluationData(int? assignmentId, int? attemptId, {bool isStudent = false}) async {
     _assignmentId = assignmentId;
     _attemptId = attemptId;
@@ -102,6 +121,8 @@ class TestEvaluationNotifier extends Notifier<TestEvaluationState> {
     }
   }
 
+  /// Jádro modulu: Parsuje odpovědi studenta a definice otázek do sjednoceného
+  /// objektu (UI modelu), který může `TestEvaluationPage` snadno vykreslit.
   void _initializeStateFromData(Map<String, dynamic> data) {
     Map<String, String> feedbacks = {};
     Map<String, String> points = {};
@@ -226,6 +247,8 @@ class TestEvaluationNotifier extends Notifier<TestEvaluationState> {
     );
   }
 
+  /// Pomocná funkce pro dohledání textové hodnoty k odpovědi podle jejího ID, 
+  /// pokud je k dispozici v metadatech.
   String _getAnswerText(Map<String, dynamic> snap, dynamic id) {
     if (snap['answers'] != null) {
       for (var a in snap['answers']) {
@@ -237,6 +260,7 @@ class TestEvaluationNotifier extends Notifier<TestEvaluationState> {
     return id.toString();
   }
 
+  /// Rozbalí / Sbalí panel se zobrazením detailu hodnocení otázky.
   void toggleExpanded(String questionId) {
     final newExpanded = Set<String>.from(state.expandedQuestions);
     if (newExpanded.contains(questionId)) {
@@ -247,12 +271,14 @@ class TestEvaluationNotifier extends Notifier<TestEvaluationState> {
     state = state.copyWith(expandedQuestions: newExpanded);
   }
 
+  /// Uloží lokálně slovní hodnocení učitele k dané otázce.
   void updateFeedback(String questionId, String feedback) {
     final newFeedbacks = Map<String, String>.from(state.teacherFeedbacks);
     newFeedbacks[questionId] = feedback;
     state = state.copyWith(teacherFeedbacks: newFeedbacks);
   }
 
+  /// Uloží lokálně počet přidělených bodů učitelem k dané otázce.
   void updatePoints(String questionId, String pointsStr) {
     final newPoints = Map<String, String>.from(state.awardedPoints);
     newPoints[questionId] = pointsStr;
@@ -263,6 +289,8 @@ class TestEvaluationNotifier extends Notifier<TestEvaluationState> {
     state = state.copyWith(clearError: true);
   }
 
+  /// Poskládá manuálně zadaná data od učitele (body a poznámky) zpět do struktury
+  /// očekávané backendem a odešle je k finálnímu uzavření a oznámkování pokusu.
   Future<void> submitEvaluation() async {
     state = state.copyWith(isSubmitting: true, clearError: true);
     
@@ -314,6 +342,7 @@ class TestEvaluationNotifier extends Notifier<TestEvaluationState> {
   }
 }
 
+/// Provider spravující TestEvaluationNotifier. (autoDispose uvolní stav při opuštění).
 final testEvaluationProvider = NotifierProvider.autoDispose<TestEvaluationNotifier, TestEvaluationState>(() {
   return TestEvaluationNotifier();
 });

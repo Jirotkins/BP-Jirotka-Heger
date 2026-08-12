@@ -10,6 +10,12 @@ import '../../components/page_header_widget.dart';
 import '../../components/add_new_students_popup_widget.dart';
 import '../../components/student_row_widget.dart';
 
+/// Hlavní stránka pro správu konkrétní třídy (Class Manager).
+/// 
+/// Zobrazuje rozbalitelný seznam studentů patřících do třídy,
+/// a také přehled všech testů (aktivní, naplánované a ukončené ke kontrole).
+/// Umožňuje přidávání nových studentů, spouštění naplánovaných testů
+/// a navigaci do editoru testů nebo vyhodnocení.
 class ClassManagerPage extends ConsumerStatefulWidget {
   const ClassManagerPage({super.key});
 
@@ -17,6 +23,7 @@ class ClassManagerPage extends ConsumerStatefulWidget {
   ConsumerState<ClassManagerPage> createState() => _ClassManagerPageState();
 }
 
+/// Stav stránky správy třídy řídící načítání dat podle ID z url (go_router extra parametrů).
 class _ClassManagerPageState extends ConsumerState<ClassManagerPage> {
   int? _lastGroupId;
 
@@ -128,6 +135,7 @@ class _ClassManagerPageState extends ConsumerState<ClassManagerPage> {
     );
   }
 
+  /// Pomocná metoda pro formátování ISO data do čitelné podoby.
   String _formatDate(String? isoDate) {
     if (isoDate == null) return 'Neurčito';
     try {
@@ -138,6 +146,7 @@ class _ClassManagerPageState extends ConsumerState<ClassManagerPage> {
     }
   }
 
+  /// Zobrazí potvrzovací dialog před manuální aktivací (spuštěním) naplánovaného testu.
   void _showActivateDialog(int assignmentId, ClassManagerNotifier notifier) {
     showDialog(
       context: context,
@@ -167,6 +176,7 @@ class _ClassManagerPageState extends ConsumerState<ClassManagerPage> {
     );
   }
 
+  /// Zobrazí dialogové okno pro potvrzení a následně odebere studenta ze třídy.
   Future<void> _removeStudent(int studentId, String studentEmail, ClassManagerNotifier notifier) async {
     final bool? confirm = await showDialog<bool>(
       context: context,
@@ -192,6 +202,7 @@ class _ClassManagerPageState extends ConsumerState<ClassManagerPage> {
     }
   }
 
+  /// Sestaví hlavní tělo obsahu – rozbalovací seznam studentů a sekce s kartami testů.
   Widget _buildContent(ClassManagerState state, ClassManagerNotifier notifier) {
     final activeTests = (state.overviewData?['active'] as List?) ?? [];
     final upcomingTests = (state.overviewData?['upcoming'] as List?) ?? [];
@@ -202,7 +213,7 @@ class _ClassManagerPageState extends ConsumerState<ClassManagerPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ROZBALOVACÍ PANEL STUDENTŮ
+          // SEZNAM STUDENTŮ (ExpansionTile)
           Container(
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.surface,
@@ -341,6 +352,7 @@ class _ClassManagerPageState extends ConsumerState<ClassManagerPage> {
     );
   }
 
+  /// Pomocná metoda pro vykreslení hlavičky jednotlivé sekce testů (Aktivní, Ke kontrole...).
   Widget _buildSectionHeader(BuildContext context, String title, Color badgeColor, String count) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,

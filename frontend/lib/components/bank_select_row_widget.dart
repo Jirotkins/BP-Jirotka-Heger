@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
 
+/// Komponenta pro jeden řádek výběru banky ze seznamu. 
+/// Využívá se typicky v modálním okně nebo formuláři při tvorbě nového testu.
 class BankSelectRowWidget extends StatefulWidget {
+  /// Název banky otázek.
   final String bank;
+  
+  /// Ikona banky.
   final Widget icon;
+  
+  /// Počet otázek v bance.
   final int questions;
 
   const BankSelectRowWidget({
@@ -17,7 +24,7 @@ class BankSelectRowWidget extends StatefulWidget {
 }
 
 class _BankSelectRowWidgetState extends State<BankSelectRowWidget> {
-  // Lokální stav pro výběr banky
+  /// Lokální stav určující, zda je tento řádek s bankou aktuálně zakliknutý/vybraný.
   bool _isSelected = false;
 
   @override
