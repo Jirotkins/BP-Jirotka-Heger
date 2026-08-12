@@ -4,9 +4,13 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../components/page_header_widget.dart';
 import '../../components/image_upload_widget.dart';
+import '../../components/student_preview_dialog.dart';
 import '../../services/api_client.dart';
 import '../questions_overview/questions_overview_provider.dart';
 
+/// Editor pro vytvoření otázky s krátkou odpovědí.
+/// Učitel zde definuje jednu nebo více přesných textových variant, 
+/// které systém následně u studenta automaticky vyhodnotí jako správné.
 class ShortAnswerQuestionPage extends ConsumerStatefulWidget {
   const ShortAnswerQuestionPage({super.key});
 
@@ -130,87 +134,35 @@ class _ShortAnswerQuestionPageState extends ConsumerState<ShortAnswerQuestionPag
     }
   }
 
-  // --- FUNKCE PRO ZOBRAZENÍ NÁHLEDU STUDENTA ---
+  /// Zobrazí modální okno simulující pohled studenta na mobilním zařízení.
+  /// Využívá komponentu [StudentPreviewDialog].
   void _showStudentPreview() {
     showDialog(
       context: context,
       builder: (context) {
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          child: Center(
-            child: Container(
-              // Rozměry mobilního telefonu
-              width: 375.0,
-              height: 700.0,
-              decoration: BoxDecoration(
-                color: Theme.of(context).scaffoldBackgroundColor, // Pozadí studentské aplikace
-                borderRadius: BorderRadius.circular(36.0),
-                border: Border.all(color: Theme.of(context).colorScheme.onSurface, width: 10.0), // Rámeček mobilu
-                boxShadow: [
-                  BoxShadow(color: Theme.of(context).shadowColor.withValues(alpha: 0.1), blurRadius: 20.0, offset: const Offset(0, 10))
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(26.0), // Vnitřní zaoblení displeje
-                child: Scaffold(
-                  backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-                  appBar: AppBar(
-                    backgroundColor: Theme.of(context).colorScheme.surface,
-                    elevation: 0,
-                    centerTitle: true,
-                    title: Text('Ukázka testu', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurface, fontSize: 16, fontWeight: FontWeight.bold)),
-                    automaticallyImplyLeading: false, // Skryje šipku zpět
-                    actions: [
-                      IconButton(
-                        icon: Icon(Icons.close, color: Theme.of(context).colorScheme.onSurface),
-                        onPressed: () => Navigator.pop(context),
-                      )
-                    ],
-                  ),
-                  body: Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // Dynamicky zobrazený text zadaný učitelem
-                        Text(
-                          _questionTextController.text.isEmpty 
-                              ? '[Zde bude znění otázky...]' 
-                              : _questionTextController.text,
-                          style: GoogleFonts.inter(fontSize: 18.0, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface),
-                        ),
-                        const SizedBox(height: 32.0),
-                        
-                        // Simulace políčka, do kterého bude psát student
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.surface,
-                            borderRadius: BorderRadius.circular(12.0),
-                            border: Border.all(color: Theme.of(context).colorScheme.outline),
-                          ),
-                          child: Text('Tvoje odpověď...', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary)),
-                        ),
-                        
-                        const Spacer(),
-
-                        // Falešné tlačítko pro odevzdání
-                        ElevatedButton(
-                          onPressed: () {},
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Theme.of(context).colorScheme.primary,
-                            minimumSize: const Size(double.infinity, 48.0),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.0)),
-                          ),
-                          child: Text('Další otázka', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.bold)),
-                        )
-                      ],
-                    ),
+        return StudentPreviewDialog(
+          questionText: _questionTextController.text,
+          imageBase64: _imageBase64,
+          subtitle: 'Napište krátkou odpověď:',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius: BorderRadius.circular(12.0),
+                  border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+                ),
+                child: Text(
+                  'Vaše odpověď...', 
+                  style: GoogleFonts.inter(
+                    color: Theme.of(context).colorScheme.secondary,
+                    fontSize: 14,
                   ),
                 ),
               ),
-            ),
+            ],
           ),
         );
       },

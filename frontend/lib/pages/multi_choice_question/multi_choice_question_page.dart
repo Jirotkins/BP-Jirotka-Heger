@@ -4,9 +4,13 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../components/page_header_widget.dart';
 import '../../components/image_upload_widget.dart';
+import '../../components/student_preview_dialog.dart';
 import '../../services/api_client.dart';
 import '../questions_overview/questions_overview_provider.dart';
 
+/// Editor otázky typu "Výběr z možností" (Multi-choice / Single-choice).
+/// Umožňuje definovat znění otázky, přidat nepovinný obrázek a určit seznam
+/// textových možností. Jednu nebo více možností lze označit jako správnou.
 class MultiChoiceQuestionPage extends ConsumerStatefulWidget {
   const MultiChoiceQuestionPage({super.key});
 
@@ -165,9 +169,9 @@ class _MultiChoiceQuestionPageState extends ConsumerState<MultiChoiceQuestionPag
     }
   }
 
-  // --- FUNKCE PRO ZOBRAZENÍ NÁHLEDU STUDENTA ---
+  /// Zobrazí modální okno simulující pohled studenta na mobilním zařízení.
+  /// Využívá komponentu [StudentPreviewDialog].
   void _showStudentPreview() {
-    // Pro ukázku si vytáhneme texty, aby byl náhled co nejreálnější
     List<String> studentOptions = _options
         .map((opt) => (opt['controller'] as TextEditingController).text.isEmpty 
             ? 'Prázdná varianta' 
@@ -177,108 +181,79 @@ class _MultiChoiceQuestionPageState extends ConsumerState<MultiChoiceQuestionPag
     showDialog(
       context: context,
       builder: (context) {
-        // StatefulBuilder, aby šlo v náhledu i reálně klikat na checkboxy
         return StatefulBuilder(
           builder: (context, setDialogState) {
-            // Lokální stav jen pro tento náhled 
             List<bool> studentChecked = List.generate(studentOptions.length, (index) => false);
 
-            return Dialog(
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              child: Center(
-                child: Container(
-                  width: 375.0,
-                  height: 700.0,
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).scaffoldBackgroundColor, 
-                    borderRadius: BorderRadius.circular(36.0),
-                    border: Border.all(color: Theme.of(context).colorScheme.onSurface, width: 10.0), 
-                    boxShadow: [BoxShadow(color: Theme.of(context).shadowColor.withValues(alpha: 0.1), blurRadius: 20.0, offset: const Offset(0, 10))],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(26.0),
-                    child: Scaffold(
-                      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-                      appBar: AppBar(
-                        backgroundColor: Theme.of(context).colorScheme.surface,
-                        elevation: 0,
-                        centerTitle: true,
-                        title: Text('Ukázka testu', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurface, fontSize: 16, fontWeight: FontWeight.bold)),
-                        automaticallyImplyLeading: false,
-                        actions: [
-                          IconButton(icon: Icon(Icons.close, color: Theme.of(context).colorScheme.onSurface), onPressed: () => Navigator.pop(context))
-                        ],
-                      ),
-                      body: Padding(
-                        padding: const EdgeInsets.all(24.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Text(
-                              _questionTextController.text.isEmpty ? '[Zde bude znění otázky...]' : _questionTextController.text,
-                              style: GoogleFonts.inter(fontSize: 18.0, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface),
-                            ),
-                            const SizedBox(height: 24.0),
-                            
-                            // Simulace seznamu možností
-                            Expanded(
-                              child: ListView.separated(
-                                itemCount: studentOptions.length,
-                                separatorBuilder: (_, _) => const SizedBox(height: 12),
-                                itemBuilder: (context, index) {
-                                  bool isChecked = studentChecked[index];
-                                  return InkWell(
-                                    onTap: () {
-                                      setDialogState(() {
-                                        studentChecked[index] = !studentChecked[index];
-                                      });
-                                    },
-                                    borderRadius: BorderRadius.circular(12.0),
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
-                                      decoration: BoxDecoration(
-                                        color: isChecked ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.1) : Theme.of(context).colorScheme.surface,
-                                        borderRadius: BorderRadius.circular(12.0),
-                                        border: Border.all(color: isChecked ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.outline, width: isChecked ? 2.0 : 1.0),
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          Icon(
-                                            isChecked ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
-                                            color: isChecked ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.secondary,
-                                          ),
-                                          const SizedBox(width: 12),
-                                          Expanded(
-                                            child: Text(
-                                              studentOptions[index], 
-                                              style: GoogleFonts.inter(fontWeight: isChecked ? FontWeight.w600 : FontWeight.w500, color: Theme.of(context).colorScheme.onSurface)
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-
-                            // Falešné tlačítko
-                            ElevatedButton(
-                              onPressed: () {},
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF0056D2),
-                                minimumSize: const Size(double.infinity, 48.0),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.0)),
-                              ),
-                              child: Text('Další otázka', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold)),
-                            )
-                          ],
+            return StudentPreviewDialog(
+              questionText: _questionTextController.text,
+              imageBase64: _imageBase64,
+              subtitle: 'Vyberte jednu správnou odpověď:',
+              child: ListView.separated(
+                itemCount: studentOptions.length,
+                separatorBuilder: (_, _) => const SizedBox(height: 12),
+                itemBuilder: (context, index) {
+                  bool isChecked = studentChecked[index];
+                  return InkWell(
+                    onTap: () {
+                      setDialogState(() {
+                        studentChecked[index] = !studentChecked[index];
+                      });
+                    },
+                    borderRadius: BorderRadius.circular(12.0),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+                      decoration: BoxDecoration(
+                        color: isChecked 
+                          ? Theme.of(context).colorScheme.primaryContainer 
+                          : Theme.of(context).colorScheme.surface,
+                        borderRadius: BorderRadius.circular(12.0),
+                        border: Border.all(
+                          color: isChecked 
+                            ? Theme.of(context).colorScheme.primary 
+                            : Theme.of(context).colorScheme.outlineVariant, 
+                          width: isChecked ? 2.0 : 1.0,
                         ),
                       ),
+                      child: Row(
+                        children: [
+                          // Písmeno možnosti (A, B, C, D...)
+                          SizedBox(
+                            width: 24,
+                            child: Text(
+                              String.fromCharCode(65 + index),
+                              style: GoogleFonts.inter(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                                color: isChecked ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurface,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          
+                          // Text možnosti
+                          Expanded(
+                            child: Text(
+                              studentOptions[index], 
+                              style: GoogleFonts.inter(
+                                fontWeight: isChecked ? FontWeight.w600 : FontWeight.w500, 
+                                color: Theme.of(context).colorScheme.onSurface,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          
+                          // Radio button
+                          Icon(
+                            isChecked ? Icons.radio_button_checked : Icons.radio_button_off,
+                            color: isChecked ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.outlineVariant,
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ),
+                  );
+                },
               ),
             );
           }

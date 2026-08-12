@@ -4,10 +4,13 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../components/page_header_widget.dart';
 import '../../components/image_upload_widget.dart';
+import '../../components/student_preview_dialog.dart';
 import '../../services/api_client.dart';
-import '../../theme/app_themes.dart';
 import '../questions_overview/questions_overview_provider.dart';
 
+/// Editor pro vytvoření otázky typu "Párování" (Matching/Connect).
+/// Učitel zde zadá logické dvojice (Pojem -> Definice).
+/// Při spuštění testu se studentovi pravý sloupec zamíchá a on musí hodnoty správně propojit.
 class ConnectQuestionPage extends ConsumerStatefulWidget {
   const ConnectQuestionPage({super.key});
 
@@ -172,13 +175,13 @@ class _ConnectQuestionPageState extends ConsumerState<ConnectQuestionPage> {
     }
   }
 
-  // --- FUNKCE PRO ZOBRAZENÍ NÁHLEDU STUDENTA ---
+  /// Zobrazí modální okno simulující pohled studenta na mobilním zařízení.
+  /// Využívá komponentu [StudentPreviewDialog].
   void _showStudentPreview() {
-    // Vytáhneme hodnoty z kontrolerů pro zobrazení
     List<String> leftItems = _pairControllers.map((p) => p['left']!.text.isEmpty ? 'Pojem' : p['left']!.text).toList();
     List<String> rightItems = _pairControllers.map((p) => p['right']!.text.isEmpty ? 'Definice' : p['right']!.text).toList();
     
-    // Pro ukázku "zamícháme" pravý sloupec (v praxi se to udělá reálně, tady to posuneme o 1)
+    // Pro ukázku posuneme pravý sloupec
     if (rightItems.length > 1) {
       String first = rightItems.removeAt(0);
       rightItems.add(first);
@@ -187,102 +190,55 @@ class _ConnectQuestionPageState extends ConsumerState<ConnectQuestionPage> {
     showDialog(
       context: context,
       builder: (context) {
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          child: Center(
-            child: Container(
-              width: 375.0,
-              height: 700.0,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF5F7FA), 
-                borderRadius: BorderRadius.circular(36.0),
-                border: Border.all(color: const Color(0xFF111827), width: 10.0), 
-                boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 20.0, offset: Offset(0, 10))],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(26.0),
-                child: Scaffold(
-                  backgroundColor: const Color(0xFFF5F7FA),
-                  appBar: AppBar(
-                    backgroundColor: Colors.white,
-                    elevation: 0,
-                    centerTitle: true,
-                    title: Text('Ukázka testu', style: GoogleFonts.inter(color: Colors.black87, fontSize: 16, fontWeight: FontWeight.bold)),
-                    automaticallyImplyLeading: false,
-                    actions: [
-                      IconButton(icon: const Icon(Icons.close, color: Colors.black87), onPressed: () => Navigator.pop(context))
-                    ],
+        return StudentPreviewDialog(
+          questionText: _questionTextController.text,
+          imageBase64: _imageBase64,
+          subtitle: 'Přiřaďte správný pojem ke každé položce:',
+          child: ListView.separated(
+            itemCount: leftItems.length,
+            separatorBuilder: (_, _) => const SizedBox(height: 24),
+            itemBuilder: (context, index) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    leftItems[index],
+                    style: GoogleFonts.inter(
+                      fontWeight: FontWeight.w700,
+                      color: Theme.of(context).colorScheme.onSurface,
+                      fontSize: 14,
+                    ),
                   ),
-                  body: Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface,
+                      borderRadius: BorderRadius.circular(12.0),
+                      border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          _questionTextController.text.isEmpty ? '[Zde bude znění otázky...]' : _questionTextController.text,
-                          style: GoogleFonts.inter(fontSize: 18.0, fontWeight: FontWeight.w600, color: const Color(0xFF111827)),
-                        ),
-                        const SizedBox(height: 24.0),
-                        
-                        // Simulace dvou sloupců pro studenta
                         Expanded(
-                          child: Row(
-                            children: [
-                              // Levý sloupec
-                              Expanded(
-                                child: ListView.separated(
-                                  itemCount: leftItems.length,
-                                  separatorBuilder: (_, _) => const SizedBox(height: 12),
-                                  itemBuilder: (context, index) => _buildPreviewCard(leftItems[index], const Color(0xFFF5F3FF), const Color(0xFF7C3AED)),
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              // Pravý sloupec (Zamíchaný)
-                              Expanded(
-                                child: ListView.separated(
-                                  itemCount: rightItems.length,
-                                  separatorBuilder: (_, _) => const SizedBox(height: 12),
-                                  itemBuilder: (context, index) => _buildPreviewCard(rightItems[index], Colors.white, const Color(0xFFE5E7EB)),
-                                ),
-                              ),
-                            ],
+                          child: Text(
+                            rightItems[index], 
+                            style: GoogleFonts.inter(
+                              color: Theme.of(context).colorScheme.onSurface,
+                              fontSize: 14,
+                            ),
                           ),
                         ),
-
-                        // Falešné tlačítko
-                        ElevatedButton(
-                          onPressed: () {},
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF0056D2),
-                            minimumSize: const Size(double.infinity, 48.0),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.0)),
-                          ),
-                          child: Text('Další otázka', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold)),
-                        )
+                        Icon(Icons.arrow_drop_down, color: Theme.of(context).colorScheme.onSurface),
                       ],
                     ),
                   ),
-                ),
-              ),
-            ),
+                ],
+              );
+            },
           ),
         );
       },
-    );
-  }
-
-  Widget _buildPreviewCard(String text, Color bgColor, Color borderColor) {
-    return Container(
-      padding: const EdgeInsets.all(12.0),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(12.0),
-        border: Border.all(color: borderColor),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 4, offset: const Offset(0, 2))]
-      ),
-      alignment: Alignment.center,
-      child: Text(text, textAlign: TextAlign.center, style: GoogleFonts.inter(fontWeight: FontWeight.w500, color: const Color(0xFF111827), fontSize: 13)),
     );
   }
 
@@ -355,11 +311,12 @@ class _ConnectQuestionPageState extends ConsumerState<ConnectQuestionPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   
+                  // ŠTÍTEK TYPU OTÁZKY
                   Text('TYP OTÁZKY', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, letterSpacing: 1.2, fontSize: 12, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8.0),
                   Container(
                     decoration: BoxDecoration(
-                      color: Theme.of(context).extension<CustomColors>()?.purpleBg ?? Theme.of(context).colorScheme.primaryContainer, 
+                      color: const Color(0xFFF3E5F5), // Světle fialová
                       borderRadius: BorderRadius.circular(20.0),
                       border: Border.all(color: Theme.of(context).colorScheme.outline, width: 1.0),
                     ),
@@ -367,9 +324,9 @@ class _ConnectQuestionPageState extends ConsumerState<ConnectQuestionPage> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.compare_arrows_rounded, color: Theme.of(context).extension<CustomColors>()?.purpleText ?? Theme.of(context).colorScheme.primary, size: 16),
+                        const Icon(Icons.compare_arrows_rounded, color: Color(0xFF7B1FA2), size: 16),
                         const SizedBox(width: 8),
-                        Text('Párování', style: GoogleFonts.inter(color: Theme.of(context).extension<CustomColors>()?.purpleText ?? Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w600, fontSize: 13)),
+                        Text('Párování', style: GoogleFonts.inter(color: const Color(0xFF7B1FA2), fontWeight: FontWeight.w600, fontSize: 13)),
                       ],
                     ),
                   ),

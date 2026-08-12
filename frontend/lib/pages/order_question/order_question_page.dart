@@ -4,10 +4,13 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../components/page_header_widget.dart';
 import '../../components/image_upload_widget.dart';
+import '../../components/student_preview_dialog.dart';
 import '../../services/api_client.dart';
-import '../../theme/app_themes.dart';
 import '../questions_overview/questions_overview_provider.dart';
 
+/// Editor pro vytvoření otázky typu "Seřazení" (Ordering).
+/// Učitel zde zadá položky v přesném chronologickém (nebo jiném) pořadí.
+/// Studentovi se při testu tyto položky zamíchají a jeho úkolem je seřadit je správně.
 class OrderQuestionPage extends ConsumerStatefulWidget {
   const OrderQuestionPage({super.key});
 
@@ -154,9 +157,9 @@ class _OrderQuestionPageState extends ConsumerState<OrderQuestionPage> {
     }
   }
 
-  // --- FUNKCE PRO ZOBRAZENÍ NÁHLEDU STUDENTA ---
+  /// Zobrazí modální okno simulující pohled studenta na mobilním zařízení.
+  /// Využívá komponentu [StudentPreviewDialog].
   void _showStudentPreview() {
-    // Vytvoří simulovaný seznam pro studenta 
     List<String> mockStudentItems = _optionControllers
         .map((c) => c.text.isEmpty ? 'Prázdná položka' : c.text)
         .toList();
@@ -164,90 +167,37 @@ class _OrderQuestionPageState extends ConsumerState<OrderQuestionPage> {
     showDialog(
       context: context,
       builder: (context) {
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          child: Center(
-            child: Container(
-              width: 375.0,
-              height: 700.0,
-              decoration: BoxDecoration(
-                color: Theme.of(context).scaffoldBackgroundColor, 
-                borderRadius: BorderRadius.circular(36.0),
-                border: Border.all(color: Theme.of(context).colorScheme.onSurface, width: 10.0), 
-                boxShadow: [BoxShadow(color: Theme.of(context).shadowColor.withValues(alpha: 0.1), blurRadius: 20.0, offset: const Offset(0, 10))],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(26.0),
-                child: Scaffold(
-                  backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-                  appBar: AppBar(
-                    backgroundColor: Theme.of(context).colorScheme.surface,
-                    elevation: 0,
-                    centerTitle: true,
-                    title: Text('Ukázka testu', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurface, fontSize: 16, fontWeight: FontWeight.bold)),
-                    automaticallyImplyLeading: false,
-                    actions: [
-                      IconButton(icon: Icon(Icons.close, color: Theme.of(context).colorScheme.onSurface), onPressed: () => Navigator.pop(context))
-                    ],
-                  ),
-                  body: Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Text(
-                          _questionTextController.text.isEmpty ? '[Zde bude znění otázky...]' : _questionTextController.text,
-                          style: GoogleFonts.inter(fontSize: 18.0, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface),
-                        ),
-                        const SizedBox(height: 24.0),
-                        
-                        // Simulace Drag & Drop kartiček pro studenta
-                        Expanded(
-                          child: ListView.separated(
-                            itemCount: mockStudentItems.length,
-                            separatorBuilder: (_, _) => const SizedBox(height: 12),
-                            itemBuilder: (context, index) {
-                              return Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.surface,
-                                  borderRadius: BorderRadius.circular(12.0),
-                                  border: Border.all(color: Theme.of(context).colorScheme.outline),
-                                  boxShadow: [
-                                    BoxShadow(color: Theme.of(context).shadowColor.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2))
-                                  ]
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.drag_indicator_rounded, color: Theme.of(context).colorScheme.secondary),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Text(mockStudentItems[index], style: GoogleFonts.inter(fontWeight: FontWeight.w500, color: Theme.of(context).colorScheme.onSurface)),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-
-                        // Falešné tlačítko
-                        ElevatedButton(
-                          onPressed: () {},
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF0056D2),
-                            minimumSize: const Size(double.infinity, 48.0),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.0)),
-                          ),
-                          child: Text('Další otázka', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold)),
-                        )
-                      ],
-                    ),
-                  ),
+        return StudentPreviewDialog(
+          questionText: _questionTextController.text,
+          imageBase64: _imageBase64,
+          subtitle: 'Seřaďte položky (podržte a přetáhněte):',
+          child: ListView.separated(
+            itemCount: mockStudentItems.length,
+            separatorBuilder: (_, _) => const SizedBox(height: 12),
+            itemBuilder: (context, index) {
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius: BorderRadius.circular(12.0),
+                  border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
                 ),
-              ),
-            ),
+                child: Row(
+                  children: [
+                    Icon(Icons.drag_indicator_rounded, color: Theme.of(context).colorScheme.outlineVariant),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Text(
+                        mockStudentItems[index], 
+                        style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Icon(Icons.drag_handle_rounded, color: Theme.of(context).colorScheme.onSurface),
+                  ],
+                ),
+              );
+            },
           ),
         );
       },
@@ -321,11 +271,12 @@ class _OrderQuestionPageState extends ConsumerState<OrderQuestionPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   
+                  // ŠTÍTEK TYPU OTÁZKY
                   Text('TYP OTÁZKY', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, letterSpacing: 1.2, fontSize: 12, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8.0),
                   Container(
                     decoration: BoxDecoration(
-                      color: Theme.of(context).extension<CustomColors>()?.orangeBg ?? Theme.of(context).colorScheme.primaryContainer, 
+                      color: const Color(0xFFFFF3E0), // Světle oranžová
                       borderRadius: BorderRadius.circular(20.0),
                       border: Border.all(color: Theme.of(context).colorScheme.outline, width: 1.0),
                     ),
@@ -333,9 +284,9 @@ class _OrderQuestionPageState extends ConsumerState<OrderQuestionPage> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.drag_indicator_rounded, color: Theme.of(context).extension<CustomColors>()?.orangeText ?? Theme.of(context).colorScheme.primary, size: 16),
+                        const Icon(Icons.drag_indicator_rounded, color: Color(0xFFE65100), size: 16),
                         const SizedBox(width: 8),
-                        Text('Seřazení', style: GoogleFonts.inter(color: Theme.of(context).extension<CustomColors>()?.orangeText ?? Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w600, fontSize: 13)),
+                        Text('Seřazení', style: GoogleFonts.inter(color: const Color(0xFFE65100), fontWeight: FontWeight.w600, fontSize: 13)),
                       ],
                     ),
                   ),
