@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+/// Varovný dialog, který se zobrazí před konečným odevzdáním testu.
+/// 
+/// Informuje studenta o tom, kolik otázek zodpověděl z celkového počtu.
+/// Pokud student nevyplnil všechny otázky, dialog se zbarví varovně (do oranžova)
+/// a odrazuje od odevzdání.
 class TestSubmitPopupWidget extends StatelessWidget {
   final int answeredQuestions;
   final int totalQuestions;

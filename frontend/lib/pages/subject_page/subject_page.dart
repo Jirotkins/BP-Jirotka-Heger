@@ -6,8 +6,12 @@ import '../../theme/app_themes.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../student_overview/student_overview_provider.dart';
 
-// Stránka s detailem konkrétního předmětu (např. Matematika).
-// Zobrazuje statistiky, právě probíhající test, budoucí termíny a historii.
+/// Stránka s detailem konkrétního předmětu z pohledu studenta.
+/// 
+/// Zobrazuje rozdělení testů pro daný předmět do tří kategorií:
+/// 1. Právě probíhající (aktivní) testy
+/// 2. Nadcházející testy (ještě nezačaly)
+/// 3. Historie testů (odevzdané nebo ohodnocené)
 class SubjectPage extends ConsumerStatefulWidget {
   const SubjectPage({super.key});
 
@@ -270,7 +274,8 @@ class _SubjectPageState extends ConsumerState<SubjectPage> {
   // POMOCNÉ WIDGETY
   // ============================================================================
 
-  // Společný widget pro nadpisy sekcí (volitelně s kulatým odznáčkem počtu)
+  /// Společný widget pro nadpisy sekcí (např. "Nadcházející testy").
+  /// Volitelně může zobrazit i bublinu s počtem položek.
   Widget _buildSectionHeader(String title, int? count, Color? countColor) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -286,7 +291,9 @@ class _SubjectPageState extends ConsumerState<SubjectPage> {
     );
   }
 
-  // Karta reprezentující jeden nadcházející test.
+  /// Karta reprezentující jeden nadcházející (nebo dostupný, ale nespustěný) test.
+  /// 
+  /// Pokud čas testu ještě nenastal (isScheduledFuture), nedovolí do něj vstoupit.
   Widget _buildUpcomingTestCard(Map<String, dynamic> test) {
     bool isScheduledFuture = test['isScheduledFuture'] == true;
 
@@ -327,7 +334,11 @@ class _SubjectPageState extends ConsumerState<SubjectPage> {
     );
   }
 
-  // Karta reprezentující historický test. Může mít oranžové skóre při horším výsledku.
+  /// Karta reprezentující historický test (již odevzdaný nebo ohodnocený).
+  /// 
+  /// Zobrazuje procentuální skóre, které se může podbarvit oranžově/červeně, 
+  /// pokud student nedosáhl dostatečného výsledku (isWarning).
+  /// Po kliknutí přesměruje na detailní hodnocení testu.
   Widget _buildPastTestCard(Map<String, dynamic> test) {
     bool isWarning = test['isWarning'] == true;
     final customColors = Theme.of(context).extension<CustomColors>();

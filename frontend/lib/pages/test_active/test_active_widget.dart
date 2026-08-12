@@ -8,6 +8,11 @@ import 'test_active_provider.dart';
 import '../../components/test_submit_popup_widget.dart';
 import '../../components/test_exit_popup_widget.dart';
 
+/// Hlavní obrazovka pro samotné vyplňování testu studentem (Aktivní test).
+/// 
+/// Poskytuje rozhraní pro čtení otázek (včetně obrázků), vybírání/psaní
+/// odpovědí, hlídá časový odpočet a zpracovává navigaci mezi otázkami.
+/// Také obsahuje podporu pro okamžitou zpětnou vazbu (immediate feedback) přes SSE.
 class TestActiveWidget extends ConsumerStatefulWidget {
   const TestActiveWidget({super.key});
 
@@ -43,6 +48,9 @@ class _TestActiveWidgetState extends ConsumerState<TestActiveWidget> {
     super.dispose();
   }
 
+  /// Sychronizuje textové pole s odpovědí uloženou ve stavu,
+  /// pokud je typ aktuální otázky textový. To zajišťuje, že se text
+  /// neztratí při přecházení mezi otázkami.
   void _syncTextController(TestActiveState state) {
     if (state.questions.isEmpty) return;
     var qType = state.questions[state.currentIndex]['type'];
@@ -51,7 +59,8 @@ class _TestActiveWidgetState extends ConsumerState<TestActiveWidget> {
     }
   }
 
-  // Zobrazí popup pro finální odevzdání a po potvrzení odesílá data na API.
+  /// Zobrazí popup pro finální odevzdání a po potvrzení odesílá data na API.
+  /// Pokud [autoSubmit] je true, nedotazuje se a ihned odevzdá (např. při vypršení času).
   void _submitTest(TestActiveState state, TestActiveNotifier notifier, {bool autoSubmit = false}) {
     int answeredCount = state.selectedAnswers.length;
 
@@ -76,6 +85,7 @@ class _TestActiveWidgetState extends ConsumerState<TestActiveWidget> {
     );
   }
 
+  /// Zobrazí varovný dialog při pokusu o opuštění rozpracovaného testu.
   void _showExitWarning(TestActiveNotifier notifier) {
     showDialog(
       context: context,
@@ -88,6 +98,7 @@ class _TestActiveWidgetState extends ConsumerState<TestActiveWidget> {
     );
   }
 
+  /// Převede sekundy na lidově čitelný formát `MM:SS`.
   String _formatTime(int seconds) {
     int m = seconds ~/ 60;
     int s = seconds % 60;
@@ -362,6 +373,8 @@ class _TestActiveWidgetState extends ConsumerState<TestActiveWidget> {
       ));
   }
 
+  /// Vykreslí banner se zpětnou vazbou pro danou otázku (Správně / Špatně / Čeká na hodnocení).
+  /// Používá se v režimu okamžité zpětné vazby (immediate_feedback).
   Widget _buildFeedbackBanner(Map<String, dynamic> question, TestActiveState state) {
     final qId = (question['id'] ?? question['question_id']).toString();
     if (!state.questionFeedback.containsKey(qId)) return const SizedBox.shrink();
@@ -404,6 +417,7 @@ class _TestActiveWidgetState extends ConsumerState<TestActiveWidget> {
     );
   }
 
+  /// Vykreslí komponenty pro otázky typu "Výběr z možností" (SINGLE_CHOICE / MULTI_CHOICE).
   Widget _buildChoiceQuestion(Map<String, dynamic> question, TestActiveState state, TestActiveNotifier notifier) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -450,6 +464,7 @@ class _TestActiveWidgetState extends ConsumerState<TestActiveWidget> {
     );
   }
 
+  /// Vykreslí komponenty pro otázky typu "Textová odpověď" (OPEN_TEXT / SHORT_ANSWER).
   Widget _buildTextQuestion(Map<String, dynamic> question, TestActiveNotifier notifier) {
     bool isLong = question['type'] == 'open';
     return Column(
@@ -478,6 +493,8 @@ class _TestActiveWidgetState extends ConsumerState<TestActiveWidget> {
     );
   }
 
+  /// Vykreslí komponenty pro otázky typu "Řazení" (ORDERING).
+  /// Umožňuje přetahování položek (ReorderableListView).
   Widget _buildOrderQuestion(Map<String, dynamic> question, TestActiveState state, TestActiveNotifier notifier) {
     List<String> items = state.selectedAnswers[state.currentIndex] != null 
         ? List<String>.from(state.selectedAnswers[state.currentIndex]) 
@@ -534,6 +551,8 @@ class _TestActiveWidgetState extends ConsumerState<TestActiveWidget> {
     );
   }
 
+  /// Vykreslí komponenty pro otázky typu "Párování" (MATCHING).
+  /// Zobrazí levý sloupec termínů a k nim přiřazuje pomocí DropdownMenu odpovídající hodnoty zprava.
   Widget _buildMatchQuestion(Map<String, dynamic> question, TestActiveState state, TestActiveNotifier notifier) {
     List<String> leftItems = List<String>.from(question['leftItems']);
     List<String> rightOptions = List<String>.from(question['rightItems']);

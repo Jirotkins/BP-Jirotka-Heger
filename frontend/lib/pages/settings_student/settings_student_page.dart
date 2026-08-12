@@ -5,8 +5,9 @@ import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../theme/app_themes.dart';
 
-// Obrazovka nastavení studentského účtu a aplikace.
-// Umožňuje správu profilu, notifikací, vzhledu a odhlášení.
+/// Obrazovka nastavení studentského účtu a aplikace.
+/// 
+/// Umožňuje správu profilu, vzhledu (tmavý režim) a bezpečné odhlášení.
 class SettingsStudentPage extends ConsumerStatefulWidget {
   const SettingsStudentPage({super.key});
 
@@ -16,8 +17,6 @@ class SettingsStudentPage extends ConsumerStatefulWidget {
 
 class _SettingsStudentPageState extends ConsumerState<SettingsStudentPage> {
   final scaffoldKey = GlobalKey<ScaffoldState>();
-
-  bool _isEmailNotificationsEnabled = false;
 
   @override
   Widget build(BuildContext context) {
@@ -64,17 +63,6 @@ class _SettingsStudentPageState extends ConsumerState<SettingsStudentPage> {
               _buildSectionTitle('PROFIL'),
               const SizedBox(height: 8.0),
               _buildSettingsBox([
-                // ZMĚNA JMÉNA / EMAILU
-                _buildSettingsItem(
-                  icon: Icons.person_outline_rounded,
-                  iconColor: customColors?.blueText ?? const Color(0xFF3D5AF1),
-                  title: 'Změnit jméno',
-                  subtitle: ref.watch(authProvider).username ?? 'student@skola.cz', 
-                  onTap: () {
-                    debugPrint('Změna jména');
-                  },
-                ),
-                Divider(height: 1, indent: 56, color: Theme.of(context).colorScheme.outline),
                 // ZMĚNA HESLA
                 _buildSettingsItem(
                   icon: Icons.lock_outline_rounded,
@@ -102,20 +90,6 @@ class _SettingsStudentPageState extends ConsumerState<SettingsStudentPage> {
                     activeThumbColor: customColors?.blueText ?? const Color(0xFF3D5AF1),
                     onChanged: (val) {
                       ref.read(themeProvider.notifier).toggleTheme();
-                    },
-                  ),
-                ),
-                Divider(height: 1, indent: 56, color: Theme.of(context).colorScheme.outline),
-                // E-MAILOVÁ OZNÁMENÍ
-                _buildSettingsItem(
-                  icon: Icons.mail_outline_rounded,
-                  iconColor: customColors?.greenText ?? const Color(0xFF34C759),
-                  title: 'E-mailová oznámení',
-                  trailing: Switch(
-                    value: _isEmailNotificationsEnabled,
-                    activeThumbColor: customColors?.blueText ?? const Color(0xFF3D5AF1),
-                    onChanged: (val) {
-                      setState(() => _isEmailNotificationsEnabled = val);
                     },
                   ),
                 ),
@@ -160,7 +134,7 @@ class _SettingsStudentPageState extends ConsumerState<SettingsStudentPage> {
   // POMOCNÉ WIDGETY
   // ============================================================================
 
-  // Drobný šedý text pro nadpis sekce (např. "PROFIL")
+  /// Vykreslí drobný šedý text pro nadpis sekce (např. "PROFIL", "APLIKACE").
   Widget _buildSectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.only(left: 4.0),
@@ -176,7 +150,7 @@ class _SettingsStudentPageState extends ConsumerState<SettingsStudentPage> {
     );
   }
 
-  // Bílý kontejner seskupující související nastavení dohromady
+  /// Vykreslí bílý kontejner seskupující související možnosti nastavení (dlaždice) dohromady.
   Widget _buildSettingsBox(List<Widget> children) {
     return Container(
       width: double.infinity,
@@ -190,7 +164,8 @@ class _SettingsStudentPageState extends ConsumerState<SettingsStudentPage> {
     );
   }
 
-  // Jednotlivý řádek s možností nastavení (ikona, text, a volitelně Switch / šipka)
+  /// Vykreslí jednotlivý řádek s možností nastavení.
+  /// Může obsahovat ikonu, text a volitelně Switch / verzi nebo šipku indikující proklik.
   Widget _buildSettingsItem({
     required IconData icon,
     required String title,

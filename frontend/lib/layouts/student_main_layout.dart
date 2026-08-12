@@ -2,6 +2,12 @@ import 'package:flutter/material.dart';
 import '../pages/student_overview/student_overview_page.dart';
 import '../pages/settings_student/settings_student_page.dart';
 
+/// Hlavní layout pro roli "Student".
+/// 
+/// Zapouzdřuje spodní navigační lištu (BottomNavigationBar) a zajišťuje
+/// plynulé přepínání (pomocí PageView) mezi hlavními obrazovkami studenta:
+/// 1. Přehled předmětů a testů (`StudentOverviewPage`)
+/// 2. Nastavení profilu (`SettingsStudentPage`)
 class StudentMainLayout extends StatefulWidget {
   const StudentMainLayout({super.key});
 
@@ -12,10 +18,10 @@ class StudentMainLayout extends StatefulWidget {
 class _StudentMainLayoutState extends State<StudentMainLayout> {
   int _currentIndex = 0;
   
-  // Controller, který se postará o plynulé posouvání stránek
+  /// Controller, který se postará o plynulé posouvání stránek.
   late PageController _pageController;
 
-  // Seznam stránek, mezi kterými lišta přepíná
+  /// Seznam stránek, mezi kterými lišta přepíná.
   final List<Widget> _pages = const [
     StudentOverviewPage(),
     SettingsStudentPage(),
@@ -33,7 +39,8 @@ class _StudentMainLayoutState extends State<StudentMainLayout> {
     super.dispose();
   }
 
-  // Funkce, která se zavolá po kliknutí na ikonu v liště
+  /// Funkce, která se zavolá po kliknutí na ikonu ve spodní liště.
+  /// Zajistí plynulou animaci (posun) na vybranou stránku.
   void _onItemTapped(int index) {
     if (_currentIndex != index) {
       setState(() {

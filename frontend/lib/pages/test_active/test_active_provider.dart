@@ -2,21 +2,37 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../services/api_client.dart';
 
+/// Stav reprezentující probíhající test z pohledu studenta.
+/// 
+/// Uchovává informace o načtených otázkách, vybraných odpovědích,
+/// čase, chybách a stavu odevzdávání.
 class TestActiveState {
+  /// Určuje, zda se data načítají (nebo odesílají).
   final bool isLoading;
+  /// Případná chybová zpráva.
   final String? errorMessage;
   
+  /// Seznam všech otázek načtených z backendu, včetně namapovaných odpovědí a možností.
   final List<Map<String, dynamic>> questions;
+  /// Index aktuálně zobrazené otázky (od 0 do questions.length - 1).
   final int currentIndex;
+  /// Mapa, kde klíčem je index otázky a hodnotou je vybraná odpověď
+  /// (může být string, list nebo mapa, záleží na typu otázky).
   final Map<int, dynamic> selectedAnswers;
   
+  /// Záznam o tom, kolik vteřin zbývá do vypršení časového limitu testu.
   final int remainingSeconds;
   
+  /// Určuje, zda se uživatel pokouší opustit test (vyvolá se např. varovný dialog).
   final bool isExiting;
+  /// Příznak úspěšného odevzdání testu na backend.
   final bool submitSuccess;
 
+  /// Určuje, zda se má studentovi hned po odpovědi ukázat zpětná vazba (správně/špatně).
   final bool showImmediateFeedback;
+  /// Mapa okamžité zpětné vazby k jednotlivým otázkám (klíč je id otázky, hodnota 'correct'/'incorrect').
   final Map<String, String> questionFeedback;
+  /// Zda je v testu povoleno vracet se k předchozím otázkám.
   final bool canGoBack;
 
   TestActiveState({
@@ -63,12 +79,16 @@ class TestActiveState {
   }
 }
 
+/// Notifier spravující životní cyklus vyplňování testu (TestActiveWidget).
+/// 
+/// Řeší stahování otázek, logiku odpočtu (Timer), SSE stream pro okamžitou
+/// zpětnou vazbu a odesílání finálních odpovědí.
 class TestActiveNotifier extends Notifier<TestActiveState> {
   Timer? _timer;
   StreamSubscription? _sseSubscription;
 
-
   int? _attemptId;
+
   @override
   TestActiveState build() {
     ref.onDispose(() {
@@ -78,6 +98,9 @@ class TestActiveNotifier extends Notifier<TestActiveState> {
     return TestActiveState();
   }
 
+  /// Inicializuje test s daným [assignmentId].
+  /// Zavolá backendový endpoint `start`, naparsuje různé typy otázek (např. spáruje písmena k odpovědím),
+  /// spočítá zbývající čas a nastartuje timer a (pokud je povoleno) SSE posluchač.
   Future<void> fetchTest(int? assignmentId) async {
 
     if (assignmentId == null) {
@@ -215,12 +238,16 @@ class TestActiveNotifier extends Notifier<TestActiveState> {
     });
   }
 
+  /// Uloží odpověď (přicházející z UI komponenty) do lokálního stavu
+  /// pod indexem aktuální otázky.
   void updateAnswer(dynamic answerData) {
     final newAnswers = Map<int, dynamic>.from(state.selectedAnswers);
     newAnswers[state.currentIndex] = answerData;
     state = state.copyWith(selectedAnswers: newAnswers);
   }
 
+  /// Odešle aktuální odpověď na backend ke kontrole.
+  /// Používá se především u testů s okamžitou zpětnou vazbou.
   Future<void> checkCurrentAnswer() async {
     if (_attemptId == null) return;
     
@@ -280,6 +307,11 @@ class TestActiveNotifier extends Notifier<TestActiveState> {
     state = state.copyWith(isExiting: isExiting);
   }
 
+  /// Odevzdá celý test na backend.
+  /// 
+  /// Zformátuje všechny zapsané odpovědi ze stavu `selectedAnswers` do finálního payloadu
+  /// a zavolá `submit` endpoint. Pokud [autoSubmit] je true, ignoruje případné validace navíc
+  /// (stává se při vypršení časomíry).
   Future<void> submitTest({bool autoSubmit = false}) async {
     state = state.copyWith(isLoading: true); 
     

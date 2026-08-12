@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+/// Dialog zobrazený v případě, že se student pokusí opustit rozpracovaný test
+/// před jeho odesláním na server (například stiskem tlačítka "Zpět" nebo křížku).
+/// Varuje uživatele, že pokud odejde, postup se neuloží a pokus propadne.
 class TestExitPopupWidget extends StatelessWidget {
   final VoidCallback onExit;
 

@@ -3,10 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../services/api_client.dart';
 
+/// Reprezentuje stav domovské obrazovky studenta (StudentOverviewPage).
+/// Uchovává seznam testů, zapsaných předmětů a stav načítání.
 class StudentOverviewState {
+  /// Indikuje, zda právě probíhá asynchronní načítání dat.
   final bool isLoading;
+  /// Případná chybová hláška zobrazená uživateli.
   final String? errorMessage;
+  /// Seznam všech aktuálních testů, které studentovi poslal backend.
   final List<Map<String, dynamic>> activeTests;
+  /// Seznam předmětů (skupin), ve kterých je student zapsán.
   final List<Map<String, dynamic>> mySubjects;
 
   StudentOverviewState({
@@ -15,6 +21,33 @@ class StudentOverviewState {
     this.activeTests = const [],
     this.mySubjects = const [],
   });
+
+  /// Dynamicky vrací pouze ty testy, které jsou **v tento okamžik** reálně přístupné 
+  /// k vypracování. Vyřazuje ty, které ještě nezačaly, nebo už skončily 
+  /// (a nejsou ve stavu STARTED).
+  List<Map<String, dynamic>> get trulyActiveTests {
+    final now = DateTime.now();
+    return activeTests.where((test) {
+      final String? activateTo = test['rawActivateTo'];
+      final String? activateFrom = test['rawActivateFrom'];
+      
+      if (activateFrom != null) {
+        final fromDate = DateTime.parse(activateFrom.endsWith('Z') ? activateFrom : '${activateFrom}Z').toLocal();
+        if (now.isBefore(fromDate)) return false;
+      }
+      if (activateTo != null) {
+        final toDate = DateTime.parse(activateTo.endsWith('Z') ? activateTo : '${activateTo}Z').toLocal();
+        if (now.isAfter(toDate)) return false;
+      }
+
+      // Test se zobrazí, pokud už byl zahájen (STARTED).
+      if (test['status'] == 'STARTED') return true;
+      // Pokud test už má jakýkoliv jiný stav (např. odevzdán), nezobrazuje se zde.
+      if (test['status'] != null) return false; 
+      
+      return true;
+    }).toList();
+  }
 
   StudentOverviewState copyWith({
     bool? isLoading,
@@ -31,12 +64,15 @@ class StudentOverviewState {
   }
 }
 
+/// Riverpod Notifier, který spravuje stav úvodní stránky studenta.
+/// Komunikuje s API a transformuje data pro zobrazení (formátování dat, výpočty testů na předmět atd.).
 class StudentOverviewNotifier extends Notifier<StudentOverviewState> {
   @override
   StudentOverviewState build() {
     return StudentOverviewState(isLoading: true);
   }
 
+  /// Stáhne z backendu všechny potřebné údaje (testy a předměty) a transformuje je pro UI.
   Future<void> fetchDashboardData() async {
     state = state.copyWith(isLoading: true, errorMessage: null);
 

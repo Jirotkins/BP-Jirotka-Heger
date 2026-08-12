@@ -8,6 +8,10 @@ import '../../providers/auth_provider.dart';
 
 // Úvodní domovská obrazovka studenta (Dashboard).
 // Slouží jako rozcestník pro probíhající testy a přehled zapsaných předmětů.
+/// 
+/// Zobrazuje dvě hlavní sekce:
+/// 1. Aktivní testy - testy, které aktuálně probíhají a student je má řešit.
+/// 2. Moje předměty - seznam předmětů, do kterých je student přiřazen.
 class StudentOverviewPage extends ConsumerStatefulWidget {
   const StudentOverviewPage({super.key});
 
@@ -30,26 +34,8 @@ class _StudentOverviewPageState extends ConsumerState<StudentOverviewPage> {
   Widget build(BuildContext context) {
     final state = ref.watch(studentOverviewProvider);
     
-    // Filtrujeme pouze skutečně aktivní testy (začaté, nebo dostupné)
-    final now = DateTime.now();
-    final trulyActiveTests = state.activeTests.where((test) {
-      final String? activateTo = test['rawActivateTo'];
-      final String? activateFrom = test['rawActivateFrom'];
-      
-      if (activateFrom != null) {
-        final fromDate = DateTime.parse(activateFrom.endsWith('Z') ? activateFrom : '${activateFrom}Z').toLocal();
-        if (now.isBefore(fromDate)) return false;
-      }
-      if (activateTo != null) {
-        final toDate = DateTime.parse(activateTo.endsWith('Z') ? activateTo : '${activateTo}Z').toLocal();
-        if (now.isAfter(toDate)) return false;
-      }
-
-      if (test['status'] == 'STARTED') return true;
-      if (test['status'] != null) return false; // Odevzdané nebo ohodnocené nepatří do aktivních
-      
-      return true;
-    }).toList();
+    // Získání reálně aktivních testů přímo ze stavu (logika zapouzdřena v provideru)
+    final trulyActiveTests = state.trulyActiveTests;
 
     return Scaffold(
       key: scaffoldKey,
@@ -129,7 +115,11 @@ class _StudentOverviewPageState extends ConsumerState<StudentOverviewPage> {
   // POMOCNÉ WIDGETY
   // ============================================================================
 
-  // Univerzální hlavička sekce (např. "Aktivní testy"), volitelně s počtem v bublině
+  /// Univerzální hlavička sekce (např. "Aktivní testy"), volitelně s počtem v bublině.
+  /// 
+  /// [title] - Název sekce.
+  /// [count] - Počet položek v bublině (pokud je null nebo 0, nezobrazí se).
+  /// [countColor] - Barva bubliny.
   Widget _buildSectionHeader(String title, int? count, Color? countColor) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -145,8 +135,9 @@ class _StudentOverviewPageState extends ConsumerState<StudentOverviewPage> {
     );
   }
 
-  // Výrazná červená karta pro test, který se musí okamžitě řešit.
-  // Po kliknutí na tlačítko naviguje rovnou do vyplňování testu.
+  /// Výrazná červená karta pro test, který se musí okamžitě řešit.
+  /// Po kliknutí na tlačítko "Spustit" naviguje rovnou do vyplňování testu.
+  /// Bere v potaz maximální počet pokusů studenta.
   Widget _buildActiveTestCard(Map<String, dynamic> test) {
     return Container(
       width: double.infinity,

@@ -3,16 +3,30 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_themes.dart';
 
+/// Karta reprezentující jeden předmět na úvodní obrazovce studenta (StudentOverviewPage).
+/// 
+/// Zobrazuje základní informace o předmětu (název, zkratku, učitele), celkový
+/// počet testů a status (např. zda má student aktuálně test k vypracování).
+/// Po kliknutí přesměruje uživatele na detail daného předmětu.
 class SubjectCardWidget extends StatelessWidget {
+  /// Unikátní identifikátor předmětu (slouží pro navigaci do detailu).
   final String id;
-  final String code; // např. MA
-  final String name; // např. Matematika
-  final String teacher; // např. Ing. Petr Svoboda
-  final Color color; // Hlavní barva předmětu (na ikonku)
+  /// Zkratka předmětu, zobrazuje se ve velkém barevném čtverci (např. "MA").
+  final String code; 
+  /// Celý název předmětu (např. "Matematika").
+  final String name; 
+  /// Jméno vyučujícího, který předmět vede.
+  final String teacher; 
+  /// Hlavní barva předmětu, ovlivňuje zbarvení levého čtverce se zkratkou.
+  final Color color; 
   
-  final int testCount; // Kolik má předmět celkem testů
-  final String status; // 'active', 'upcoming', 'none'
-  final String? timeText; // např. "Vyprší 45 min", "Za 2 dny"
+  /// Celkový počet testů dostupných v daném předmětu.
+  final int testCount; 
+  /// Stav, určující jaký odznáček se zobrazí vpravo nahoře.
+  /// Může nabývat hodnot: 'active' (test probíhá), 'upcoming' (bude brzy), nebo 'none' (vše hotovo).
+  final String status; 
+  /// Textový údaj o čase zobrazený ve spodní části karty (např. "Vyprší za 45 min").
+  final String? timeText;
 
   const SubjectCardWidget({
     super.key,
