@@ -1581,7 +1581,11 @@ def start_student_attempt_endpoint(
     try:
         pwd = request.access_password if request else None
         attempt = db_layer.start_student_attempt(db, current_student["user_id"], assignment_id, pwd)
+        setattr(attempt, "can_go_back", attempt.assignment.can_go_back)
+        setattr(attempt, "show_immediate_feedback", attempt.assignment.show_immediate_feedback)
         return attempt
+    except HTTPException as he:
+        raise he
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -1641,7 +1645,8 @@ def get_student_attempt_endpoint(
             "score_percent": float(attempt.score_percent) if attempt.score_percent is not None else None,
             "teacher_note": attempt.teacher_note,
             "questions_snapshot": attempt.questions_snapshot,
-            "student_answers": attempt.student_answers or {}
+            "student_answers": attempt.student_answers or {},
+            "show_results_after_submit": attempt.assignment.show_results_after_submit
         }
     except ValueError as e:
         raise HTTPException(

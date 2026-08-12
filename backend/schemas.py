@@ -252,6 +252,10 @@ class ExamAssignmentCreate(BaseModel):
     time_limit_minutes: int | None = None
     access_password: str | None = None
     show_immediate_feedback: bool = False
+    max_attempts: int | None = None
+    shuffle_questions: bool = False
+    can_go_back: bool = True
+    show_results_after_submit: bool = True
 
     @field_validator('time_limit_minutes')
     @classmethod
@@ -289,6 +293,10 @@ class ExamAssignmentUpdate(BaseModel):
     access_password: str | None = None
     is_active: bool | None = None
     show_immediate_feedback: bool | None = None
+    max_attempts: int | None = None
+    shuffle_questions: bool | None = None
+    can_go_back: bool | None = None
+    show_results_after_submit: bool | None = None
 
 
 class ExamAssignmentResponse(BaseModel):
@@ -302,6 +310,10 @@ class ExamAssignmentResponse(BaseModel):
     time_limit_minutes: int | None = None
     access_password: str | None = None
     show_immediate_feedback: bool = False
+    max_attempts: int | None = None
+    shuffle_questions: bool = False
+    can_go_back: bool = True
+    show_results_after_submit: bool = True
     created_at: str
 
     class Config:
@@ -348,6 +360,7 @@ class StudentAttemptDetailedResponse(BaseModel):
     teacher_note: str = None
     questions_snapshot: list | dict  # JSONB - snapshot otázek
     student_answers: dict = None  # JSONB - odpovědi studenta
+    show_results_after_submit: bool = True
     
     class Config:
         from_attributes = True
@@ -442,6 +455,9 @@ class StudentAssignmentResponse(BaseModel):
     group_id: int | None = None
     group_name: str | None = None
     question_count: int | None = None
+    max_attempts: int | None = None
+    attempts_count: int = 0
+    score_percent: float | None = None
     
     class Config:
         from_attributes = True
@@ -455,6 +471,8 @@ class StartAttemptResponse(BaseModel):
     attempt_id: int
     started_at: datetime
     time_limit_minutes: int | None = None
+    can_go_back: bool = True
+    show_immediate_feedback: bool = False
     questions_snapshot: list[dict]
     
     class Config:

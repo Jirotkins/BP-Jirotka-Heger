@@ -792,7 +792,11 @@ def update_assignment(db: Session, assignment_id: int, teacher_id: int, update_d
 
 def activate_assignment(db: Session, assignment_id: int, teacher_id: int):
     """Manuálně aktivuje přiřazení testu (is_active = True)"""
+    from datetime import datetime
     assignment = get_assignment_details(db, assignment_id, teacher_id)
+    now = datetime.utcnow()
+    if assignment.activate_from and assignment.activate_from > now:
+        assignment.activate_from = now
     assignment.is_active = True
     db.commit()
     db.refresh(assignment)
@@ -1379,20 +1383,33 @@ def get_student_assignments(db: Session, student_id: int):
     
     result = []
     for a in assignments:
-        # Check status from student attempts
-        attempt = db.query(StudentAttempt).filter(
+        # Check attempts
+        attempts = db.query(StudentAttempt).filter(
             StudentAttempt.assignment_id == a.assignment_id,
             StudentAttempt.student_id == student_id
-        ).first()
+        ).all()
         
-        status = attempt.status.value if attempt else None
+        attempts_count = len(attempts)
+        attempt_id = None
+        status = None
+        score_percent = None
+        
+        if attempts:
+            last_attempt = max(attempts, key=lambda x: x.started_at)
+            attempt_id = last_attempt.attempt_id
+            status = last_attempt.status.value
+            
+            graded_attempts = [att for att in attempts if att.status.value == "GRADED" and att.score_percent is not None]
+            if graded_attempts:
+                best_attempt = max(graded_attempts, key=lambda x: x.score_percent)
+                score_percent = float(best_attempt.score_percent)
         
         # Determine if it requires password
         requires_password = a.access_password is not None and len(a.access_password) > 0
         
         result.append({
             "assignment_id": a.assignment_id,
-            "attempt_id": attempt.attempt_id if attempt else None,
+            "attempt_id": attempt_id,
             "template_name": a.template.name,
             "description": a.template.description,
             "activate_from": a.activate_from.isoformat() if a.activate_from else None,
@@ -1402,11 +1419,16 @@ def get_student_assignments(db: Session, student_id: int):
             "status": status,
             "group_id": a.group_id,
             "group_name": a.group.name if a.group else None,
-            "question_count": len(a.template.question_associations) if a.template else 0
+            "question_count": len(a.template.question_associations) if a.template else 0,
+            "max_attempts": a.max_attempts,
+            "attempts_count": attempts_count,
+            "score_percent": score_percent
         })
     return result
 
 def start_student_attempt(db: Session, student_id: int, assignment_id: int, password: str = None):
+    from fastapi import HTTPException
+    
     assignment = db.query(ExamAssignment).filter(ExamAssignment.assignment_id == assignment_id).first()
     if not assignment:
         raise Exception("Přiřazení nenalezeno.")
@@ -1423,15 +1445,14 @@ def start_student_attempt(db: Session, student_id: int, assignment_id: int, pass
     if assignment.access_password and assignment.access_password != password:
         raise Exception("Nesprávné heslo pro přístup k testu.")
         
-    # Zkontroluj, jestli už nemá attempt
-    existing_attempt = db.query(StudentAttempt).filter(
+    # Ověření počtu pokusů
+    attempts_count = db.query(StudentAttempt).filter(
         StudentAttempt.assignment_id == assignment_id,
         StudentAttempt.student_id == student_id
-    ).first()
+    ).count()
     
-    if existing_attempt:
-        existing_attempt.time_limit_minutes = assignment.time_limit_minutes
-        return existing_attempt  # Můžeme vrátit existující, pokud už začal
+    if assignment.max_attempts is not None and attempts_count >= assignment.max_attempts:
+        raise HTTPException(status_code=403, detail="Vyčerpali jste všechny pokusy")
         
     # Vytvořit snapshot otázek
     questions = []
@@ -1439,6 +1460,10 @@ def start_student_attempt(db: Session, student_id: int, assignment_id: int, pass
     
     # Seřadit podle pozice
     template_questions = sorted(assignment.template.question_associations, key=lambda x: x.position)
+    
+    if assignment.shuffle_questions:
+        import random
+        random.shuffle(template_questions)
     
     for tq in template_questions:
         q = tq.question

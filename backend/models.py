@@ -175,6 +175,10 @@ class ExamAssignment(Base):
     time_limit_minutes = Column(Integer)
     access_password = Column(String)
     show_immediate_feedback = Column(Boolean, default=False)
+    max_attempts = Column(Integer, nullable=True)
+    shuffle_questions = Column(Boolean, default=False)
+    can_go_back = Column(Boolean, default=True)
+    show_results_after_submit = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     # Vztahy

@@ -15,7 +15,7 @@ print("=" * 70)
 test_count = 0
 passed_count = 0
 
-def test(name, should_pass=True):
+def schema_test(name, should_pass=True):
     def decorator(func):
         def wrapper():
             global test_count, passed_count
@@ -42,7 +42,7 @@ def test(name, should_pass=True):
     return decorator
 
 # Test 1: SINGLE_CHOICE with one correct answer (should pass)
-@test("SINGLE_CHOICE with correct answer", should_pass=True)
+@schema_test("SINGLE_CHOICE with correct answer", should_pass=True)
 def test_single_choice_valid():
     return QuestionCreateRequest(
         text="What is 2 + 2?",
@@ -57,7 +57,7 @@ def test_single_choice_valid():
 test_single_choice_valid()
 
 # Test 2: SINGLE_CHOICE without correct answer (should fail)
-@test("SINGLE_CHOICE without correct answer", should_pass=False)
+@schema_test("SINGLE_CHOICE without correct answer", should_pass=False)
 def test_single_choice_no_correct():
     return QuestionCreateRequest(
         text="Invalid question",
@@ -70,7 +70,7 @@ def test_single_choice_no_correct():
 test_single_choice_no_correct()
 
 # Test 3: SINGLE_CHOICE with no answers (should fail)
-@test("SINGLE_CHOICE with no answers", should_pass=False)
+@schema_test("SINGLE_CHOICE with no answers", should_pass=False)
 def test_single_choice_no_answers():
     return QuestionCreateRequest(
         text="Invalid question",
@@ -80,7 +80,7 @@ def test_single_choice_no_answers():
 test_single_choice_no_answers()
 
 # Test 4: MULTI_CHOICE with multiple correct answers (should pass)
-@test("MULTI_CHOICE with multiple correct answers", should_pass=True)
+@schema_test("MULTI_CHOICE with multiple correct answers", should_pass=True)
 def test_multi_choice_valid():
     return QuestionCreateRequest(
         text="Which are prime numbers?",
@@ -97,7 +97,7 @@ def test_multi_choice_valid():
 test_multi_choice_valid()
 
 # Test 5: MULTI_CHOICE without correct answer (should fail)
-@test("MULTI_CHOICE without correct answer", should_pass=False)
+@schema_test("MULTI_CHOICE without correct answer", should_pass=False)
 def test_multi_choice_no_correct():
     return QuestionCreateRequest(
         text="Invalid question",
@@ -110,7 +110,7 @@ def test_multi_choice_no_correct():
 test_multi_choice_no_correct()
 
 # Test 6: OPEN_TEXT without answers (should pass)
-@test("OPEN_TEXT without answers", should_pass=True)
+@schema_test("OPEN_TEXT without answers", should_pass=True)
 def test_open_text_no_answers():
     return QuestionCreateRequest(
         text="Describe the water cycle",
@@ -122,7 +122,7 @@ def test_open_text_no_answers():
 test_open_text_no_answers()
 
 # Test 7: OPEN_TEXT with hints (should pass)
-@test("OPEN_TEXT with hints", should_pass=True)
+@schema_test("OPEN_TEXT with hints", should_pass=True)
 def test_open_text_with_hints():
     return QuestionCreateRequest(
         text="List capitals",
@@ -135,7 +135,7 @@ def test_open_text_with_hints():
 test_open_text_with_hints()
 
 # Test 8: ORDERING with order_index (should pass)
-@test("ORDERING with order_index", should_pass=True)
+@schema_test("ORDERING with order_index", should_pass=True)
 def test_ordering_valid():
     return QuestionCreateRequest(
         text="Order from smallest to largest",
@@ -150,7 +150,7 @@ def test_ordering_valid():
 test_ordering_valid()
 
 # Test 9: ORDERING without order_index (should fail)
-@test("ORDERING without order_index", should_pass=False)
+@schema_test("ORDERING without order_index", should_pass=False)
 def test_ordering_no_order_index():
     return QuestionCreateRequest(
         text="Order items",
@@ -163,7 +163,7 @@ def test_ordering_no_order_index():
 test_ordering_no_order_index()
 
 # Test 10: ORDERING with duplicate order_index (should fail)
-@test("ORDERING with duplicate order_index", should_pass=False)
+@schema_test("ORDERING with duplicate order_index", should_pass=False)
 def test_ordering_duplicate_order_index():
     return QuestionCreateRequest(
         text="Order items",
@@ -176,7 +176,7 @@ def test_ordering_duplicate_order_index():
 test_ordering_duplicate_order_index()
 
 # Test 11: Invalid question type (should fail)
-@test("Invalid question type", should_pass=False)
+@schema_test("Invalid question type", should_pass=False)
 def test_invalid_type():
     return QuestionCreateRequest(
         text="Question",
@@ -186,7 +186,7 @@ def test_invalid_type():
 test_invalid_type()
 
 # Test 12: Invalid default_points (should fail)
-@test("Invalid default_points (0 points)", should_pass=False)
+@schema_test("Invalid default_points (0 points)", should_pass=False)
 def test_invalid_points():
     return QuestionCreateRequest(
         text="Question",
@@ -197,7 +197,7 @@ def test_invalid_points():
 test_invalid_points()
 
 # Test 13: Valid question with tags and image_url
-@test("Complete MULTI_CHOICE with all fields", should_pass=True)
+@schema_test("Complete MULTI_CHOICE with all fields", should_pass=True)
 def test_complete_question():
     return QuestionCreateRequest(
         text="Full example",
@@ -214,7 +214,7 @@ def test_complete_question():
 test_complete_question()
 
 # Test 14: Question without answers (defaults to empty list)
-@test("SINGLE_CHOICE created with default empty answers", should_pass=False)
+@schema_test("SINGLE_CHOICE created with default empty answers", should_pass=False)
 def test_answers_default():
     return QuestionCreateRequest(
         text="Question without answers field",
@@ -223,7 +223,7 @@ def test_answers_default():
 test_answers_default()
 
 # Test 15: Valid MATCHING with ||| pairs
-@test("MATCHING with delimiter ||| pairs", should_pass=True)
+@schema_test("MATCHING with delimiter ||| pairs", should_pass=True)
 def test_matching_valid_delimiter():
     return QuestionCreateRequest(
         text="Přiřaďte pojmy k definicím",
@@ -236,7 +236,7 @@ def test_matching_valid_delimiter():
 test_matching_valid_delimiter()
 
 # Test 16: Valid MATCHING with match_text field
-@test("MATCHING with match_text field", should_pass=True)
+@schema_test("MATCHING with match_text field", should_pass=True)
 def test_matching_valid_match_text():
     return QuestionCreateRequest(
         text="Přiřaďte pojmy k definicím",
@@ -249,7 +249,7 @@ def test_matching_valid_match_text():
 test_matching_valid_match_text()
 
 # Test 17: MATCHING with less than 2 pairs (should fail)
-@test("MATCHING with only 1 pair (should fail)", should_pass=False)
+@schema_test("MATCHING with only 1 pair (should fail)", should_pass=False)
 def test_matching_invalid_count():
     return QuestionCreateRequest(
         text="Přiřaďte",
@@ -261,7 +261,7 @@ def test_matching_invalid_count():
 test_matching_invalid_count()
 
 # Test 18: Valid SHORT_ANSWER
-@test("SHORT_ANSWER with correct variant", should_pass=True)
+@schema_test("SHORT_ANSWER with correct variant", should_pass=True)
 def test_short_answer_valid():
     return QuestionCreateRequest(
         text="Jaké je hlavní město ČR?",
@@ -274,7 +274,7 @@ def test_short_answer_valid():
 test_short_answer_valid()
 
 # Test 19: SHORT_ANSWER with no answers (should fail)
-@test("SHORT_ANSWER without answers (should fail)", should_pass=False)
+@schema_test("SHORT_ANSWER without answers (should fail)", should_pass=False)
 def test_short_answer_invalid():
     return QuestionCreateRequest(
         text="Jaké je hlavní město?",
