@@ -1323,6 +1323,7 @@ def get_group_assignments_overview(db: Session, group_id: int, teacher_id: int) 
     active = []
     upcoming = []
     finished = []
+    graded = []
 
     for a in assignments:
         template = db.query(TestTemplate).filter(
@@ -1333,6 +1334,11 @@ def get_group_assignments_overview(db: Session, group_id: int, teacher_id: int) 
         submitted_count = db.query(StudentAttempt.student_id).filter(
             StudentAttempt.assignment_id == a.assignment_id,
             StudentAttempt.status.in_([AttemptStatus.SUBMITTED, AttemptStatus.GRADED])
+        ).distinct().count()
+
+        graded_count = db.query(StudentAttempt.student_id).filter(
+            StudentAttempt.assignment_id == a.assignment_id,
+            StudentAttempt.status == AttemptStatus.GRADED
         ).distinct().count()
 
         entry = {
@@ -1356,7 +1362,13 @@ def get_group_assignments_overview(db: Session, group_id: int, teacher_id: int) 
         if is_live:
             active.append(entry)
         elif a.activate_to is not None and a.activate_to < now:
-            finished.append(entry)
+            if submitted_count == graded_count and submitted_count > 0:
+                graded.append(entry)
+            elif submitted_count == 0:
+                # Pokud nikdo neodevzdal, dáme ho taky do hodnocených/uzavřených
+                graded.append(entry)
+            else:
+                finished.append(entry)
         else:
             upcoming.append(entry)
 
@@ -1365,6 +1377,7 @@ def get_group_assignments_overview(db: Session, group_id: int, teacher_id: int) 
         "active": active,
         "upcoming": upcoming,
         "finished": finished,
+        "graded": graded,
     }
 
 

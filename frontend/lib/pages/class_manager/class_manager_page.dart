@@ -207,6 +207,7 @@ class _ClassManagerPageState extends ConsumerState<ClassManagerPage> {
     final activeTests = (state.overviewData?['active'] as List?) ?? [];
     final upcomingTests = (state.overviewData?['upcoming'] as List?) ?? [];
     final finishedTests = (state.overviewData?['finished'] as List?) ?? [];
+    final gradedTests = ((state.overviewData?['graded'] as List?) ?? []).reversed.toList();
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(32.0),
@@ -281,93 +282,151 @@ class _ClassManagerPageState extends ConsumerState<ClassManagerPage> {
             ),
           ),
 
-          if (activeTests.isNotEmpty) ...[
-            const SizedBox(height: 48.0),
-            _buildSectionHeader(context, 'Aktivní testy', Theme.of(context).colorScheme.error, activeTests.length.toString()), 
-            const SizedBox(height: 16.0),
-            ...activeTests.map((test) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 16.0),
-                child: ActiveTestCard(
-                  title: test['template_name'] ?? 'Neznámý test',
-                  subtitle: 'Spuštěno do: ${_formatDate(test['activate_to'] as String?)}',
-                  submittedCount: test['submitted_count'] ?? 0,
-                  totalStudents: test['total_students'] ?? 0,
-                  onTap: () {
-                    context.push('/testAttempts', extra: {
-                      'assignmentId': test['assignment_id'] ?? 999,
-                      'testTitle': test['template_name'] ?? 'Neznámý test'
-                    });
-                  },
-                ),
-              );
-            }),
-          ],
+          const SizedBox(height: 24.0),
 
-          if (upcomingTests.isNotEmpty) ...[
-            const SizedBox(height: 48.0),
-            _buildSectionHeader(context, 'Připravené a naplánované testy', Theme.of(context).colorScheme.tertiary, upcomingTests.length.toString()), 
-            const SizedBox(height: 16.0),
-            ...upcomingTests.map((test) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 16.0),
-                child: ActiveTestCard( 
-                  title: test['template_name'] ?? 'Neznámý test',
-                  subtitle: test['activate_from'] != null 
-                    ? (test['activate_to'] != null 
-                        ? 'Termín: ${_formatDate(test['activate_from'] as String?)} – ${_formatDate(test['activate_to'] as String?)}' 
-                        : 'Naplánováno na: ${_formatDate(test['activate_from'] as String?)}') 
-                    : 'Čeká na manuální spuštění',
-                  submittedCount: test['submitted_count'] ?? 0,
-                  totalStudents: test['total_students'] ?? 0,
-                  isScheduled: true,
-                  onTap: () => _showActivateDialog(test['assignment_id'], notifier),
-                ),
-              );
-            }),
-          ],
+          _buildTestSection(
+            context: context,
+            title: 'AKTIVNÍ TESTY',
+            badgeColor: Theme.of(context).colorScheme.error,
+            iconData: Icons.play_circle_outline,
+            tests: activeTests,
+            initiallyExpanded: true,
+            itemBuilder: (test) => ActiveTestCard(
+              title: test['template_name'] ?? 'Neznámý test',
+              subtitle: 'Spuštěno do: ${_formatDate(test['activate_to'] as String?)}',
+              submittedCount: test['submitted_count'] ?? 0,
+              totalStudents: test['total_students'] ?? 0,
+              onTap: () async {
+                await context.push('/testAttempts', extra: {
+                  'assignmentId': test['assignment_id'] ?? 999,
+                  'testTitle': test['template_name'] ?? 'Neznámý test'
+                });
+                notifier.refresh();
+              },
+            ),
+          ),
 
-          if (finishedTests.isNotEmpty) ...[
-            const SizedBox(height: 48.0),
-            _buildSectionHeader(context, 'Testy ke kontrole', Theme.of(context).colorScheme.primary, finishedTests.length.toString()), 
-            const SizedBox(height: 16.0),
-            ...finishedTests.map((test) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 16.0),
-                child: ControlTestCard(
-                  title: test['template_name'] ?? 'Neznámý test',
-                  subtitle: '${test['submitted_count'] ?? 0}/${test['total_students'] ?? 0} odevzdalo',
-                  onTap: () {
-                    context.push('/testAttempts', extra: {
-                      'assignmentId': test['assignment_id'] ?? 999,
-                      'testTitle': test['template_name'] ?? 'Neznámý test'
-                    });
-                  },
-                ),
-              );
-            }),
-          ],
+          _buildTestSection(
+            context: context,
+            title: 'PŘIPRAVENÉ A NAPLÁNOVANÉ',
+            badgeColor: Theme.of(context).colorScheme.tertiary,
+            iconData: Icons.schedule,
+            tests: upcomingTests,
+            initiallyExpanded: true,
+            itemBuilder: (test) => ActiveTestCard( 
+              title: test['template_name'] ?? 'Neznámý test',
+              subtitle: test['activate_from'] != null 
+                ? (test['activate_to'] != null 
+                    ? 'Termín: ${_formatDate(test['activate_from'] as String?)} – ${_formatDate(test['activate_to'] as String?)}' 
+                    : 'Naplánováno na: ${_formatDate(test['activate_from'] as String?)}') 
+                : 'Čeká na manuální spuštění',
+              submittedCount: test['submitted_count'] ?? 0,
+              totalStudents: test['total_students'] ?? 0,
+              isScheduled: true,
+              onTap: () => _showActivateDialog(test['assignment_id'], notifier),
+            ),
+          ),
+
+          _buildTestSection(
+            context: context,
+            title: 'KE KONTROLE',
+            badgeColor: Theme.of(context).colorScheme.primary,
+            iconData: Icons.fact_check_outlined,
+            tests: finishedTests,
+            initiallyExpanded: true,
+            itemBuilder: (test) => ControlTestCard(
+              title: test['template_name'] ?? 'Neznámý test',
+              subtitle: '${test['submitted_count'] ?? 0}/${test['total_students'] ?? 0} odevzdalo',
+              onTap: () async {
+                await context.push('/testAttempts', extra: {
+                  'assignmentId': test['assignment_id'] ?? 999,
+                  'testTitle': test['template_name'] ?? 'Neznámý test'
+                });
+                notifier.refresh();
+              },
+            ),
+          ),
+
+          _buildTestSection(
+            context: context,
+            title: 'OHODNOCENO',
+            badgeColor: Theme.of(context).colorScheme.secondary,
+            iconData: Icons.done_all,
+            tests: gradedTests,
+            initiallyExpanded: false,
+            itemBuilder: (test) => ControlTestCard(
+              title: test['template_name'] ?? 'Neznámý test',
+              subtitle: '${test['submitted_count'] ?? 0}/${test['total_students'] ?? 0} odevzdalo (Hodnocení dokončeno)',
+              onTap: () async {
+                await context.push('/testAttempts', extra: {
+                  'assignmentId': test['assignment_id'] ?? 999,
+                  'testTitle': test['template_name'] ?? 'Neznámý test'
+                });
+                notifier.refresh();
+              },
+            ),
+          ),
         ],
       ),
     );
   }
 
-  /// Pomocná metoda pro vykreslení hlavičky jednotlivé sekce testů (Aktivní, Ke kontrole...).
-  Widget _buildSectionHeader(BuildContext context, String title, Color badgeColor, String count) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Container(width: 4, height: 20, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary, borderRadius: BorderRadius.circular(2))),
-        const SizedBox(width: 12),
-        Text(title, style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.onSurface)),
-        const Spacer(),
-        Container(
-          width: 28, height: 28,
-          decoration: BoxDecoration(color: badgeColor, shape: BoxShape.circle),
-          alignment: Alignment.center,
-          child: Text(count, style: GoogleFonts.inter(color: Theme.of(context).colorScheme.surface, fontSize: 13, fontWeight: FontWeight.bold)),
+  /// Pomocná metoda pro vykreslení rozbalovací sekce s testy
+  Widget _buildTestSection({
+    required BuildContext context,
+    required String title,
+    required Color badgeColor,
+    required IconData iconData,
+    required List<dynamic> tests,
+    required bool initiallyExpanded,
+    required Widget Function(dynamic) itemBuilder,
+  }) {
+    if (tests.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 24.0),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(12.0),
+          border: Border.all(color: Theme.of(context).colorScheme.outline, width: 1.0), 
+          boxShadow: [
+            BoxShadow(blurRadius: 10.0, color: Colors.black.withValues(alpha: 0.02), offset: const Offset(0, 4))
+          ],
         ),
-      ],
+        child: Theme(
+          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+          child: ExpansionTile(
+            initiallyExpanded: initiallyExpanded,
+            tilePadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            title: Row(
+              children: [
+                Icon(iconData, color: badgeColor, size: 20),
+                const SizedBox(width: 12),
+                Text(title, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: badgeColor, letterSpacing: 1.1)),
+                const SizedBox(width: 12),
+                Container(
+                  width: 24, height: 24,
+                  decoration: BoxDecoration(color: badgeColor, shape: BoxShape.circle),
+                  alignment: Alignment.center,
+                  child: Text(tests.length.toString(), style: GoogleFonts.inter(color: Theme.of(context).colorScheme.surface, fontSize: 12, fontWeight: FontWeight.bold)),
+                ),
+              ],
+            ),
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                child: Column(
+                  children: tests.map((test) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12.0),
+                    child: itemBuilder(test),
+                  )).toList(),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

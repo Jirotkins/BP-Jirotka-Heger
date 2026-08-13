@@ -21,6 +21,7 @@ class SubjectPage extends ConsumerStatefulWidget {
 
 class _SubjectPageState extends ConsumerState<SubjectPage> {
   final scaffoldKey = GlobalKey<ScaffoldState>();
+  bool _showAllHistory = false;
 
   @override
   Widget build(BuildContext context) {
@@ -120,6 +121,9 @@ class _SubjectPageState extends ConsumerState<SubjectPage> {
         }
       }
     }
+    
+    // Nejnovější historie nahoře
+    pastTests = pastTests.reversed.toList();
 
     return Scaffold(
       key: scaffoldKey,
@@ -198,7 +202,7 @@ class _SubjectPageState extends ConsumerState<SubjectPage> {
                 _buildSectionHeader('Aktivní testy', 1, Theme.of(context).colorScheme.error),
                 const SizedBox(height: 16.0),
                 InkWell(
-                  onTap: activeTest!['hasAttemptsRemaining'] == false ? () {
+                  onTap: activeTest['hasAttemptsRemaining'] == false ? () {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: const Text('Vyčerpali jste všechny pokusy.'),
@@ -218,7 +222,7 @@ class _SubjectPageState extends ConsumerState<SubjectPage> {
                       color: Theme.of(context).colorScheme.surface, 
                       borderRadius: BorderRadius.circular(12.0),
                       border: Border.all(
-                        color: activeTest!['hasAttemptsRemaining'] == false 
+                        color: activeTest['hasAttemptsRemaining'] == false 
                           ? Theme.of(context).colorScheme.error.withValues(alpha: 0.5) 
                           : Theme.of(context).colorScheme.primary.withValues(alpha: 0.5), 
                         width: 1.5
@@ -300,26 +304,62 @@ class _SubjectPageState extends ConsumerState<SubjectPage> {
               if (pastTests.isEmpty)
                 Text('Zatím nemáš žádnou historii testů.', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontSize: 14))
               else
-                Container(
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface,
-                    borderRadius: BorderRadius.circular(16.0),
-                    border: Border.all(color: Theme.of(context).colorScheme.outline),
-                  ),
-                  child: Column(
-                    children: pastTests.asMap().entries.map((entry) {
-                      int index = entry.key;
-                      Map<String, dynamic> test = entry.value;
-                      return Column(
-                        children: [
-                          _buildPastTestCard(test),
-                          // Čára
-                          if (index != pastTests.length - 1)
-                            Divider(height: 1, thickness: 1, color: Theme.of(context).colorScheme.outline, indent: 20, endIndent: 20),
-                        ],
-                      );
-                    }).toList(),
-                  ),
+                Column(
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surface,
+                        borderRadius: BorderRadius.circular(16.0),
+                        border: Border.all(color: Theme.of(context).colorScheme.outline),
+                      ),
+                      child: Column(
+                        children: (_showAllHistory ? pastTests : pastTests.take(3).toList()).asMap().entries.map((entry) {
+                          int index = entry.key;
+                          Map<String, dynamic> test = entry.value;
+                          final visibleCount = _showAllHistory ? pastTests.length : (pastTests.length > 3 ? 3 : pastTests.length);
+                          return Column(
+                            children: [
+                              _buildPastTestCard(test),
+                              // Čára
+                              if (index != visibleCount - 1)
+                                Divider(height: 1, thickness: 1, color: Theme.of(context).colorScheme.outline, indent: 20, endIndent: 20),
+                            ],
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                    if (pastTests.length > 3) ...[
+                      const SizedBox(height: 12.0),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton(
+                          onPressed: () {
+                            setState(() {
+                              _showAllHistory = !_showAllHistory;
+                            });
+                          },
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Theme.of(context).colorScheme.primary,
+                            side: BorderSide(color: Theme.of(context).colorScheme.outline),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            backgroundColor: Theme.of(context).colorScheme.surface,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                _showAllHistory ? 'Zobrazit méně' : 'Zobrazit celou historii (${pastTests.length})', 
+                                style: GoogleFonts.inter(fontWeight: FontWeight.bold)
+                              ),
+                              const SizedBox(width: 8),
+                              Icon(_showAllHistory ? Icons.expand_less : Icons.expand_more, size: 20),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               
               const SizedBox(height: 40.0), // Místo pro plynulý scroll dolů

@@ -121,9 +121,10 @@ class _TestEvaluationPageState extends ConsumerState<TestEvaluationPage> {
     if (state.isLoading) {
       return Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        appBar: widget.isStudent ? _buildStudentAppBar(context) : null,
         body: Column(
           children: [
-            const PageHeaderWidget(title: 'Načítání...', showBackButton: true),
+            if (!widget.isStudent) const PageHeaderWidget(title: 'Načítání...', showBackButton: true),
             Expanded(child: Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary))),
           ],
         ),
@@ -133,9 +134,10 @@ class _TestEvaluationPageState extends ConsumerState<TestEvaluationPage> {
     if (state.testData.isEmpty) {
       return Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        appBar: widget.isStudent ? _buildStudentAppBar(context) : null,
         body: Column(
           children: [
-            const PageHeaderWidget(title: 'Chyba načítání', showBackButton: true),
+            if (!widget.isStudent) const PageHeaderWidget(title: 'Chyba načítání', showBackButton: true),
             Expanded(child: Center(child: Text('Data o testu se nepodařilo načíst.', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurface)))),
           ],
         ),
@@ -144,14 +146,15 @@ class _TestEvaluationPageState extends ConsumerState<TestEvaluationPage> {
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBar: widget.isStudent ? _buildStudentAppBar(context) : null,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          PageHeaderWidget(
-            title: 'Hodnocení testu',
-            showBackButton: true,
-            actions: [
-              if (!widget.isStudent)
+          if (!widget.isStudent)
+            PageHeaderWidget(
+              title: 'Hodnocení testu',
+              showBackButton: true,
+              actions: [
                 state.isSubmitting
                     ? SizedBox(
                         width: 24, height: 24,
@@ -168,8 +171,8 @@ class _TestEvaluationPageState extends ConsumerState<TestEvaluationPage> {
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
                       ),
-            ],
-          ),
+              ],
+            ),
           Expanded(
             child: SingleChildScrollView(
               child: Column(
@@ -191,76 +194,138 @@ class _TestEvaluationPageState extends ConsumerState<TestEvaluationPage> {
     );
   }
 
+  PreferredSizeWidget _buildStudentAppBar(BuildContext context) {
+    return AppBar(
+      backgroundColor: Theme.of(context).appBarTheme.backgroundColor ?? Theme.of(context).colorScheme.surface,
+      surfaceTintColor: Colors.transparent, // Zabrání zešednutí při rolování
+      scrolledUnderElevation: 0,
+      elevation: 0,
+      toolbarHeight: 80, 
+      centerTitle: false,
+      leading: IconButton(
+        icon: Icon(Icons.arrow_back_rounded, color: Theme.of(context).colorScheme.onSurface),
+        onPressed: () => Navigator.of(context).pop(), 
+      ),
+      title: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            'Hodnocení testu',
+            style: GoogleFonts.inter(fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.onSurface, fontSize: 24),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            'Detail výsledků',
+            style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontSize: 13, fontWeight: FontWeight.w500),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// Vykreslí horní informační panel s detaily o odevzdaném testu
   /// (Jméno studenta, předmět, stav, datum a maximální skóre).
   Widget _buildHeaderInfo(BuildContext context, TestEvaluationState state) {
-    return Container(
-      color: Theme.of(context).colorScheme.surface,
-      padding: const EdgeInsets.all(24.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = constraints.maxWidth < 600;
+        
+        final infoColumn = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              state.testData['studentName'] ?? 'Neznámý student',
+              style: GoogleFonts.inter(fontSize: 24, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.onSurface),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 16,
+              runSpacing: 4,
               children: [
-                Text(
-                  state.testData['studentName'] ?? 'Neznámý student',
-                  style: GoogleFonts.inter(fontSize: 24, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.onSurface),
-                ),
-                const SizedBox(height: 8),
                 Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(Icons.book_rounded, size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
                     const SizedBox(width: 6),
                     Text(state.testData['subject'] ?? 'Předmět', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.w500)),
-                    const SizedBox(width: 16),
+                  ],
+                ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
                     Icon(Icons.people_alt_rounded, size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
                     const SizedBox(width: 6),
                     Text(state.testData['classGroup'] ?? 'Třída', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.w500)),
                   ],
                 ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Icon(Icons.calendar_today_rounded, size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
-                    const SizedBox(width: 6),
-                    Text('Odevzdáno: ${state.testData['submittedAt'] ?? '-'}', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.w500)),
-                  ],
-                ),
               ],
             ),
-          ),
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.5),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2)),
-            ),
-            child: Column(
+            const SizedBox(height: 4),
+            Row(
               children: [
-                Text('CELKOVÉ SKÓRE', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary, letterSpacing: 0.5)),
-                const SizedBox(height: 8),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
-                  children: [
-                    Text(
-                      state.currentTotalScore.toStringAsFixed(1).replaceAll(RegExp(r'\.0$'), ''),
-                      style: GoogleFonts.inter(fontSize: 32, fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.primary),
-                    ),
-                    Text(
-                      ' / ${state.testData['maxScore'] ?? 0} b.',
-                      style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary),
-                    ),
-                  ],
-                ),
+                Icon(Icons.calendar_today_rounded, size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                const SizedBox(width: 6),
+                Text('Odevzdáno: ${state.testData['submittedAt'] ?? '-'}', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.w500)),
               ],
             ),
+          ],
+        );
+
+        final scoreBox = Container(
+          width: isMobile ? double.infinity : null,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.5),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2)),
           ),
-        ],
-      ),
+          child: Column(
+            children: [
+              Text('CELKOVÉ SKÓRE', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary, letterSpacing: 0.5)),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  Text(
+                    state.currentTotalScore.toStringAsFixed(1).replaceAll(RegExp(r'\.0$'), ''),
+                    style: GoogleFonts.inter(fontSize: 32, fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.primary, height: 1),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '/ ${state.testData['maxScore'] ?? 0} b.',
+                    style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7)),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+
+        return Container(
+          color: Theme.of(context).colorScheme.surface,
+          padding: const EdgeInsets.all(24.0),
+          child: isMobile
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    infoColumn,
+                    const SizedBox(height: 24),
+                    scoreBox,
+                  ],
+                )
+              : Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(child: infoColumn),
+                    const SizedBox(width: 24),
+                    scoreBox,
+                  ],
+                ),
+        );
+      },
     );
   }
 
@@ -297,24 +362,20 @@ class _TestEvaluationPageState extends ConsumerState<TestEvaluationPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
+          Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 12,
+            runSpacing: 4,
             children: [
               Text(
                 'Detail odpovědí',
                 style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
               ),
-              if (hideCorrectAnswers) ...[
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    '(U tohoto testu učitel zakázal zobrazení správných odpovědí)',
-                    style: GoogleFonts.inter(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant, fontStyle: FontStyle.italic),
-                    overflow: TextOverflow.ellipsis,
-                  ),
+              if (hideCorrectAnswers)
+                Text(
+                  '(U tohoto testu učitel zakázal zobrazení správných odpovědí)',
+                  style: GoogleFonts.inter(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant, fontStyle: FontStyle.italic),
                 ),
-              ],
             ],
           ),
           const SizedBox(height: 20),
@@ -403,16 +464,21 @@ class _TestEvaluationPageState extends ConsumerState<TestEvaluationPage> {
             borderRadius: BorderRadius.circular(16.0),
             child: Padding(
               padding: const EdgeInsets.all(24.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: Wrap(
+                spacing: 16,
+                runSpacing: 12,
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  Row(
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 8,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       Text(
                         title,
                         style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16, color: Theme.of(context).colorScheme.onSurface),
                       ),
-                      const SizedBox(width: 12),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
@@ -434,6 +500,7 @@ class _TestEvaluationPageState extends ConsumerState<TestEvaluationPage> {
                     ],
                   ),
                   Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
                         scoreDisplay,

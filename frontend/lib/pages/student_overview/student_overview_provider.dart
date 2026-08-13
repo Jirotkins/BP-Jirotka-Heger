@@ -141,8 +141,22 @@ class StudentOverviewNotifier extends Notifier<StudentOverviewState> {
         final now = DateTime.now();
         final testCount = activeTestsList.where((t) {
           if (t['groupId'] != groupId) return false;
-          if (!(t['status'] == null || t['status'] == 'STARTED')) return false;
           
+          final String? activateTo = t['rawActivateTo'];
+          if (activateTo != null) {
+            final toDate = DateTime.parse(activateTo.endsWith('Z') ? activateTo : '${activateTo}Z').toLocal();
+            if (now.isAfter(toDate)) return false;
+          }
+
+          final hasAttemptsRemaining = (t['max_attempts'] == null || t['attempts_count'] == null) 
+                                       || (t['attempts_count'] as int) < (t['max_attempts'] as int);
+
+          if (t['status'] == 'SUBMITTED' || t['status'] == 'GRADED') {
+            if (!hasAttemptsRemaining) return false;
+          } else {
+            if (t['status'] == 'STARTED' && !hasAttemptsRemaining) return false;
+          }
+
           final String? activateFrom = t['rawActivateFrom'];
           if (activateFrom != null) {
             final fromDate = DateTime.parse(activateFrom.endsWith('Z') ? activateFrom : '${activateFrom}Z').toLocal();
