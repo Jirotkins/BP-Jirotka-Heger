@@ -445,6 +445,7 @@ class StudentAssignmentResponse(BaseModel):
     """Schema pro vrácení přiřazených testů studentovi"""
     assignment_id: int
     attempt_id: int | None = None
+    attempt_number: int | None = None
     template_name: str
     description: str | None = None
     activate_from: str | None = None

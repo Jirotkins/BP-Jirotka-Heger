@@ -106,9 +106,10 @@ class TestEvaluationNotifier extends Notifier<TestEvaluationState> {
       final aId = _assignmentId ?? 999;
       final attId = _attemptId ?? 1;
       
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
       final url = _isStudent 
-          ? '/api/student/attempts/$attId' 
-          : '/exam-assignments/$aId/attempts/$attId';
+          ? '/api/student/attempts/$attId?_t=$timestamp' 
+          : '/exam-assignments/$aId/attempts/$attId?_t=$timestamp';
           
       final response = await apiClient.get(url);
       
@@ -247,7 +248,7 @@ class TestEvaluationNotifier extends Notifier<TestEvaluationState> {
 
     final mappedData = {
         "studentName": data['student_name'] ?? "Student ID: ${data['student_id']}",
-        "subject": "Pokus #${data['attempt_id']}",
+        "subject": "Pokus #${data['attempt_number'] ?? data['attempt_id']}",
       "classGroup": statusText,
       "submittedAt": submittedAtText,
       "maxScore": data['max_points'] ?? 0,

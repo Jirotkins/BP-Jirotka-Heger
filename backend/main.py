@@ -1392,8 +1392,16 @@ def get_attempt_detail(
             else (attempt.student.login_code if attempt.student else None)
         )
 
+        from models import StudentAttempt
+        attempt_number = db.query(StudentAttempt).filter(
+            StudentAttempt.assignment_id == attempt.assignment_id,
+            StudentAttempt.student_id == attempt.student_id,
+            StudentAttempt.started_at <= attempt.started_at
+        ).count()
+
         return {
             "attempt_id": attempt.attempt_id,
+            "attempt_number": attempt_number,
             "assignment_id": attempt.assignment_id,
             "student_id": attempt.student_id,
             "student_name": student_name,
@@ -1654,8 +1662,16 @@ def get_student_attempt_endpoint(
             else (attempt.student.login_code if attempt.student else None)
         )
 
+        from models import StudentAttempt
+        attempt_number = db.query(StudentAttempt).filter(
+            StudentAttempt.assignment_id == attempt.assignment_id,
+            StudentAttempt.student_id == attempt.student_id,
+            StudentAttempt.started_at <= attempt.started_at
+        ).count()
+
         return {
             "attempt_id": attempt.attempt_id,
+            "attempt_number": attempt_number,
             "assignment_id": attempt.assignment_id,
             "student_id": attempt.student_id,
             "student_name": student_name,

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -73,14 +74,26 @@ class StudentOverviewState {
 /// Riverpod Notifier, který spravuje stav úvodní stránky studenta.
 /// Komunikuje s API a transformuje data pro zobrazení (formátování dat, výpočty testů na předmět atd.).
 class StudentOverviewNotifier extends Notifier<StudentOverviewState> {
+  Timer? _pollingTimer;
+
   @override
   StudentOverviewState build() {
+    ref.onDispose(() {
+      _pollingTimer?.cancel();
+    });
+
+    _pollingTimer = Timer.periodic(const Duration(seconds: 15), (_) {
+      fetchDashboardData(silent: true);
+    });
+
     return StudentOverviewState(isLoading: true);
   }
 
   /// Stáhne z backendu všechny potřebné údaje (testy a předměty) a transformuje je pro UI.
-  Future<void> fetchDashboardData() async {
-    state = state.copyWith(isLoading: true, errorMessage: null);
+  Future<void> fetchDashboardData({bool silent = false}) async {
+    if (!silent) {
+      state = state.copyWith(isLoading: true, errorMessage: null);
+    }
 
     try {
       final apiClient = ref.read(apiClientProvider);
@@ -111,6 +124,7 @@ class StudentOverviewNotifier extends Notifier<StudentOverviewState> {
           'groupId': assignment['group_id']?.toString() ?? '',
           'questions': assignment['question_count'] ?? 0,
           'attempt_id': assignment['attempt_id'],
+          'attempt_number': assignment['attempt_number'],
           'score_percent': assignment['score_percent'],
           'max_attempts': assignment['max_attempts'],
           'attempts_count': assignment['attempts_count'],
@@ -150,17 +164,17 @@ class StudentOverviewNotifier extends Notifier<StudentOverviewState> {
       }).toList();
 
       state = state.copyWith(
+        isLoading: false,
         activeTests: activeTestsList,
         mySubjects: mySubjectsList,
-        isLoading: false,
       );
     } catch (e) {
-      state = state.copyWith(
-        activeTests: [],
-        mySubjects: [],
-        isLoading: false,
-        errorMessage: 'Nepodařilo se načíst data z API: $e',
-      );
+      if (!silent) {
+        state = state.copyWith(
+          isLoading: false,
+          errorMessage: 'Nepodařilo se načíst data: $e',
+        );
+      }
     }
   }
 }

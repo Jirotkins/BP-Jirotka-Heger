@@ -76,6 +76,10 @@ class _SubjectPageState extends ConsumerState<SubjectPage> {
           infoText = 'Aktivní • ${test['questions'] ?? 0} otázek';
         }
       }
+      bool hasAttemptsRemaining = true;
+      if (test['max_attempts'] != null && test['attempts_count'] != null) {
+        hasAttemptsRemaining = (test['attempts_count'] as int) < (test['max_attempts'] as int);
+      }
 
       final uiTest = {
         'id': test['id'],
@@ -87,16 +91,13 @@ class _SubjectPageState extends ConsumerState<SubjectPage> {
         'score': status == 'GRADED' ? (test['score_percent'] != null ? '${(test['score_percent'] as num).toStringAsFixed(0)} %' : 'Ohodnoceno') : 'Čeká na hodnocení',
         'isWarning': status == 'GRADED' && test['score_percent'] != null && (test['score_percent'] as num) < 50,
         'attempt_id': test['attempt_id'],
+        'attempt_number': test['attempt_number'],
+        'attempts_count': test['attempts_count'],
         'isScheduledFuture': isScheduledFuture,
         'isExpired': isExpired,
-        'attempts_count': test['attempts_count'],
+        'hasAttemptsRemaining': hasAttemptsRemaining,
         'max_attempts': test['max_attempts'],
       };
-
-      bool hasAttemptsRemaining = true;
-      if (test['max_attempts'] != null && test['attempts_count'] != null) {
-        hasAttemptsRemaining = (test['attempts_count'] as int) < (test['max_attempts'] as int);
-      }
 
       if (status == 'STARTED' && !isExpired) {
         activeTest = uiTest; // Pro zjednodušení bere první spuštěný
@@ -197,7 +198,15 @@ class _SubjectPageState extends ConsumerState<SubjectPage> {
                 _buildSectionHeader('Aktivní testy', 1, Theme.of(context).colorScheme.error),
                 const SizedBox(height: 16.0),
                 InkWell(
-                  onTap: () async {
+                  onTap: activeTest!['hasAttemptsRemaining'] == false ? () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: const Text('Vyčerpali jste všechny pokusy.'),
+                        backgroundColor: Theme.of(context).colorScheme.error,
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                  } : () async {
                     // Navigace do ostrého testu s předáním ID testu
                     await context.push('/testActive', extra: {'assignmentId': activeTest!['id'], 'testTitle': activeTest['title']});
                     // Obnovit data po návratu (kvůli aktualizaci počtu pokusů)
@@ -208,7 +217,12 @@ class _SubjectPageState extends ConsumerState<SubjectPage> {
                     decoration: BoxDecoration(
                       color: Theme.of(context).colorScheme.surface, 
                       borderRadius: BorderRadius.circular(12.0),
-                      border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5), width: 1.5), 
+                      border: Border.all(
+                        color: activeTest!['hasAttemptsRemaining'] == false 
+                          ? Theme.of(context).colorScheme.error.withValues(alpha: 0.5) 
+                          : Theme.of(context).colorScheme.primary.withValues(alpha: 0.5), 
+                        width: 1.5
+                      ), 
                     ),
                     padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
                     child: Row(
@@ -231,7 +245,14 @@ class _SubjectPageState extends ConsumerState<SubjectPage> {
                               const SizedBox(height: 2),
                               Text('Pokus: ${activeTest['attempts_count'] ?? 0} / ${activeTest['max_attempts'] ?? 'Neomezeno'}', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontSize: 12.0, fontWeight: FontWeight.bold)),
                               const SizedBox(height: 4),
-                              Text('Spustit nový pokus', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.primary, fontSize: 12.0, fontWeight: FontWeight.bold)),
+                              Text(
+                                activeTest['hasAttemptsRemaining'] == false ? 'Vyčerpáno' : 'Spustit nový pokus', 
+                                style: GoogleFonts.inter(
+                                  color: activeTest['hasAttemptsRemaining'] == false ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.primary, 
+                                  fontSize: 12.0, 
+                                  fontWeight: FontWeight.bold
+                                )
+                              ),
                             ],
                           ),
                         ),
@@ -410,7 +431,7 @@ class _SubjectPageState extends ConsumerState<SubjectPage> {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(test['score'], style: GoogleFonts.inter(color: scoreColor, fontWeight: FontWeight.bold, fontSize: 16)),
-                Text('1', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12)), 
+                Text('Pokus ${test['attempt_number'] ?? test['attempts_count'] ?? 1}', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12)), 
               ],
             ),
           ],

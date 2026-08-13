@@ -1409,12 +1409,15 @@ def get_student_assignments(db: Session, student_id: int):
         
         attempts_count = len(attempts)
         attempt_id = None
+        attempt_number = None
         status = None
         score_percent = None
         
         if attempts:
-            last_attempt = max(attempts, key=lambda x: x.started_at)
+            attempts_sorted = sorted(attempts, key=lambda x: x.started_at)
+            last_attempt = attempts_sorted[-1]
             attempt_id = last_attempt.attempt_id
+            attempt_number = len(attempts_sorted)
             status = last_attempt.status.value
             
             graded_attempts = [att for att in attempts if att.status.value == "GRADED" and att.score_percent is not None]
@@ -1422,6 +1425,7 @@ def get_student_assignments(db: Session, student_id: int):
                 best_attempt = max(graded_attempts, key=lambda x: x.score_percent)
                 score_percent = float(best_attempt.score_percent)
                 attempt_id = best_attempt.attempt_id
+                attempt_number = attempts_sorted.index(best_attempt) + 1
                 status = best_attempt.status.value
         
         # Determine if it requires password
@@ -1430,6 +1434,7 @@ def get_student_assignments(db: Session, student_id: int):
         result.append({
             "assignment_id": a.assignment_id,
             "attempt_id": attempt_id,
+            "attempt_number": attempt_number,
             "template_name": a.template.name,
             "description": a.template.description,
             "activate_from": a.activate_from.isoformat() if a.activate_from else None,
