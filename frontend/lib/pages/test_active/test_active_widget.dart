@@ -379,9 +379,12 @@ class _TestActiveWidgetState extends ConsumerState<TestActiveWidget> {
     final qId = (question['id'] ?? question['question_id']).toString();
     if (!state.questionFeedback.containsKey(qId)) return const SizedBox.shrink();
 
-    final result = state.questionFeedback[qId];
-    final isCorrect = result == 'correct';
-    final isPending = result == 'pending';
+    final resultObj = state.questionFeedback[qId];
+    final status = resultObj is Map ? resultObj['status'] : resultObj;
+    final correctAnswerText = resultObj is Map ? resultObj['correct_answer'] : null;
+
+    final isCorrect = status == 'correct';
+    final isPending = status == 'pending';
 
     Color bgColor = isCorrect ? const Color(0xFFDCFCE7) : const Color(0xFFFEE2E2);
     Color textColor = isCorrect ? const Color(0xFF166534) : const Color(0xFF991B1B);
@@ -406,11 +409,21 @@ class _TestActiveWidgetState extends ConsumerState<TestActiveWidget> {
         border: Border.all(color: borderColor),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Icon(icon, color: textColor),
           const SizedBox(width: 12.0),
           Expanded(
-            child: Text(text, style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: textColor, fontSize: 15.0)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(text, style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: textColor, fontSize: 15.0)),
+                if (!isCorrect && !isPending && correctAnswerText != null && correctAnswerText.toString().isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text('Správně: $correctAnswerText', style: GoogleFonts.inter(color: textColor.withValues(alpha: 0.8), fontSize: 13.0, fontWeight: FontWeight.w500)),
+                ],
+              ],
+            ),
           ),
         ],
       ),

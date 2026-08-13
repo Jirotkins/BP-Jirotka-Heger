@@ -175,17 +175,12 @@ class _TestEvaluationPageState extends ConsumerState<TestEvaluationPage> {
               child: Column(
                 children: [
                   _buildHeaderInfo(context, state),
-                  if (!widget.isStudent || (state.testData['show_results_after_submit'] ?? true))
-                    _buildQuestionsList(context, state, notifier)
-                  else
-                    Padding(
-                      padding: const EdgeInsets.all(32.0),
-                      child: Text(
-                        'Učitel u tohoto testu zakázal zobrazení správných odpovědí.',
-                        style: GoogleFonts.inter(fontSize: 16, color: Theme.of(context).colorScheme.onSurfaceVariant, fontStyle: FontStyle.italic),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
+                  _buildQuestionsList(
+                    context, 
+                    state, 
+                    notifier,
+                    hideCorrectAnswers: widget.isStudent && !(state.testData['show_results_after_submit'] ?? true),
+                  ),
                   const SizedBox(height: 60), 
                 ],
               ),
@@ -269,22 +264,19 @@ class _TestEvaluationPageState extends ConsumerState<TestEvaluationPage> {
     );
   }
 
-  /// Vykreslí hlavní sekci se seznamem všech otázek.
-  /// Iteruje přes `state.testData['questions']`.
-  Widget _buildQuestionsList(BuildContext context, TestEvaluationState state, TestEvaluationNotifier notifier) {
-    List<dynamic> questions = state.testData['questions'] ?? [];
-
-    return Padding(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Detail odpovědí',
-            style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
-          ),
-          const SizedBox(height: 20),
-          if (questions.isEmpty)
+  /// Vykreslí seznam otázek
+  Widget _buildQuestionsList(BuildContext context, TestEvaluationState state, TestEvaluationNotifier notifier, {bool hideCorrectAnswers = false}) {
+    if (state.testData['questions'] == null || (state.testData['questions'] as List).isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Detail odpovědí',
+              style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
+            ),
+            const SizedBox(height: 20),
             Center(
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 40.0),
@@ -293,14 +285,45 @@ class _TestEvaluationPageState extends ConsumerState<TestEvaluationPage> {
                   style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurfaceVariant),
                 ),
               ),
-            )
-          else
-            ...questions.asMap().entries.map((entry) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 20.0),
-                child: _buildDynamicEvaluationCard(entry.value, entry.key, state, notifier),
-              );
-            }),
+            ),
+          ],
+        ),
+      );
+    }
+
+    List<dynamic> questionsList = state.testData['questions'];
+    return Padding(
+      padding: const EdgeInsets.all(24.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(
+                'Detail odpovědí',
+                style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
+              ),
+              if (hideCorrectAnswers) ...[
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    '(U tohoto testu učitel zakázal zobrazení správných odpovědí)',
+                    style: GoogleFonts.inter(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant, fontStyle: FontStyle.italic),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 20),
+          ...questionsList.asMap().entries.map((entry) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 20.0),
+              child: _buildDynamicEvaluationCard(entry.value, entry.key, state, notifier, hideCorrectAnswers: hideCorrectAnswers),
+            );
+          }),
         ],
       ),
     );
@@ -334,7 +357,7 @@ class _TestEvaluationPageState extends ConsumerState<TestEvaluationPage> {
   /// 
   /// Zajišťuje zobrazení znění, obrázků a hlavičky s body. Volá další pod-metody
   /// (`_buildAutoGradedAnswerView` apod.) podle typu otázky.
-  Widget _buildDynamicEvaluationCard(Map<String, dynamic> question, int index, TestEvaluationState state, TestEvaluationNotifier notifier) {
+  Widget _buildDynamicEvaluationCard(Map<String, dynamic> question, int index, TestEvaluationState state, TestEvaluationNotifier notifier, {bool hideCorrectAnswers = false}) {
     String qId = question['id'];
     bool isExpanded = state.expandedQuestions.contains(qId);
     bool isAutoGraded = question['isAutoGraded'] ?? false;
@@ -469,13 +492,13 @@ class _TestEvaluationPageState extends ConsumerState<TestEvaluationPage> {
                   const SizedBox(height: 20),
 
                   if (question['type'] == 'choice' || question['type'] == 'short_answer')
-                    _buildAutoGradedAnswerView(question)
+                    _buildAutoGradedAnswerView(question, hideCorrectAnswers)
                   else if (question['type'] == 'open')
-                    _buildOpenQuestionEvaluation(question, notifier)
+                    _buildOpenQuestionEvaluation(question, notifier, hideCorrectAnswers)
                   else if (question['type'] == 'order')
-                    _buildOrderAnswerView(question)
+                    _buildOrderAnswerView(question, hideCorrectAnswers)
                   else if (question['type'] == 'match')
-                    _buildMatchAnswerView(question),
+                    _buildMatchAnswerView(question, hideCorrectAnswers),
                 ],
               ),
             ),
@@ -488,20 +511,22 @@ class _TestEvaluationPageState extends ConsumerState<TestEvaluationPage> {
   /// Vykreslí vizuální zhodnocení u automaticky opravovaných otázek
   /// (např. multiple choice, short answer), kde se jen zobrazuje odpověď žáka
   /// a správná odpověď s ikonami pro úspěch/neúspěch.
-  Widget _buildAutoGradedAnswerView(Map<String, dynamic> question) {
+  Widget _buildAutoGradedAnswerView(Map<String, dynamic> question, bool hideCorrectAnswers) {
     bool isCorrect = question['isCorrect'] == true;
     final customColors = Theme.of(context).extension<CustomColors>();
+
+    Color bgColor = isCorrect ? (customColors?.greenBg ?? Colors.green.withValues(alpha: 0.1)) : Theme.of(context).colorScheme.errorContainer;
+    Color borderColor = isCorrect ? (customColors?.greenText?.withValues(alpha: 0.3) ?? Colors.transparent) : Theme.of(context).colorScheme.error.withValues(alpha: 0.3);
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isCorrect ? customColors?.greenBg : Theme.of(context).colorScheme.errorContainer,
+        color: bgColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isCorrect ? customColors?.greenText?.withValues(alpha: 0.3) ?? Colors.transparent : Theme.of(context).colorScheme.error.withValues(alpha: 0.3),
-        ),
+        border: Border.all(color: borderColor),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(
             child: Column(
@@ -510,6 +535,11 @@ class _TestEvaluationPageState extends ConsumerState<TestEvaluationPage> {
                 Text('Odpověď studenta:', style: GoogleFonts.inter(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
                 const SizedBox(height: 4),
                 Text(question['studentAnswer'] ?? '', style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface)),
+                
+                if (!hideCorrectAnswers && !isCorrect && question['correctAnswer'] != null && question['correctAnswer'].toString().isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text('Správně: ${question['correctAnswer']}', style: GoogleFonts.inter(fontSize: 12, color: customColors?.greenText ?? Colors.green, fontWeight: FontWeight.w600)),
+                ],
               ],
             ),
           ),
@@ -525,7 +555,7 @@ class _TestEvaluationPageState extends ConsumerState<TestEvaluationPage> {
 
   /// Vykreslí detail seřazovací (ORDER) otázky – jak žák položky poskládal.
   /// (Tato implementace se spoléhá na backend ohledně logiky částečných bodů).
-  Widget _buildOrderAnswerView(Map<String, dynamic> question) {
+  Widget _buildOrderAnswerView(Map<String, dynamic> question, bool hideCorrectAnswers) {
     double awarded = (question['awardedPoints'] ?? 0).toDouble();
     double max = (question['maxPoints'] ?? 1).toDouble();
     var colors = _getFeedbackColors(context, awarded, max);
@@ -559,6 +589,9 @@ class _TestEvaluationPageState extends ConsumerState<TestEvaluationPage> {
             int index = entry.key;
             String text = entry.value;
             bool isItemCorrect = (index < correctItems.length) ? text == correctItems[index] : false;
+            
+            Color badgeBg = isItemCorrect ? (customColors?.greenBg ?? Theme.of(context).colorScheme.primaryContainer) : Theme.of(context).colorScheme.errorContainer;
+            Color badgeText = isItemCorrect ? (customColors?.greenText ?? Theme.of(context).colorScheme.primary) : Theme.of(context).colorScheme.error;
 
             return Padding(
               padding: const EdgeInsets.only(bottom: 8.0),
@@ -567,14 +600,14 @@ class _TestEvaluationPageState extends ConsumerState<TestEvaluationPage> {
                   Container(
                     width: 28, height: 28,
                     decoration: BoxDecoration(
-                      color: isItemCorrect ? customColors?.greenBg ?? Theme.of(context).colorScheme.primaryContainer : Theme.of(context).colorScheme.errorContainer,
+                      color: badgeBg,
                       shape: BoxShape.circle,
                     ),
                     alignment: Alignment.center,
                     child: Text(
                       '${index + 1}.',
                       style: GoogleFonts.inter(
-                        color: isItemCorrect ? customColors?.greenText ?? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.error,
+                        color: badgeText,
                         fontWeight: FontWeight.bold, fontSize: 13,
                       ),
                     ),
@@ -588,10 +621,10 @@ class _TestEvaluationPageState extends ConsumerState<TestEvaluationPage> {
                           text,
                           style: GoogleFonts.inter(
                             fontWeight: FontWeight.w500, color: Theme.of(context).colorScheme.onSurface,
-                            decoration: isItemCorrect ? TextDecoration.none : TextDecoration.lineThrough,
+                            decoration: (!isItemCorrect) ? TextDecoration.lineThrough : TextDecoration.none,
                           ),
                         ),
-                        if (!isItemCorrect && index < correctItems.length)
+                        if (!hideCorrectAnswers && !isItemCorrect && index < correctItems.length)
                           Text(
                             'Správně: ${correctItems[index]}',
                             style: GoogleFonts.inter(fontSize: 12, color: customColors?.greenText ?? Colors.green, fontWeight: FontWeight.w600),
@@ -610,7 +643,7 @@ class _TestEvaluationPageState extends ConsumerState<TestEvaluationPage> {
 
   /// Vykreslí detail spojovací (MATCHING) otázky – zobrazení párů levé a pravé strany,
   /// jak je student propojil.
-  Widget _buildMatchAnswerView(Map<String, dynamic> question) {
+  Widget _buildMatchAnswerView(Map<String, dynamic> question, bool hideCorrectAnswers) {
     double awarded = (question['awardedPoints'] ?? 0).toDouble();
     double max = (question['maxPoints'] ?? 1).toDouble();
     var colors = _getFeedbackColors(context, awarded, max);
@@ -641,6 +674,10 @@ class _TestEvaluationPageState extends ConsumerState<TestEvaluationPage> {
           const SizedBox(height: 16),
           ...pairs.map((pair) {
             bool isPairCorrect = pair['isCorrect'] ?? false;
+            
+            Color rightBoxBg = isPairCorrect ? Theme.of(context).colorScheme.surface : Theme.of(context).colorScheme.errorContainer;
+            Color rightBoxBorder = isPairCorrect ? Theme.of(context).colorScheme.outline : Theme.of(context).colorScheme.error.withValues(alpha: 0.3);
+            Color rightBoxText = isPairCorrect ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.error;
 
             return Padding(
               padding: const EdgeInsets.only(bottom: 12.0),
@@ -674,22 +711,20 @@ class _TestEvaluationPageState extends ConsumerState<TestEvaluationPage> {
                           width: double.infinity,
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                           decoration: BoxDecoration(
-                            color: isPairCorrect ? Theme.of(context).colorScheme.surface : Theme.of(context).colorScheme.errorContainer,
+                            color: rightBoxBg,
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: isPairCorrect ? Theme.of(context).colorScheme.outline : Theme.of(context).colorScheme.error.withValues(alpha: 0.3),
-                            ),
+                            border: Border.all(color: rightBoxBorder),
                           ),
                           child: Text(
                             pair['right'] ?? '',
                             style: GoogleFonts.inter(
                               fontWeight: FontWeight.w500,
-                              color: isPairCorrect ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.error,
-                              decoration: isPairCorrect ? TextDecoration.none : TextDecoration.lineThrough,
+                              color: rightBoxText,
+                              decoration: (!isPairCorrect) ? TextDecoration.lineThrough : TextDecoration.none,
                             ),
                           ),
                         ),
-                        if (!isPairCorrect && pair['correctRight'] != null)
+                        if (!hideCorrectAnswers && !isPairCorrect && pair['correctRight'] != null)
                           Padding(
                             padding: const EdgeInsets.only(top: 4.0, left: 4.0),
                             child: Text(
@@ -711,7 +746,7 @@ class _TestEvaluationPageState extends ConsumerState<TestEvaluationPage> {
 
   /// Sekce pro manuální (otevřené) otázky (např. 'open'). Zobrazí textové
   /// pole pro zpětnou vazbu učitele a input pro manuální udělení bodů.
-  Widget _buildOpenQuestionEvaluation(Map<String, dynamic> question, TestEvaluationNotifier notifier) {
+  Widget _buildOpenQuestionEvaluation(Map<String, dynamic> question, TestEvaluationNotifier notifier, bool hideCorrectAnswers) {
     String qId = question['id'] ?? '';
     if (!_pointsControllers.containsKey(qId)) return const SizedBox();
     

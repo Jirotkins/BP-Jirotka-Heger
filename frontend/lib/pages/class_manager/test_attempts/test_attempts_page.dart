@@ -127,6 +127,12 @@ class _TestAttemptsPageState extends ConsumerState<TestAttemptsPage> {
                       style: GoogleFonts.inter(fontSize: 12, color: statusColor, fontWeight: FontWeight.w600),
                     ),
                   ),
+                  const SizedBox(width: 8),
+                  if (attempt['attemptCountLabel'] != null)
+                    Text(
+                      attempt['attemptCountLabel'],
+                      style: GoogleFonts.inter(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                    ),
                 ],
               ),
             ),

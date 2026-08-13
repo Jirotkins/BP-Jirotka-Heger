@@ -196,6 +196,21 @@ class TestEvaluationNotifier extends Notifier<TestEvaluationState> {
             }).toList();
          }
       }
+      
+      dynamic displayCorrectAnswer;
+      if (type == 'choice' || type == 'short_answer') {
+          if (snap['answers'] != null) {
+              List<String> corrects = [];
+              for (var a in snap['answers']) {
+                  if (a['is_correct'] == true) {
+                      corrects.add(a['text'] ?? '');
+                  }
+              }
+              if (corrects.isNotEmpty) {
+                  displayCorrectAnswer = corrects.join(", ");
+              }
+          }
+      }
 
       mappedQuestions.add({
         "id": qId,
@@ -205,6 +220,7 @@ class TestEvaluationNotifier extends Notifier<TestEvaluationState> {
         "image_url": snap['image_url'], // PRIDANO
         "studentAnswer": displayStudentAnswer ?? '-',
         "studentPairs": displayStudentPairs,
+        "correctAnswer": displayCorrectAnswer,
         "isCorrect": (awardedPoints ?? 0) > 0, 
         "awardedPoints": awardedPoints ?? 0.0,
         "maxPoints": maxPoints,
@@ -236,6 +252,7 @@ class TestEvaluationNotifier extends Notifier<TestEvaluationState> {
       "submittedAt": submittedAtText,
       "maxScore": data['max_points'] ?? 0,
       "questions": mappedQuestions,
+      "show_results_after_submit": data['show_results_after_submit'],
     };
 
     state = state.copyWith(

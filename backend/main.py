@@ -1035,7 +1035,11 @@ def create_exam_assignment(
             activate_to=assignment_data.activate_to,
             time_limit_minutes=assignment_data.time_limit_minutes,
             access_password=assignment_data.access_password,
-            show_immediate_feedback=assignment_data.show_immediate_feedback
+            show_immediate_feedback=assignment_data.show_immediate_feedback,
+            max_attempts=assignment_data.max_attempts,
+            shuffle_questions=assignment_data.shuffle_questions,
+            can_go_back=assignment_data.can_go_back,
+            show_results_after_submit=assignment_data.show_results_after_submit
         )
         return {
             "success": True,
@@ -1048,6 +1052,10 @@ def create_exam_assignment(
                 "activate_to": assignment.activate_to.isoformat() if assignment.activate_to else None,
                 "is_active": assignment.is_active,
                 "show_immediate_feedback": assignment.show_immediate_feedback,
+                "max_attempts": assignment.max_attempts,
+                "shuffle_questions": assignment.shuffle_questions,
+                "can_go_back": assignment.can_go_back,
+                "show_results_after_submit": assignment.show_results_after_submit,
                 "time_limit_minutes": assignment.time_limit_minutes,
                 "created_at": assignment.created_at.isoformat()
             }
@@ -1112,6 +1120,11 @@ def get_group_assignments(
                 "activate_from": a.activate_from.isoformat() if a.activate_from else None,
                 "activate_to": a.activate_to.isoformat() if a.activate_to else None,
                 "is_active": a.is_active,
+                "show_immediate_feedback": a.show_immediate_feedback,
+                "max_attempts": a.max_attempts,
+                "shuffle_questions": a.shuffle_questions,
+                "can_go_back": a.can_go_back,
+                "show_results_after_submit": a.show_results_after_submit,
                 "time_limit_minutes": a.time_limit_minutes,
                 "created_at": a.created_at.isoformat(),
                 "attempt_count": len(a.attempts)
@@ -1151,6 +1164,11 @@ def get_assignment(
             "activate_from": assignment.activate_from.isoformat() if assignment.activate_from else None,
             "activate_to": assignment.activate_to.isoformat() if assignment.activate_to else None,
             "is_active": assignment.is_active,
+            "show_immediate_feedback": assignment.show_immediate_feedback,
+            "max_attempts": assignment.max_attempts,
+            "shuffle_questions": assignment.shuffle_questions,
+            "can_go_back": assignment.can_go_back,
+            "show_results_after_submit": assignment.show_results_after_submit,
             "time_limit_minutes": assignment.time_limit_minutes,
             "created_at": assignment.created_at.isoformat(),
             "attempt_count": len(assignment.attempts)
@@ -1198,6 +1216,10 @@ def update_assignment(
                 "activate_to": assignment.activate_to.isoformat() if assignment.activate_to else None,
                 "is_active": assignment.is_active,
                 "show_immediate_feedback": assignment.show_immediate_feedback,
+                "max_attempts": assignment.max_attempts,
+                "shuffle_questions": assignment.shuffle_questions,
+                "can_go_back": assignment.can_go_back,
+                "show_results_after_submit": assignment.show_results_after_submit,
                 "time_limit_minutes": assignment.time_limit_minutes,
             }
         }

@@ -135,6 +135,10 @@ CREATE TABLE exam_assignments (
     time_limit_minutes INT,              -- Časový limit v minutách (např. 45)
     access_password VARCHAR(50),         -- Volitelné heslo pro spuštění testu
     show_immediate_feedback BOOLEAN DEFAULT FALSE, -- Okamžitá zpětná vazba pro studenty
+    max_attempts INT,
+    shuffle_questions BOOLEAN DEFAULT FALSE,
+    can_go_back BOOLEAN DEFAULT TRUE,
+    show_results_after_submit BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

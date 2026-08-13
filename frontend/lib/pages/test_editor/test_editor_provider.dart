@@ -238,13 +238,22 @@ class TestEditorNotifier extends Notifier<TestEditorState> {
          }
       }
 
+      int? maxAttempts;
+      if (state.testSettings['attempts'] != null && state.testSettings['attempts'] != 'Nekonečno') {
+        maxAttempts = int.tryParse(state.testSettings['attempts']);
+      }
+
       final assignData = {
         "template_id": templateId,
         "activate_from": activateFromStr,
         "activate_to": activateToStr,
         "time_limit_minutes": state.timeSettings['durationMinutes'] ?? 45,
         "access_password": null,
-        "show_immediate_feedback": state.testSettings['immediate_feedback'] ?? false
+        "show_immediate_feedback": state.testSettings['immediate_feedback'] ?? false,
+        "max_attempts": maxAttempts,
+        "shuffle_questions": state.testSettings['shuffle'] ?? false,
+        "can_go_back": state.testSettings['can_go_back'] ?? true,
+        "show_results_after_submit": state.testSettings['show_results_after_submit'] ?? true,
       };
 
       await apiClient.post('/groups/$groupId/exam-assignments', assignData);

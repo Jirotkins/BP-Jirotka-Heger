@@ -63,7 +63,32 @@ class TestAttemptsNotifier extends Notifier<TestAttemptsState> {
       
       final attemptsRaw = response['attempts'] as List<dynamic>? ?? [];
       
-      final attempts = attemptsRaw.map((a) {
+      final Map<int, Map<String, dynamic>> bestAttemptsByStudent = {};
+      final Map<int, int> studentAttemptCounts = {};
+      
+      for (var a in attemptsRaw) {
+          int studentId = a['student_id'];
+          studentAttemptCounts[studentId] = (studentAttemptCounts[studentId] ?? 0) + 1;
+          
+          double currentScore = a['score_percent'] != null ? (a['score_percent'] as num).toDouble() : -1.0;
+          
+          if (!bestAttemptsByStudent.containsKey(studentId)) {
+             bestAttemptsByStudent[studentId] = a;
+          } else {
+             final existing = bestAttemptsByStudent[studentId]!;
+             double existingScore = existing['score_percent'] != null ? (existing['score_percent'] as num).toDouble() : -1.0;
+             if (currentScore > existingScore) {
+                bestAttemptsByStudent[studentId] = a;
+             }
+          }
+      }
+      
+      final attemptsRawFiltered = bestAttemptsByStudent.values.toList();
+      
+      final attempts = attemptsRawFiltered.map((a) {
+        int studentId = a['student_id'];
+        int attemptCount = studentAttemptCounts[studentId] ?? 1;
+
         String status = a['status'] ?? 'UNKNOWN';
         String statusText = status;
         if (status == 'STARTED') statusText = 'Probíhá';
@@ -87,6 +112,7 @@ class TestAttemptsNotifier extends Notifier<TestAttemptsState> {
           'submitted_at': submittedAtText,
           'score': a['score_percent'] != null ? '${a['score_percent'].toStringAsFixed(0)} %' : '-',
           'points': a['total_points'] != null ? '${a['total_points']} / ${a['max_points'] ?? '?'}' : '-',
+          'attemptCountLabel': attemptCount > 1 ? '$attemptCount pokusů' : '1 pokus',
         };
       }).toList();
       

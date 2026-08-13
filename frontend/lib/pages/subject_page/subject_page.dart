@@ -42,11 +42,21 @@ class _SubjectPageState extends ConsumerState<SubjectPage> {
       final status = test['status'];
       
       bool isScheduledFuture = false;
+      bool isExpired = false;
       final String? activateFrom = test['rawActivateFrom'];
+      final String? activateTo = test['rawActivateTo'];
+      
       if (activateFrom != null) {
         final fromDate = DateTime.parse(activateFrom.endsWith('Z') ? activateFrom : '${activateFrom}Z').toLocal();
         if (now.isBefore(fromDate)) {
           isScheduledFuture = true;
+        }
+      }
+      
+      if (activateTo != null) {
+        final toDate = DateTime.parse(activateTo.endsWith('Z') ? activateTo : '${activateTo}Z').toLocal();
+        if (now.isAfter(toDate)) {
+          isExpired = true;
         }
       }
 
@@ -57,6 +67,8 @@ class _SubjectPageState extends ConsumerState<SubjectPage> {
         } else {
           infoText = 'Termín: ${test['deadline']} • ${test['questions'] ?? 0} otázek';
         }
+      } else if (isExpired) {
+        infoText = 'Uzavřeno: ${test['deadline']} • ${test['questions'] ?? 0} otázek';
       } else {
         if (test['deadline'] != 'Bez termínu') {
           infoText = 'Spuštěno do: ${test['deadline']} • ${test['questions'] ?? 0} otázek';
@@ -76,14 +88,35 @@ class _SubjectPageState extends ConsumerState<SubjectPage> {
         'isWarning': status == 'GRADED' && test['score_percent'] != null && (test['score_percent'] as num) < 50,
         'attempt_id': test['attempt_id'],
         'isScheduledFuture': isScheduledFuture,
+        'isExpired': isExpired,
+        'attempts_count': test['attempts_count'],
+        'max_attempts': test['max_attempts'],
       };
 
-      if (status == 'STARTED') {
+      bool hasAttemptsRemaining = true;
+      if (test['max_attempts'] != null && test['attempts_count'] != null) {
+        hasAttemptsRemaining = (test['attempts_count'] as int) < (test['max_attempts'] as int);
+      }
+
+      if (status == 'STARTED' && !isExpired) {
         activeTest = uiTest; // Pro zjednodušení bere první spuštěný
       } else if (status == 'SUBMITTED' || status == 'GRADED') {
         pastTests.add(uiTest);
+        // Pokud mají ještě pokusy, přidáme to i do aktivních (pokud běží okno a není future)
+        if (hasAttemptsRemaining && !isScheduledFuture && !isExpired && activeTest == null) {
+            activeTest = uiTest;
+        }
       } else {
-        upcomingTests.add(uiTest);
+        if (isExpired) {
+            pastTests.add(uiTest); // Pokud nestihl začít a vypršelo to, dáme to do historie
+        } else {
+            // Upcoming or currently active (but not started)
+            if (!isScheduledFuture && activeTest == null) {
+               activeTest = uiTest; // Available to start!
+            } else {
+               upcomingTests.add(uiTest);
+            }
+        }
       }
     }
 
@@ -164,9 +197,11 @@ class _SubjectPageState extends ConsumerState<SubjectPage> {
                 _buildSectionHeader('Aktivní testy', 1, Theme.of(context).colorScheme.error),
                 const SizedBox(height: 16.0),
                 InkWell(
-                  onTap: () {
+                  onTap: () async {
                     // Navigace do ostrého testu s předáním ID testu
-                    context.push('/testActive', extra: {'assignmentId': activeTest!['id'], 'testTitle': activeTest['title']});
+                    await context.push('/testActive', extra: {'assignmentId': activeTest!['id'], 'testTitle': activeTest['title']});
+                    // Obnovit data po návratu (kvůli aktualizaci počtu pokusů)
+                    ref.read(studentOverviewProvider.notifier).fetchDashboardData();
                   },
                   borderRadius: BorderRadius.circular(12.0),
                   child: Container(
@@ -193,6 +228,10 @@ class _SubjectPageState extends ConsumerState<SubjectPage> {
                               Text(activeTest['title'], style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16.0, color: Theme.of(context).colorScheme.onSurface)),
                               const SizedBox(height: 2),
                               Text(activeTest['info'], style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontSize: 12.0)),
+                              const SizedBox(height: 2),
+                              Text('Pokus: ${activeTest['attempts_count'] ?? 0} / ${activeTest['max_attempts'] ?? 'Neomezeno'}', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontSize: 12.0, fontWeight: FontWeight.bold)),
+                              const SizedBox(height: 4),
+                              Text('Spustit nový pokus', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.primary, fontSize: 12.0, fontWeight: FontWeight.bold)),
                             ],
                           ),
                         ),
@@ -307,8 +346,9 @@ class _SubjectPageState extends ConsumerState<SubjectPage> {
             behavior: SnackBarBehavior.floating,
           ),
         );
-      } : () {
-         context.push('/testActive', extra: {'assignmentId': test['id'], 'testTitle': test['title']});
+      } : () async {
+         await context.push('/testActive', extra: {'assignmentId': test['id'], 'testTitle': test['title']});
+         ref.read(studentOverviewProvider.notifier).fetchDashboardData();
       },
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 20.0),

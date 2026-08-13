@@ -30,8 +30,8 @@ class TestActiveState {
 
   /// Určuje, zda se má studentovi hned po odpovědi ukázat zpětná vazba (správně/špatně).
   final bool showImmediateFeedback;
-  /// Mapa okamžité zpětné vazby k jednotlivým otázkám (klíč je id otázky, hodnota 'correct'/'incorrect').
-  final Map<String, String> questionFeedback;
+  /// Mapa okamžité zpětné vazby k jednotlivým otázkám (klíč je id otázky, hodnota je objekt nebo 'correct'/'incorrect').
+  final Map<String, dynamic> questionFeedback;
   /// Zda je v testu povoleno vracet se k předchozím otázkám.
   final bool canGoBack;
 
@@ -59,7 +59,7 @@ class TestActiveState {
     bool? isExiting,
     bool? submitSuccess,
     bool? showImmediateFeedback,
-    Map<String, String>? questionFeedback,
+    Map<String, dynamic>? questionFeedback,
     bool? canGoBack,
     bool clearError = false,
   }) {
@@ -225,10 +225,15 @@ class TestActiveNotifier extends Notifier<TestActiveState> {
     _sseSubscription = apiClient.listenSse('/api/sse/student/attempts/$_attemptId/feedback').listen((event) {
       if (event['event'] == 'immediate_feedback' && event['feedback'] != null) {
         final Map<String, dynamic> feedbackMap = event['feedback'];
-        final Map<String, String> newFeedback = Map<String, String>.from(state.questionFeedback);
+        final Map<String, dynamic> newFeedback = Map<String, dynamic>.from(state.questionFeedback);
         
         feedbackMap.forEach((qId, result) {
-          newFeedback[qId] = result.toString();
+          if (result is Map) {
+            newFeedback[qId] = result;
+          } else {
+            // zpětná kompatibilita
+            newFeedback[qId] = {'status': result.toString()};
+          }
         });
         
         state = state.copyWith(questionFeedback: newFeedback);

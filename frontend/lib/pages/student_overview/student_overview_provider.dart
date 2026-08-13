@@ -42,8 +42,14 @@ class StudentOverviewState {
 
       // Test se zobrazí, pokud už byl zahájen (STARTED).
       if (test['status'] == 'STARTED') return true;
-      // Pokud test už má jakýkoliv jiný stav (např. odevzdán), nezobrazuje se zde.
-      if (test['status'] != null) return false; 
+      // Pokud test už má jakýkoliv jiný stav (např. odevzdán), zobrazí se zde
+      // pouze pokud má student ještě další pokusy.
+      if (test['status'] != null) {
+        if (test['max_attempts'] != null && test['attempts_count'] != null) {
+          return (test['attempts_count'] as int) < (test['max_attempts'] as int);
+        }
+        return true; // Neomezeno pokusů
+      } 
       
       return true;
     }).toList();

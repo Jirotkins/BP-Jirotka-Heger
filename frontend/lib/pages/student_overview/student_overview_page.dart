@@ -168,6 +168,8 @@ class _StudentOverviewPageState extends ConsumerState<StudentOverviewPage> {
                 Text(test['title'] ?? '', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16, color: Theme.of(context).colorScheme.onSurface)),
                 const SizedBox(height: 2),
                 Text('Dostupný do: ${test['deadline']}', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontSize: 12)),
+                const SizedBox(height: 2),
+                Text('Pokus: ${test['attempts_count'] ?? 0} / ${test['max_attempts'] ?? 'Neomezeno'}', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontSize: 12, fontWeight: FontWeight.bold)),
               ],
             ),
           ),
@@ -191,8 +193,10 @@ class _StudentOverviewPageState extends ConsumerState<StudentOverviewPage> {
                   }
                   
                   return ElevatedButton(
-                    onPressed: hasAttemptsRemaining ? () {
-                      context.push('/testActive', extra: {'assignmentId': test['id'], 'testTitle': test['title']});
+                    onPressed: hasAttemptsRemaining ? () async {
+                      await context.push('/testActive', extra: {'assignmentId': test['id'], 'testTitle': test['title']});
+                      // Obnovit data po návratu (kvůli aktualizaci počtu pokusů)
+                      ref.read(studentOverviewProvider.notifier).fetchDashboardData();
                     } : null,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: hasAttemptsRemaining ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.surfaceContainerHighest,

@@ -596,7 +596,9 @@ def get_teacher_test_templates(db: Session, teacher_id: int):
 def create_exam_assignment(db: Session, teacher_id: int, group_id: int, template_id: int,
                            activate_from: str = None, activate_to: str = None,
                            time_limit_minutes: int = None, access_password: str = None,
-                           show_immediate_feedback: bool = False):
+                           show_immediate_feedback: bool = False,
+                           max_attempts: int = None, shuffle_questions: bool = False,
+                           can_go_back: bool = True, show_results_after_submit: bool = True):
     """Vytvoří nové přiřazení testu skupině.
 
     Dva režimy:
@@ -669,7 +671,11 @@ def create_exam_assignment(db: Session, teacher_id: int, group_id: int, template
         is_active=is_active,
         time_limit_minutes=time_limit_minutes,
         access_password=access_password,
-        show_immediate_feedback=show_immediate_feedback
+        show_immediate_feedback=show_immediate_feedback,
+        max_attempts=max_attempts,
+        shuffle_questions=shuffle_questions,
+        can_go_back=can_go_back,
+        show_results_after_submit=show_results_after_submit
     )
 
     db.add(new_assignment)
@@ -783,6 +789,18 @@ def update_assignment(db: Session, assignment_id: int, teacher_id: int, update_d
         
     if 'show_immediate_feedback' in update_data and update_data['show_immediate_feedback'] is not None:
         assignment.show_immediate_feedback = update_data['show_immediate_feedback']
+
+    if 'max_attempts' in update_data and update_data['max_attempts'] is not None:
+        assignment.max_attempts = update_data['max_attempts']
+        
+    if 'shuffle_questions' in update_data and update_data['shuffle_questions'] is not None:
+        assignment.shuffle_questions = update_data['shuffle_questions']
+        
+    if 'can_go_back' in update_data and update_data['can_go_back'] is not None:
+        assignment.can_go_back = update_data['can_go_back']
+        
+    if 'show_results_after_submit' in update_data and update_data['show_results_after_submit'] is not None:
+        assignment.show_results_after_submit = update_data['show_results_after_submit']
 
     db.commit()
     db.refresh(assignment)
@@ -1312,10 +1330,10 @@ def get_group_assignments_overview(db: Session, group_id: int, teacher_id: int) 
         ).first()
         template_name = template.name if template else None
 
-        submitted_count = db.query(StudentAttempt).filter(
+        submitted_count = db.query(StudentAttempt.student_id).filter(
             StudentAttempt.assignment_id == a.assignment_id,
             StudentAttempt.status.in_([AttemptStatus.SUBMITTED, AttemptStatus.GRADED])
-        ).count()
+        ).distinct().count()
 
         entry = {
             "assignment_id": a.assignment_id,
@@ -1403,6 +1421,8 @@ def get_student_assignments(db: Session, student_id: int):
             if graded_attempts:
                 best_attempt = max(graded_attempts, key=lambda x: x.score_percent)
                 score_percent = float(best_attempt.score_percent)
+                attempt_id = best_attempt.attempt_id
+                status = best_attempt.status.value
         
         # Determine if it requires password
         requires_password = a.access_password is not None and len(a.access_password) > 0
@@ -1549,35 +1569,47 @@ def save_student_answers(db: Session, student_id: int, attempt_id: int, answers_
                 
             q_type = q_snap["type"]
             if q_type == "OPEN_TEXT":
-                feedback_detail[q_id] = "pending"
+                feedback_detail[q_id] = {"status": "pending", "correct_answer": None}
                 continue
                 
             correct_answers = [a for a in q_snap["answers"] if a.get("is_correct", False)]
             is_correct = False
             
+            correct_answer_text = None
             if q_type == "SINGLE_CHOICE":
-                if len(correct_answers) > 0 and str(correct_answers[0]["answer_id"]) == str(ans_data):
-                    is_correct = True
+                if len(correct_answers) > 0:
+                    correct_answer_text = correct_answers[0]["text"]
+                    if str(correct_answers[0]["answer_id"]) == str(ans_data):
+                        is_correct = True
             elif q_type == "MULTI_CHOICE":
+                correct_texts = [a["text"] for a in correct_answers]
+                if correct_texts:
+                    correct_answer_text = ", ".join(correct_texts)
                 if isinstance(ans_data, list):
                     correct_ids = set(str(a["answer_id"]) for a in correct_answers)
                     selected_ids = set(str(ans) for ans in ans_data)
                     if correct_ids == selected_ids:
                         is_correct = True
             elif q_type == "ORDERING":
+                sorted_correct = sorted(q_snap["answers"], key=lambda x: x.get("order_index", 0))
+                correct_ordered_texts = [a["text"] for a in sorted_correct]
+                if correct_ordered_texts:
+                    correct_answer_text = ", ".join(correct_ordered_texts)
                 if isinstance(ans_data, list):
-                    sorted_correct = sorted(q_snap["answers"], key=lambda x: x.get("order_index", 0))
                     if len(ans_data) > 0 and isinstance(ans_data[0], str) and not ans_data[0].isdigit():
-                        correct_ordered = [a["text"] for a in sorted_correct]
+                        correct_ordered = correct_ordered_texts
                     else:
                         correct_ordered = [str(a["answer_id"]) for a in sorted_correct]
                     selected_ordered = [str(ans) if isinstance(ans, int) or str(ans).isdigit() else ans for ans in ans_data]
                     if correct_ordered == selected_ordered:
                         is_correct = True
             elif q_type == "SHORT_ANSWER":
+                correct_texts_disp = [a["text"] for a in correct_answers] if correct_answers else [a["text"] for a in q_snap["answers"]]
+                if correct_texts_disp:
+                    correct_answer_text = ", ".join(correct_texts_disp)
                 if ans_data is not None and isinstance(ans_data, str):
                     ans_clean = ans_data.strip().lower()
-                    correct_texts = [a["text"].strip().lower() for a in correct_answers] if correct_answers else [a["text"].strip().lower() for a in q_snap["answers"]]
+                    correct_texts = [a.lower().strip() for a in correct_texts_disp]
                     if ans_clean in correct_texts:
                         is_correct = True
             elif q_type == "MATCHING":
@@ -1612,7 +1644,10 @@ def save_student_answers(db: Session, student_id: int, attempt_id: int, answers_
                     if correct_pairs and all(student_dict.get(k) == v for k, v in correct_pairs.items()):
                         is_correct = True
                         
-            feedback_detail[q_id] = "correct" if is_correct else "incorrect"
+            feedback_detail[q_id] = {
+                "status": "correct" if is_correct else "incorrect",
+                "correct_answer": correct_answer_text
+            }
             
         student_channel = f"student_attempt_{attempt_id}"
         sse_manager.sync_publish(student_channel, {
