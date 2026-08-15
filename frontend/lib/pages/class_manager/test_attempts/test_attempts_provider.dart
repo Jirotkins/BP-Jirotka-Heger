@@ -134,10 +134,15 @@ class TestAttemptsNotifier extends Notifier<TestAttemptsState> {
             final answers = a['student_answers'] as Map<String, dynamic>? ?? {};
             if (answers.containsKey(qId) && answers[qId] != null) {
               final val = answers[qId];
-              if (val is List && val.isNotEmpty) answered++;
-              else if (val is String && val.isNotEmpty) answered++;
-              else if (val is Map && val.isNotEmpty) answered++;
-              else if (val is int || val is double || val is bool) answered++;
+              if (val is List && val.isNotEmpty) {
+                answered++;
+              } else if (val is String && val.isNotEmpty) {
+                answered++;
+              } else if (val is Map && val.isNotEmpty) {
+                answered++;
+              } else if (val is int || val is double || val is bool) {
+                answered++;
+              }
             }
           }
           

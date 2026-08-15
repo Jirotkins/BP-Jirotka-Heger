@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'dart:convert';
-import 'dart:typed_data';
+import 'zoomable_image_widget.dart';
 
 /// Znovupoužitelná komponenta (Dialog) představující maketu mobilního zařízení.
 /// Používá se v editorech otázek pro funkci "Pohled studenta".
@@ -28,13 +27,6 @@ class StudentPreviewDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Uint8List? imageBytes;
-    if (imageBase64 != null && imageBase64!.startsWith('data:image')) {
-      try {
-        final b64 = imageBase64!.split(',').last;
-        imageBytes = base64Decode(b64);
-      } catch (_) {}
-    }
 
     return Dialog(
       backgroundColor: Colors.transparent,
@@ -194,16 +186,8 @@ class StudentPreviewDialog extends StatelessWidget {
                           const SizedBox(height: 16.0),
 
                           // OBRÁZEK K OTÁZCE
-                          if (imageBytes != null) ...[
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(12.0),
-                              child: Image.memory(
-                                imageBytes,
-                                width: double.infinity,
-                                height: 180, // Fixní výška náhledu obrázku
-                                fit: BoxFit.cover,
-                              ),
-                            ),
+                          if (imageBase64 != null && imageBase64!.isNotEmpty) ...[
+                            ZoomableImageWidget(imageUrl: imageBase64!),
                             const SizedBox(height: 16.0),
                           ],
 

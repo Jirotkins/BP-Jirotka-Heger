@@ -239,7 +239,7 @@ class _AddNewStudentsPopupWidgetState extends ConsumerState<AddNewStudentsPopupW
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.error.withOpacity(0.1), 
+                color: Theme.of(context).colorScheme.error.withValues(alpha: 0.1), 
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(

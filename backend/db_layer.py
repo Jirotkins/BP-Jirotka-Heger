@@ -1543,6 +1543,16 @@ def start_student_attempt(db: Session, student_id: int, assignment_id: int, pass
     db.refresh(new_attempt)
     
     new_attempt.time_limit_minutes = assignment.time_limit_minutes
+    
+    # Upozornit učitele, že student začal test
+    teacher_channel = f"teacher_assignment_{assignment_id}"
+    from sse_manager import sse_manager
+    sse_manager.sync_publish(teacher_channel, {
+        "event": "attempt_started",
+        "attempt_id": new_attempt.attempt_id,
+        "student_id": student_id
+    })
+    
     return new_attempt
 
 

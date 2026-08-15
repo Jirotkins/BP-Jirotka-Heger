@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'dart:convert';
 
 import 'test_active_provider.dart';
 import '../../components/test_submit_popup_widget.dart';
 import '../../components/test_exit_popup_widget.dart';
+import '../../components/zoomable_image_widget.dart';
 
 /// Hlavní obrazovka pro samotné vyplňování testu studentem (Aktivní test).
 /// 
@@ -247,30 +247,7 @@ class _TestActiveWidgetState extends ConsumerState<TestActiveWidget> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             if (currentQuestion['image_url'] != null && currentQuestion['image_url'].toString().isNotEmpty) ...[
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(12.0),
-                                child: Builder(builder: (context) {
-                                  final url = currentQuestion['image_url'].toString();
-                                  if (url.startsWith('data:image')) {
-                                    try {
-                                      String b64 = url.split(',').last.trim();
-                                      return ConstrainedBox(
-                                        constraints: const BoxConstraints(maxHeight: 300),
-                                        child: Image.memory(
-                                          base64Decode(base64.normalize(b64)),
-                                          fit: BoxFit.cover,
-                                          width: double.infinity,
-                                          gaplessPlayback: true,
-                                        ),
-                                      );
-                                    } catch (e) {
-                                      debugPrint('Image rendering error in test_active_widget: $e');
-                                      return const SizedBox();
-                                    }
-                                  }
-                                  return ConstrainedBox(constraints: const BoxConstraints(maxHeight: 300), child: Image.network(url, fit: BoxFit.cover, width: double.infinity, errorBuilder: (c, e, s) => const SizedBox()));
-                                }),
-                              ),
+                              ZoomableImageWidget(imageUrl: currentQuestion['image_url'].toString()),
                               const SizedBox(height: 16.0),
                             ],
                             Text(
@@ -432,19 +409,49 @@ class _TestActiveWidgetState extends ConsumerState<TestActiveWidget> {
 
   /// Vykreslí komponenty pro otázky typu "Výběr z možností" (SINGLE_CHOICE / MULTI_CHOICE).
   Widget _buildChoiceQuestion(Map<String, dynamic> question, TestActiveState state, TestActiveNotifier notifier) {
+    bool isMultiChoice = question['type'] == 'MULTI_CHOICE';
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Vyberte jednu správnou odpověď:', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontWeight: FontWeight.bold, fontSize: 13.0)),
+        Text(isMultiChoice ? 'Vyberte jednu nebo více správných odpovědí:' : 'Vyberte jednu správnou odpověď:', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontWeight: FontWeight.bold, fontSize: 13.0)),
         const SizedBox(height: 12.0),
         ...List.generate(question['options'].length, (index) {
           var option = question['options'][index];
-          bool isSelected = state.selectedAnswers[state.currentIndex] == option['id'];
+          
+          bool isSelected = false;
+          if (isMultiChoice) {
+             var currentAnswers = state.selectedAnswers[state.currentIndex];
+             if (currentAnswers is List) {
+                isSelected = currentAnswers.contains(option['id']);
+             }
+          } else {
+             isSelected = state.selectedAnswers[state.currentIndex] == option['id'];
+          }
           
           return Padding(
             padding: const EdgeInsets.only(bottom: 12.0),
             child: InkWell(
-              onTap: () => notifier.updateAnswer(option['id']),
+              onTap: () {
+                if (isMultiChoice) {
+                   var currentAnswers = state.selectedAnswers[state.currentIndex];
+                   List<String> newList = [];
+                   if (currentAnswers is List) {
+                      newList = List<String>.from(currentAnswers.map((e) => e.toString()));
+                   } else if (currentAnswers != null) {
+                      newList = [currentAnswers.toString()];
+                   }
+                   
+                   if (newList.contains(option['id'])) {
+                      newList.remove(option['id']);
+                   } else {
+                      newList.add(option['id']);
+                   }
+                   notifier.updateAnswer(newList);
+                } else {
+                   notifier.updateAnswer(option['id']);
+                }
+              },
               borderRadius: BorderRadius.circular(14.0),
               child: Container(
                 decoration: BoxDecoration(
@@ -466,7 +473,13 @@ class _TestActiveWidgetState extends ConsumerState<TestActiveWidget> {
                     ),
                     const SizedBox(width: 16.0),
                     Expanded(child: Text(option['text'], style: GoogleFonts.inter(fontSize: 15.0, fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500, color: Theme.of(context).colorScheme.onSurface))),
-                    Icon(isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked, color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.outline, size: 22.0),
+                    Icon(
+                      isSelected 
+                        ? (isMultiChoice ? Icons.check_box : Icons.radio_button_checked) 
+                        : (isMultiChoice ? Icons.check_box_outline_blank : Icons.radio_button_unchecked), 
+                      color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.outline, 
+                      size: 22.0
+                    ),
                   ],
                 ),
               ),

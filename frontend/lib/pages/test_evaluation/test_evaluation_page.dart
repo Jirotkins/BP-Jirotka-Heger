@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/services.dart';
-import 'dart:convert';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../components/zoomable_image_widget.dart';
 import 'test_evaluation_provider.dart';
 import '../class_manager/test_attempts/test_attempts_provider.dart';
 import '../../theme/app_themes.dart';
@@ -526,30 +526,7 @@ class _TestEvaluationPageState extends ConsumerState<TestEvaluationPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (question['image_url'] != null && question['image_url'].toString().isNotEmpty) ...[
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(12.0),
-                      child: Builder(builder: (context) {
-                        final url = question['image_url'].toString();
-                        if (url.startsWith('data:image')) {
-                          try {
-                            String b64 = url.split(',').last.trim();
-                            return ConstrainedBox(
-                              constraints: const BoxConstraints(maxHeight: 300),
-                              child: Image.memory(
-                                base64Decode(base64.normalize(b64)),
-                                fit: BoxFit.cover,
-                                width: double.infinity,
-                                gaplessPlayback: true,
-                              ),
-                            );
-                          } catch (e) {
-                            debugPrint('Image rendering error in test_evaluation_page: $e');
-                            return const SizedBox();
-                          }
-                        }
-                        return ConstrainedBox(constraints: const BoxConstraints(maxHeight: 300), child: Image.network(url, fit: BoxFit.cover, width: double.infinity, errorBuilder: (c, e, s) => const SizedBox()));
-                      }),
-                    ),
+                    ZoomableImageWidget(imageUrl: question['image_url'].toString()),
                     const SizedBox(height: 16),
                   ],
                   Text(

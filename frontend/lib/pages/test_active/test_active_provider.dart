@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart';
 import '../../services/api_client.dart';
 
 /// Stav reprezentující probíhající test z pohledu studenta.
@@ -251,6 +252,34 @@ class TestActiveNotifier extends Notifier<TestActiveState> {
     state = state.copyWith(selectedAnswers: newAnswers);
   }
 
+  Map<String, dynamic> _buildAnswersPayload() {
+    Map<String, dynamic> answersPayload = {};
+    state.selectedAnswers.forEach((index, answerData) {
+      final q = state.questions[index];
+      final questionId = q['id'] ?? q['question_id'];
+      
+      if (q['type'] == 'ORDERING' && answerData is List) {
+         List<String> idList = [];
+         for (var text in answerData) {
+             var matchingAnswer = (q['answers'] as List).firstWhere((a) => a['text'].toString() == text.toString(), orElse: () => null);
+             if (matchingAnswer != null) {
+                 idList.add(matchingAnswer['answer_id'].toString());
+             } else {
+                 idList.add(text.toString());
+             }
+         }
+         if (idList.isNotEmpty) {
+             answersPayload[questionId.toString()] = idList;
+         } else {
+             answersPayload[questionId.toString()] = answerData;
+         }
+      } else {
+        answersPayload[questionId.toString()] = answerData;
+      }
+    });
+    return answersPayload;
+  }
+
   /// Odešle aktuální odpověď na backend ke kontrole.
   /// Používá se především u testů s okamžitou zpětnou vazbou.
   Future<void> checkCurrentAnswer() async {
@@ -268,25 +297,10 @@ class TestActiveNotifier extends Notifier<TestActiveState> {
     state = state.copyWith(isLoading: true);
     try {
       final apiClient = ref.read(apiClientProvider);
-      dynamic payloadData = answerData;
-      
-      if (currentQ['type'] == 'ORDERING' && answerData is List) {
-         List<String> idList = [];
-         for (var text in answerData) {
-             var matchingAnswer = (currentQ['answers'] as List).firstWhere((a) => a['text'].toString() == text.toString(), orElse: () => null);
-             if (matchingAnswer != null) {
-                 idList.add(matchingAnswer['answer_id'].toString());
-             } else {
-                 idList.add(text.toString());
-             }
-         }
-         if (idList.isNotEmpty) {
-             payloadData = idList;
-         }
-      }
+      final payload = _buildAnswersPayload();
 
       await apiClient.put('/api/student/attempts/$_attemptId/answers', {
-        "answers": { questionId: payloadData }
+        "answers": payload
       });
       // SSE backend by teď měl poslat `immediate_feedback` přes kanál
     } catch (e) {
@@ -296,15 +310,32 @@ class TestActiveNotifier extends Notifier<TestActiveState> {
     }
   }
 
+  Future<void> _syncAnswersSilently() async {
+    if (_attemptId == null) return;
+    try {
+      final payload = _buildAnswersPayload();
+      if (payload.isNotEmpty) {
+        final apiClient = ref.read(apiClientProvider);
+        await apiClient.put('/api/student/attempts/$_attemptId/answers', {
+          "answers": payload
+        });
+      }
+    } catch (e) {
+      debugPrint('Chyba při tichém ukládání odpovědí: $e');
+    }
+  }
+
   void nextQuestion() {
     if (state.currentIndex < state.questions.length - 1) {
       state = state.copyWith(currentIndex: state.currentIndex + 1);
+      _syncAnswersSilently();
     }
   }
 
   void previousQuestion() {
     if (state.currentIndex > 0) {
       state = state.copyWith(currentIndex: state.currentIndex - 1);
+      _syncAnswersSilently();
     }
   }
 
@@ -324,31 +355,7 @@ class TestActiveNotifier extends Notifier<TestActiveState> {
       try {
         final apiClient = ref.read(apiClientProvider);
         
-        Map<String, dynamic> answersPayload = {};
-        state.selectedAnswers.forEach((index, answerData) {
-          final q = state.questions[index];
-          final questionId = q['id'] ?? q['question_id'];
-          
-          if (q['type'] == 'ORDERING' && answerData is List) {
-             // Map selected texts to answer_ids
-             List<String> idList = [];
-             for (var text in answerData) {
-                 var matchingAnswer = (q['answers'] as List).firstWhere((a) => a['text'].toString() == text.toString(), orElse: () => null);
-                 if (matchingAnswer != null) {
-                     idList.add(matchingAnswer['answer_id'].toString());
-                 } else {
-                     idList.add(text.toString());
-                 }
-             }
-             if (idList.isNotEmpty) {
-                 answersPayload[questionId.toString()] = idList;
-             } else {
-                 answersPayload[questionId.toString()] = answerData;
-             }
-          } else {
-            answersPayload[questionId.toString()] = answerData;
-          }
-        });
+        Map<String, dynamic> answersPayload = _buildAnswersPayload();
 
         // Uloží odpovědi
         if (answersPayload.isNotEmpty) {

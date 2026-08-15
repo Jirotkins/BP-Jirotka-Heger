@@ -1,8 +1,9 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:cross_file/cross_file.dart';
+import 'package:image/image.dart' as img;
 import 'dart:typed_data';
 import 'dart:convert';
 
@@ -57,8 +58,8 @@ class _ImageUploadWidgetState extends State<ImageUploadWidget> {
     }
   }
 
-  /// Zpracuje nahraný soubor (z FilePickeru i Drag&Drop), vytáhne jeho příponu 
-  /// a vytvoří příslušný Base64 dataUrl řetězec.
+  /// Zpracuje nahraný soubor (z FilePickeru i Drag&Drop), zkomprimuje ho, 
+  /// vytáhne jeho příponu a vytvoří příslušný Base64 dataUrl řetězec.
   Future<void> _processFile(XFile file, Uint8List bytes) async {
     final ext = file.name.split('.').last.toLowerCase();
     String mimeType = 'image/png';
@@ -66,12 +67,40 @@ class _ImageUploadWidgetState extends State<ImageUploadWidget> {
     if (ext == 'svg') mimeType = 'image/svg+xml';
     if (ext == 'webp') mimeType = 'image/webp';
     
-    final base64Str = base64Encode(bytes);
+    Uint8List finalBytes = bytes;
+
+    // SVG se nedá jednoduše komprimovat balíčkem image, necháme ho být v původním stavu
+    if (mimeType != 'image/svg+xml') {
+      try {
+        final img.Image? decodedImage = img.decodeImage(bytes);
+        if (decodedImage != null) {
+          img.Image resized = decodedImage;
+          
+          // Pokud je obrázek větší než 800px na šířku nebo výšku, zmenšíme ho
+          if (decodedImage.width > 800 || decodedImage.height > 800) {
+            resized = img.copyResize(
+              decodedImage, 
+              width: decodedImage.width > decodedImage.height ? 800 : null, 
+              height: decodedImage.height >= decodedImage.width ? 800 : null
+            );
+          }
+          
+          // Zkomprimujeme do JPEGu pro úsporu místa (kvalita 70)
+          finalBytes = img.encodeJpg(resized, quality: 70);
+          mimeType = 'image/jpeg'; // Vždy to zkomprimujeme na JPEG (kromě SVG)
+        }
+      } catch (e) {
+        debugPrint('Chyba při automatické kompresi obrázku: $e');
+        // Pokud to z nějakého důvodu selže, fallback na původní nahrávané byty
+      }
+    }
+
+    final base64Str = base64Encode(finalBytes);
     final dataUrl = 'data:$mimeType;base64,$base64Str';
     
     setState(() {
       _currentImageUrl = dataUrl;
-      _currentImageBytes = bytes;
+      _currentImageBytes = finalBytes;
     });
     
     widget.onImageSelected(dataUrl);

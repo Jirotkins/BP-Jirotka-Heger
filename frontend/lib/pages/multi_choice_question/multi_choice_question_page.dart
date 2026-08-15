@@ -178,6 +178,12 @@ class _MultiChoiceQuestionPageState extends ConsumerState<MultiChoiceQuestionPag
             : (opt['controller'] as TextEditingController).text)
         .toList();
 
+    int correctCount = _options.where((opt) => opt['isCorrect'] == true).length;
+    bool isMultiChoice = correctCount > 1;
+    String subtitleText = isMultiChoice 
+        ? 'Vyberte jednu nebo více správných odpovědí:' 
+        : 'Vyberte jednu správnou odpověď:';
+
     showDialog(
       context: context,
       builder: (context) {
@@ -188,7 +194,7 @@ class _MultiChoiceQuestionPageState extends ConsumerState<MultiChoiceQuestionPag
             return StudentPreviewDialog(
               questionText: _questionTextController.text,
               imageBase64: _imageBase64,
-              subtitle: 'Vyberte jednu správnou odpověď:',
+              subtitle: subtitleText,
               child: ListView.separated(
                 itemCount: studentOptions.length,
                 separatorBuilder: (_, _) => const SizedBox(height: 12),
@@ -244,9 +250,11 @@ class _MultiChoiceQuestionPageState extends ConsumerState<MultiChoiceQuestionPag
                           ),
                           const SizedBox(width: 12),
                           
-                          // Radio button
+                          // Ikona výběru
                           Icon(
-                            isChecked ? Icons.radio_button_checked : Icons.radio_button_off,
+                            isChecked 
+                                ? (isMultiChoice ? Icons.check_box : Icons.radio_button_checked) 
+                                : (isMultiChoice ? Icons.check_box_outline_blank : Icons.radio_button_off),
                             color: isChecked ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.outlineVariant,
                           ),
                         ],
