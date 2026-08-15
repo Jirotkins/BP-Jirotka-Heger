@@ -1352,7 +1352,9 @@ def get_attempts(
                 "status": a.status.value,
                 "total_points": float(a.total_points) if a.total_points else None,
                 "max_points": float(a.max_points) if a.max_points else None,
-                "score_percent": float(a.score_percent) if a.score_percent else None
+                "score_percent": float(a.score_percent) if a.score_percent else None,
+                "student_answers": a.student_answers or {},
+                "questions_snapshot": a.questions_snapshot or []
             })
 
         return {

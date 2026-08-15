@@ -420,10 +420,10 @@ def get_bank_questions(db: Session, bank_id: int, teacher_id: int):
     
     from models import Question
     
-    # Získáme všechny otázky s eager-loadovanými odpověďmi
+    # Získáme všechny otázky a seřadíme je podle ID
     questions = db.query(Question).filter(
         Question.bank_id == bank_id
-    ).all()
+    ).order_by(Question.question_id).all()
     
     return questions
 
