@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../services/api_client.dart';
+import '../class_overview/class_overview_provider.dart';
 
 /// Stav pro obrazovku správy třídy.
 class ClassManagerState {
@@ -104,6 +105,7 @@ class ClassManagerNotifier extends Notifier<ClassManagerState> {
     try {
       await ref.read(apiClientProvider).delete('/groups/${state.groupId}/students/$studentId');
       await fetchData(state.groupId!);
+      ref.read(classOverviewProvider.notifier).fetchGroups();
     } catch (e) {
       state = state.copyWith(
         errorMessage: 'Chyba při odebírání studenta ze třídy: $e',
@@ -125,10 +127,11 @@ class ClassManagerNotifier extends Notifier<ClassManagerState> {
     state = state.copyWith(clearError: true);
   }
   
-  /// Znovu načte data pro právě vybranou třídu.
+  /// Znovu načte data pro právě vybranou třídu a zaktualizuje globální přehled.
   void refresh() {
     if (state.groupId != null) {
       fetchData(state.groupId!);
+      ref.read(classOverviewProvider.notifier).fetchGroups();
     }
   }
 }
