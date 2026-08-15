@@ -7,8 +7,8 @@ import '../utils/question_type_helper.dart';
 /// Zobrazuje znění otázky, barevný štítek pro typ otázky a akční
 /// tlačítka pro její úpravu nebo smazání.
 class QuestionRowWidget extends StatelessWidget {
-  /// Unikátní ID otázky.
-  final int id;
+  /// Pořadové číslo otázky (1, 2, 3...)
+  final int displayNumber;
   
   /// Znění otázky pro náhled v seznamu.
   final String question;
@@ -30,7 +30,7 @@ class QuestionRowWidget extends StatelessWidget {
 
   const QuestionRowWidget({
     super.key,
-    required this.id,
+    required this.displayNumber,
     required this.question,
     required this.type,
     this.bankId = 0,
@@ -60,7 +60,7 @@ class QuestionRowWidget extends StatelessWidget {
             SizedBox(
               width: 40.0,
               child: Text(
-                id.toString(),
+                displayNumber.toString(),
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.secondary,
                   fontWeight: FontWeight.w600,

@@ -126,6 +126,21 @@ class _QuestionsOverviewPageState extends ConsumerState<QuestionsOverviewPage> {
           title: 'Úprava banky – ${widget.bankName}',
           showBackButton: true,
           actions: [
+            Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
+                icon: Icon(
+                  state.isReversed ? Icons.arrow_upward : Icons.arrow_downward,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                tooltip: 'Otočit pořadí (od nejstarší / od nejnovější)',
+                onPressed: () => notifier.toggleSortOrder(),
+              ),
+            ),
+            const SizedBox(width: 16),
             ElevatedButton.icon(
               onPressed: () {
                 context.push('/addNewQuestion', extra: {
@@ -165,22 +180,27 @@ class _QuestionsOverviewPageState extends ConsumerState<QuestionsOverviewPage> {
                     )
                   : RefreshIndicator(
                       onRefresh: () async => notifier.fetchQuestions(widget.bankId),
-                      child: ListView.separated(
-                        padding: const EdgeInsets.all(32.0),
-                        itemCount: state.questions.length,
-                        separatorBuilder: (context, index) => const SizedBox(height: 12.0),
-                        itemBuilder: (context, index) {
-                          final q = state.questions[index];
-                          return QuestionRowWidget(
-                            id: q['id'] as int,
-                            question: q['question'] as String,
-                            type: q['type'] as String,
-                            bankId: widget.bankId,
-                            targetName: widget.bankName,
-                            questionData: q['raw'],
-                            onDelete: () => _deleteQuestion(q['id'] as int, notifier),
+                      child: Builder(
+                        builder: (context) {
+                          final displayList = state.isReversed ? state.questions.reversed.toList() : state.questions;
+                          return ListView.separated(
+                            padding: const EdgeInsets.all(32.0),
+                            itemCount: displayList.length,
+                            separatorBuilder: (context, index) => const SizedBox(height: 12.0),
+                            itemBuilder: (context, index) {
+                              final q = displayList[index];
+                              return QuestionRowWidget(
+                                displayNumber: q['chronological_number'] as int? ?? (index + 1),
+                                question: q['question'] as String,
+                                type: q['type'] as String,
+                                bankId: widget.bankId,
+                                targetName: widget.bankName,
+                                questionData: q['raw'],
+                                onDelete: () => _deleteQuestion(q['id'] as int, notifier),
+                              );
+                            },
                           );
-                        },
+                        }
                       ),
                     ),
         ),

@@ -15,11 +15,15 @@ class QuestionsOverviewState {
   /// ID aktuálně otevřené banky otázek.
   final int bankId;
 
+  /// Určuje, zda má být zobrazení otázek obrácené (od nejnovější po nejstarší).
+  final bool isReversed;
+
   QuestionsOverviewState({
     this.isLoading = false,
     this.errorMessage,
     this.questions = const [],
     this.bankId = 0,
+    this.isReversed = false,
   });
 
   /// Vytvoří kopii aktuálního stavu s možností přepsání vybraných hodnot.
@@ -29,6 +33,7 @@ class QuestionsOverviewState {
     String? errorMessage,
     List<Map<String, dynamic>>? questions,
     int? bankId,
+    bool? isReversed,
     bool clearError = false,
   }) {
     return QuestionsOverviewState(
@@ -36,6 +41,7 @@ class QuestionsOverviewState {
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       questions: questions ?? this.questions,
       bankId: bankId ?? this.bankId,
+      isReversed: isReversed ?? this.isReversed,
     );
   }
 }
@@ -61,9 +67,12 @@ class QuestionsOverviewNotifier extends Notifier<QuestionsOverviewState> {
       final data = await apiClient.get('/banks/$bankId/questions');
       
       final questionsList = data['questions'] as List? ?? [];
+      
+      int chronoIndex = 1;
       final questionsData = questionsList.map((q) {
         return {
           'id': q['question_id'],
+          'chronological_number': chronoIndex++,
           'question': q['text'] ?? 'Prázdná otázka',
           'type': q['type'] ?? 'Neznámý typ',
           'raw': q,
@@ -121,6 +130,11 @@ class QuestionsOverviewNotifier extends Notifier<QuestionsOverviewState> {
     if (state.bankId != 0) {
       fetchQuestions(state.bankId);
     }
+  }
+
+  /// Přepne směr zobrazení otázek (od nejstarší po nejnovější a naopak).
+  void toggleSortOrder() {
+    state = state.copyWith(isReversed: !state.isReversed);
   }
 }
 

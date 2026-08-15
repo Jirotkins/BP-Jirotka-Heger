@@ -137,8 +137,18 @@ class _AddNewClassPopupWidgetState extends ConsumerState<AddNewClassPopupWidget>
           if (errorToShow != null) ...[
             Container(
               padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: Theme.of(context).colorScheme.errorContainer, borderRadius: BorderRadius.circular(8)),
-              child: Text(errorToShow, style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer, fontSize: 13)),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.error.withOpacity(0.1), 
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                errorToShow, 
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.error, 
+                  fontSize: 13, 
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
             const SizedBox(height: 16.0),
           ],

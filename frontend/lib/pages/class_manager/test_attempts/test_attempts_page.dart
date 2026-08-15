@@ -75,16 +75,75 @@ class _TestAttemptsPageState extends ConsumerState<TestAttemptsPage> {
     );
   }
 
-  /// Pomocná metoda pro vykreslení hlavního seznamu odevzdání.
+  /// Pomocná metoda pro vykreslení hlavního seznamu odevzdání a živých statistik.
   Widget _buildBody(BuildContext context, TestAttemptsState state) {
-    if (state.attempts.isEmpty) {
+    if (state.attempts.isEmpty && state.liveStats.isEmpty) {
       return Center(
-        child: Text('Zatím nejsou žádná odevzdání.', style: GoogleFonts.inter(fontSize: 16)),
+        child: Text('Zatím nejsou žádná odevzdání ani aktivní pokusy.', style: GoogleFonts.inter(fontSize: 16)),
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(24.0),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (state.liveStats.isNotEmpty) ...[
+          Padding(
+            padding: const EdgeInsets.only(left: 24.0, top: 24.0, right: 24.0),
+            child: Text('Živý přehled otázek', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16)),
+          ),
+          SizedBox(
+            height: 140,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
+              itemCount: state.liveStats.length,
+              itemBuilder: (context, index) {
+                final stat = state.liveStats[index];
+                final int answered = stat['answeredCount'] ?? 0;
+                final int total = stat['totalCount'] ?? 1;
+                final double progress = total > 0 ? answered / total : 0;
+                
+                return Container(
+                  width: 200,
+                  margin: const EdgeInsets.symmetric(horizontal: 4.0),
+                  padding: const EdgeInsets.all(16.0),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Otázka ${stat['index']}', style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
+                      const SizedBox(height: 8),
+                      Text(stat['questionText'], maxLines: 2, overflow: TextOverflow.ellipsis, style: GoogleFonts.inter(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                      const Spacer(),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Odpovědělo:', style: GoogleFonts.inter(fontSize: 12)),
+                          Text('$answered / $total', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14)),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      LinearProgressIndicator(
+                        value: progress,
+                        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        color: Theme.of(context).colorScheme.primary,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+          const Divider(height: 1),
+        ],
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.all(24.0),
       itemCount: state.attempts.length,
       itemBuilder: (context, index) {
         final attempt = state.attempts[index];
@@ -154,6 +213,9 @@ class _TestAttemptsPageState extends ConsumerState<TestAttemptsPage> {
           ),
         );
       },
+    ),
+        ),
+      ],
     );
   }
 }

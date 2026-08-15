@@ -14,23 +14,28 @@ class TestAttemptsState {
   
   /// Seznam zpracovaných odevzdání (pokusů) připravených pro zobrazení.
   final List<Map<String, dynamic>> attempts;
+  /// Živé statistiky k jednotlivým otázkám
+  final List<Map<String, dynamic>> liveStats;
   
   TestAttemptsState({
     this.isLoading = true,
     this.errorMessage,
     this.attempts = const [],
+    this.liveStats = const [],
   });
 
   TestAttemptsState copyWith({
     bool? isLoading,
     String? errorMessage,
     List<Map<String, dynamic>>? attempts,
+    List<Map<String, dynamic>>? liveStats,
     bool clearError = false,
   }) {
     return TestAttemptsState(
       isLoading: isLoading ?? this.isLoading,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       attempts: attempts ?? this.attempts,
+      liveStats: liveStats ?? this.liveStats,
     );
   }
 }
@@ -116,7 +121,36 @@ class TestAttemptsNotifier extends Notifier<TestAttemptsState> {
         };
       }).toList();
       
-      state = state.copyWith(isLoading: false, attempts: attempts);
+      // Výpočet živých statistik (liveStats)
+      List<Map<String, dynamic>> computedLiveStats = [];
+      if (attemptsRaw.isNotEmpty && attemptsRaw.first['questions_snapshot'] != null) {
+        final List<dynamic> snapshot = attemptsRaw.first['questions_snapshot'];
+        for (int i = 0; i < snapshot.length; i++) {
+          final q = snapshot[i];
+          final qId = q['question_id'].toString();
+          int answered = 0;
+          
+          for (var a in attemptsRawFiltered) {
+            final answers = a['student_answers'] as Map<String, dynamic>? ?? {};
+            if (answers.containsKey(qId) && answers[qId] != null) {
+              final val = answers[qId];
+              if (val is List && val.isNotEmpty) answered++;
+              else if (val is String && val.isNotEmpty) answered++;
+              else if (val is Map && val.isNotEmpty) answered++;
+              else if (val is int || val is double || val is bool) answered++;
+            }
+          }
+          
+          computedLiveStats.add({
+             'index': i + 1,
+             'questionText': q['text'] ?? 'Otázka ${i + 1}',
+             'answeredCount': answered,
+             'totalCount': attemptsRawFiltered.length,
+          });
+        }
+      }
+      
+      state = state.copyWith(isLoading: false, attempts: attempts, liveStats: computedLiveStats);
 
       // Pokud jsme ještě nenavázali SSE spojení, uděláme to nyní
       if (_sseSubscription == null) {
@@ -143,7 +177,7 @@ class TestAttemptsNotifier extends Notifier<TestAttemptsState> {
         
         // Jakmile zachytíme událost o tom, že student něco udělal, 
         // rovnou tiše načteme celou tabulku znovu
-        if (event == 'attempt_started' || event == 'answer_saved' || event == 'attempt_submitted') {
+        if (event == 'attempt_started' || event == 'answer_saved' || event == 'progress_update' || event == 'attempt_submitted') {
           fetchAttempts(assignmentId, silent: true);
         }
       },
