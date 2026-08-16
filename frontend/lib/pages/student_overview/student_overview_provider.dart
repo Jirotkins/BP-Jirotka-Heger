@@ -193,10 +193,15 @@ class StudentOverviewNotifier extends Notifier<StudentOverviewState> {
         }).length;
 
         String statusText = 'none';
+        int displayedTestCount = testCount;
+        String timeText = '';
+
         if (testCount > 0) {
             statusText = 'active';
         } else if (futureTestCount > 0) {
             statusText = 'upcoming';
+            displayedTestCount = futureTestCount;
+            timeText = 'Test se brzy otevře';
         }
 
         return {
@@ -205,9 +210,9 @@ class StudentOverviewNotifier extends Notifier<StudentOverviewState> {
           'name': name,
           'teacher': group['teacher_name'] ?? 'Neznámý učitel',
           'color': colors[idx % colors.length],
-          'testCount': testCount,
+          'testCount': displayedTestCount,
           'status': statusText,
-          'timeText': '',
+          'timeText': timeText,
         };
       }).toList();
 
