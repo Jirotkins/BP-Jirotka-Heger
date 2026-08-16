@@ -232,20 +232,49 @@ def create_bulk_students(db: Session, group_id: int, prefix: str, count: int) ->
     if not group:
         raise ValueError("Skupina neexistuje")
     
+    # Najdeme počáteční index, abychom předešli kolizím a minimalizovali dotazy
+    existing_students = db.query(Student.login_code, Student.email).filter(
+        (Student.login_code.startswith(f"{prefix}_")) |
+        (Student.email.startswith(f"{prefix}_"))
+    ).all()
+    
+    max_num = 0
+    for code, email in existing_students:
+        if code and code.startswith(f"{prefix}_"):
+            try:
+                num = int(code[len(prefix) + 1:])
+                if num > max_num:
+                    max_num = num
+            except ValueError:
+                pass
+                
+        if email and email.startswith(f"{prefix}_") and "@" in email:
+            try:
+                num = int(email[len(prefix) + 1:].split("@")[0])
+                if num > max_num:
+                    max_num = num
+            except ValueError:
+                pass
+                
+    current_index = max_num + 1
     created_students = []
     
-    for i in range(1, count + 1):
-        login_code = f"{prefix}_{i:02d}"
-        email = f"{prefix}_{i:02d}@school.local"
+    for _ in range(count):
+        # Vždy raději ověříme volnost kódu pro případ souběhu nebo anomálie
+        while True:
+            login_code = f"{prefix}_{current_index:02d}"
+            email = f"{prefix}_{current_index:02d}@school.local"
+            
+            existing = db.query(Student.student_id).filter(
+                (Student.login_code == login_code) | (Student.email == email)
+            ).first()
+            
+            if not existing:
+                break
+                
+            current_index += 1
+
         password = generate_random_password(8)
-        
-        # Zkontroluj, že login_code a email neexistuje
-        existing = db.query(Student).filter(
-            (Student.login_code == login_code) | (Student.email == email)
-        ).first()
-        if existing:
-            raise ValueError(f"Login kód nebo email {login_code} / {email} už existuje")
-        
         password_hash = get_password_hash(password)
         
         new_student = Student(
@@ -264,6 +293,8 @@ def create_bulk_students(db: Session, group_id: int, prefix: str, count: int) ->
             "email": email,
             "password": password
         })
+        
+        current_index += 1
     
     db.commit()
     return created_students
