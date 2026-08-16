@@ -147,6 +147,7 @@ class _TestAttemptsPageState extends ConsumerState<TestAttemptsPage> {
       itemCount: state.attempts.length,
       itemBuilder: (context, index) {
         final attempt = state.attempts[index];
+        final isStarted = attempt['status'] == 'STARTED';
         final isGraded = attempt['status'] == 'GRADED';
         final isSubmitted = attempt['status'] == 'SUBMITTED';
 
@@ -203,7 +204,14 @@ class _TestAttemptsPageState extends ConsumerState<TestAttemptsPage> {
                 Text(attempt['points'], style: GoogleFonts.inter(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
               ],
             ),
-            onTap: () {
+            onTap: isStarted ? () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text('Nelze hodnotit – student test ještě neodevzdal.'),
+                  backgroundColor: Theme.of(context).colorScheme.error,
+                ),
+              );
+            } : () {
               context.push('/testEvaluation', extra: {
                 'assignmentId': widget.assignmentId,
                 'attemptId': attempt['attempt_id'],

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -137,7 +138,21 @@ class StudentOverviewNotifier extends Notifier<StudentOverviewState> {
         final group = entry.value;
         final className = group['name'] as String? ?? 'Neznámá třída';
         final description = group['description'] as String?;
-        final name = (description != null && description.isNotEmpty) ? description : className;
+        String parsedSubject = className;
+        
+        if (description != null && description.isNotEmpty) {
+           try {
+              final Map<String, dynamic> decoded = jsonDecode(description);
+              if (decoded.containsKey('subject')) {
+                 parsedSubject = decoded['subject'] as String;
+              } else {
+                 parsedSubject = description;
+              }
+           } catch (e) {
+              parsedSubject = description;
+           }
+        }
+        final name = parsedSubject;
         final groupId = group['group_id'].toString();
         
         final now = DateTime.now();
