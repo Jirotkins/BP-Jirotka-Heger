@@ -250,6 +250,7 @@ class TestEvaluationNotifier extends Notifier<TestEvaluationState> {
         "studentName": data['student_name'] ?? "Student ID: ${data['student_id']}",
         "subject": "Pokus #${data['attempt_number'] ?? data['attempt_id']}",
       "classGroup": statusText,
+      "rawStatus": status,
       "submittedAt": submittedAtText,
       "maxScore": data['max_points'] ?? 0,
       "questions": mappedQuestions,

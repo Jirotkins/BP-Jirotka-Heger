@@ -160,15 +160,20 @@ class _TestEvaluationPageState extends ConsumerState<TestEvaluationPage> {
                         width: 24, height: 24,
                         child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.primary),
                       )
-                    : ElevatedButton.icon(
-                        onPressed: () => notifier.submitEvaluation(),
-                        icon: const Icon(Icons.save_rounded, size: 20),
-                        label: const Text('Uložit hodnocení'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Theme.of(context).colorScheme.primary,
-                          foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    : Tooltip(
+                        message: state.testData['rawStatus'] == 'STARTED' ? 'Nelze hodnotit – student test ještě neodevzdal.' : '',
+                        child: ElevatedButton.icon(
+                          onPressed: state.testData['rawStatus'] == 'STARTED' ? null : () => notifier.submitEvaluation(),
+                          icon: const Icon(Icons.save_rounded, size: 20),
+                          label: const Text('Uložit hodnocení'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Theme.of(context).colorScheme.primary,
+                            foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                            disabledBackgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                            disabledForegroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
                         ),
                       ),
               ],

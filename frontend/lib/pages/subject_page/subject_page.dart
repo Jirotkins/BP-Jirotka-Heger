@@ -82,6 +82,15 @@ class _SubjectPageState extends ConsumerState<SubjectPage> {
         hasAttemptsRemaining = (test['attempts_count'] as int) < (test['max_attempts'] as int);
       }
 
+      bool isMissed = isExpired && (status == null || status == 'ASSIGNED');
+      
+      String scoreText = 'Čeká na hodnocení';
+      if (isMissed) {
+        scoreText = 'Neodevzdáno';
+      } else if (status == 'GRADED') {
+        scoreText = test['score_percent'] != null ? '${(test['score_percent'] as num).toStringAsFixed(0)} %' : 'Ohodnoceno';
+      }
+
       final uiTest = {
         'id': test['id'],
         'title': test['title'],
@@ -89,8 +98,9 @@ class _SubjectPageState extends ConsumerState<SubjectPage> {
         'info': infoText,
         'date': test['deadline'],
         'questions': test['questions'] ?? 0,
-        'score': status == 'GRADED' ? (test['score_percent'] != null ? '${(test['score_percent'] as num).toStringAsFixed(0)} %' : 'Ohodnoceno') : 'Čeká na hodnocení',
+        'score': scoreText,
         'isWarning': status == 'GRADED' && test['score_percent'] != null && (test['score_percent'] as num) < 50,
+        'isMissed': isMissed,
         'attempt_id': test['attempt_id'],
         'attempt_number': test['attempt_number'],
         'attempts_count': test['attempts_count'],
@@ -442,11 +452,23 @@ class _SubjectPageState extends ConsumerState<SubjectPage> {
   /// Po kliknutí přesměruje na detailní hodnocení testu.
   Widget _buildPastTestCard(Map<String, dynamic> test) {
     bool isWarning = test['isWarning'] == true;
+    bool isMissed = test['isMissed'] == true;
     final customColors = Theme.of(context).extension<CustomColors>();
     Color scoreColor = isWarning ? (customColors?.orangeText ?? const Color(0xFFD97706)) : (customColors?.greenText ?? const Color(0xFF16A34A));
+    
+    if (isMissed) {
+        scoreColor = Theme.of(context).colorScheme.error;
+    }
 
     return InkWell(
-      onTap: () {
+      onTap: isMissed ? () {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Tento test nebyl vypracován.'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      } : () {
         context.push('/studentTestEvaluation', extra: {
           'assignmentId': test['id'] ?? 999,
           'attemptId': test['attempt_id'] ?? 1, // Fallback dokud backend nepřidá attempt_id
@@ -471,7 +493,8 @@ class _SubjectPageState extends ConsumerState<SubjectPage> {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(test['score'], style: GoogleFonts.inter(color: scoreColor, fontWeight: FontWeight.bold, fontSize: 16)),
-                Text('Pokus ${test['attempt_number'] ?? test['attempts_count'] ?? 1}', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12)), 
+                if (!isMissed)
+                  Text('Pokus ${test['attempt_number'] ?? test['attempts_count'] ?? 1}', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12)),
               ],
             ),
           ],

@@ -259,14 +259,22 @@ class _TestActiveWidgetState extends ConsumerState<TestActiveWidget> {
                       ),
                       const SizedBox(height: 32.0),
 
-                      if (currentQuestion['type'] == 'choice' || currentQuestion['type'] == 'SINGLE_CHOICE' || currentQuestion['type'] == 'MULTI_CHOICE')
-                        _buildChoiceQuestion(currentQuestion, state, notifier)
-                      else if (currentQuestion['type'] == 'open' || currentQuestion['type'] == 'short_answer' || currentQuestion['type'] == 'OPEN_TEXT' || currentQuestion['type'] == 'SHORT_ANSWER')
-                        _buildTextQuestion(currentQuestion, notifier)
-                      else if (currentQuestion['type'] == 'order' || currentQuestion['type'] == 'ORDERING')
-                        _buildOrderQuestion(currentQuestion, state, notifier)
-                      else if (currentQuestion['type'] == 'match' || currentQuestion['type'] == 'MATCHING')
-                        _buildMatchQuestion(currentQuestion, state, notifier),
+                      Builder(
+                        builder: (context) {
+                          bool hasFeedback = state.questionFeedback.containsKey((currentQuestion['id'] ?? currentQuestion['question_id']).toString());
+                          
+                          if (currentQuestion['type'] == 'choice' || currentQuestion['type'] == 'SINGLE_CHOICE' || currentQuestion['type'] == 'MULTI_CHOICE') {
+                            return _buildChoiceQuestion(currentQuestion, state, notifier, hasFeedback);
+                          } else if (currentQuestion['type'] == 'open' || currentQuestion['type'] == 'short_answer' || currentQuestion['type'] == 'OPEN_TEXT' || currentQuestion['type'] == 'SHORT_ANSWER') {
+                            return _buildTextQuestion(currentQuestion, notifier, hasFeedback);
+                          } else if (currentQuestion['type'] == 'order' || currentQuestion['type'] == 'ORDERING') {
+                            return _buildOrderQuestion(currentQuestion, state, notifier, hasFeedback);
+                          } else if (currentQuestion['type'] == 'match' || currentQuestion['type'] == 'MATCHING') {
+                            return _buildMatchQuestion(currentQuestion, state, notifier, hasFeedback);
+                          }
+                          return const SizedBox.shrink();
+                        },
+                      ),
 
                       const SizedBox(height: 24.0),
                       if (state.showImmediateFeedback) _buildFeedbackBanner(currentQuestion, state),
@@ -408,7 +416,7 @@ class _TestActiveWidgetState extends ConsumerState<TestActiveWidget> {
   }
 
   /// Vykreslí komponenty pro otázky typu "Výběr z možností" (SINGLE_CHOICE / MULTI_CHOICE).
-  Widget _buildChoiceQuestion(Map<String, dynamic> question, TestActiveState state, TestActiveNotifier notifier) {
+  Widget _buildChoiceQuestion(Map<String, dynamic> question, TestActiveState state, TestActiveNotifier notifier, bool hasFeedback) {
     bool isMultiChoice = question['type'] == 'MULTI_CHOICE';
 
     return Column(
@@ -432,7 +440,7 @@ class _TestActiveWidgetState extends ConsumerState<TestActiveWidget> {
           return Padding(
             padding: const EdgeInsets.only(bottom: 12.0),
             child: InkWell(
-              onTap: () {
+              onTap: hasFeedback ? null : () {
                 if (isMultiChoice) {
                    var currentAnswers = state.selectedAnswers[state.currentIndex];
                    List<String> newList = [];
@@ -491,7 +499,7 @@ class _TestActiveWidgetState extends ConsumerState<TestActiveWidget> {
   }
 
   /// Vykreslí komponenty pro otázky typu "Textová odpověď" (OPEN_TEXT / SHORT_ANSWER).
-  Widget _buildTextQuestion(Map<String, dynamic> question, TestActiveNotifier notifier) {
+  Widget _buildTextQuestion(Map<String, dynamic> question, TestActiveNotifier notifier, bool hasFeedback) {
     bool isLong = question['type'] == 'open';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -500,6 +508,7 @@ class _TestActiveWidgetState extends ConsumerState<TestActiveWidget> {
         const SizedBox(height: 12.0),
         TextFormField(
           controller: _textController,
+          readOnly: hasFeedback,
           maxLines: isLong ? 6 : 1,
           onChanged: (val) {
             notifier.updateAnswer(val);
@@ -521,7 +530,7 @@ class _TestActiveWidgetState extends ConsumerState<TestActiveWidget> {
 
   /// Vykreslí komponenty pro otázky typu "Řazení" (ORDERING).
   /// Umožňuje přetahování položek (ReorderableListView).
-  Widget _buildOrderQuestion(Map<String, dynamic> question, TestActiveState state, TestActiveNotifier notifier) {
+  Widget _buildOrderQuestion(Map<String, dynamic> question, TestActiveState state, TestActiveNotifier notifier, bool hasFeedback) {
     List<String> items = state.selectedAnswers[state.currentIndex] != null 
         ? List<String>.from(state.selectedAnswers[state.currentIndex]) 
         : List<String>.from(question['items']);
@@ -532,16 +541,18 @@ class _TestActiveWidgetState extends ConsumerState<TestActiveWidget> {
       });
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Seřaďte položky (podržte a přetáhněte):', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontWeight: FontWeight.bold, fontSize: 13.0)),
-        const SizedBox(height: 12.0),
-        ReorderableListView.builder(
-          shrinkWrap: true, 
-          physics: const NeverScrollableScrollPhysics(), 
-          itemCount: items.length,
-          proxyDecorator: (Widget child, int index, Animation<double> animation) {
+    return IgnorePointer(
+      ignoring: hasFeedback,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Seřaďte položky (podržte a přetáhněte):', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary, fontWeight: FontWeight.bold, fontSize: 13.0)),
+          const SizedBox(height: 12.0),
+          ReorderableListView.builder(
+            shrinkWrap: true, 
+            physics: const NeverScrollableScrollPhysics(), 
+            itemCount: items.length,
+            proxyDecorator: (Widget child, int index, Animation<double> animation) {
             return Material(
               color: Colors.transparent,
               elevation: 0,
@@ -574,12 +585,13 @@ class _TestActiveWidgetState extends ConsumerState<TestActiveWidget> {
           },
         ),
       ],
+      ),
     );
   }
 
   /// Vykreslí komponenty pro otázky typu "Párování" (MATCHING).
   /// Zobrazí levý sloupec termínů a k nim přiřazuje pomocí DropdownMenu odpovídající hodnoty zprava.
-  Widget _buildMatchQuestion(Map<String, dynamic> question, TestActiveState state, TestActiveNotifier notifier) {
+  Widget _buildMatchQuestion(Map<String, dynamic> question, TestActiveState state, TestActiveNotifier notifier, bool hasFeedback) {
     List<String> leftItems = List<String>.from(question['leftItems']);
     List<String> rightOptions = List<String>.from(question['rightItems']);
     
@@ -628,7 +640,7 @@ class _TestActiveWidgetState extends ConsumerState<TestActiveWidget> {
                       child: Text(option, style: GoogleFonts.inter(fontSize: 14.0, fontWeight: FontWeight.w500, color: Theme.of(context).colorScheme.onSurface)),
                     );
                   }).toList(),
-                  onChanged: (String? newValue) {
+                  onChanged: hasFeedback ? null : (String? newValue) {
                     if (newValue != null) {
                       final newPairs = Map<String, String>.from(pairs);
                       newPairs[leftItem] = newValue;

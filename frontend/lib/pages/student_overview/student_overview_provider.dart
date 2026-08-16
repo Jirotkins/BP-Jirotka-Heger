@@ -135,7 +135,9 @@ class StudentOverviewNotifier extends Notifier<StudentOverviewState> {
       final mySubjectsList = groupsList.asMap().entries.map((entry) {
         final idx = entry.key;
         final group = entry.value;
-        final name = group['name'] as String? ?? 'Neznámá třída';
+        final className = group['name'] as String? ?? 'Neznámá třída';
+        final description = group['description'] as String?;
+        final name = (description != null && description.isNotEmpty) ? description : className;
         final groupId = group['group_id'].toString();
         
         final now = DateTime.now();
@@ -165,6 +167,23 @@ class StudentOverviewNotifier extends Notifier<StudentOverviewState> {
           return true;
         }).length;
         
+        final futureTestCount = activeTestsList.where((t) {
+          if (t['groupId'] != groupId) return false;
+          final String? activateFrom = t['rawActivateFrom'];
+          if (activateFrom != null) {
+            final fromDate = DateTime.parse(activateFrom.endsWith('Z') ? activateFrom : '${activateFrom}Z').toLocal();
+            if (now.isBefore(fromDate)) return true;
+          }
+          return false;
+        }).length;
+
+        String statusText = 'none';
+        if (testCount > 0) {
+            statusText = 'active';
+        } else if (futureTestCount > 0) {
+            statusText = 'upcoming';
+        }
+
         return {
           'id': groupId,
           'code': name.length >= 2 ? name.substring(0, 2).toUpperCase() : name.toUpperCase(),
@@ -172,7 +191,7 @@ class StudentOverviewNotifier extends Notifier<StudentOverviewState> {
           'teacher': group['teacher_name'] ?? 'Neznámý učitel',
           'color': colors[idx % colors.length],
           'testCount': testCount,
-          'status': testCount > 0 ? 'active' : 'none',
+          'status': statusText,
           'timeText': '',
         };
       }).toList();
